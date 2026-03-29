@@ -33,7 +33,7 @@ export function AdminSidebar({
     <div className="flex min-h-screen bg-background">
       {/* Mobile header */}
       <header className="fixed inset-x-0 top-0 z-50 flex h-14 items-center justify-between border-b border-sidebar-border bg-sidebar px-4 lg:hidden">
-        <Link href="/admin" className="flex items-center gap-2">
+        <Link href={`/${shopSlug}/admin`} className="flex items-center gap-2">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Scissors className="h-3.5 w-3.5" />
           </div>

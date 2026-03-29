@@ -54,7 +54,7 @@ export default async function ClientesPage({ params, searchParams }: PageProps) 
   const clients = dbUsers.map((user: any) => {
     const completedApps = user.appointmentsAsCustomer || []
     const totalVisits = completedApps.length
-    const totalSpentValue = completedApps.reduce((acc: number, app: any) => acc + (app.service?.price || 0), 0)
+    const totalSpentValue = completedApps.reduce((acc: number, app: any) => acc + (app.priceAtBooking ?? app.service?.price ?? 0), 0)
     const lastVisitDate = completedApps[0]?.startTime
     return {
       id: user.id,

@@ -38,7 +38,7 @@ export function ListView({ appointments }: ListViewProps) {
                   <div>
                     <p className="font-semibold text-card-foreground">{apt.customer?.name || "Cliente"}</p>
                     <p className="text-sm text-muted-foreground">
-                      <span className="font-medium text-foreground/70">{apt.service?.name}</span> &middot; <User className="mb-0.5 inline h-3 w-3" /> {apt.staff?.name || "Staff"}
+                      <span className="font-medium text-foreground/70">{apt.services?.length > 0 ? apt.services.map((s: any) => s.name).join(', ') : apt.service?.name}</span> &middot; <User className="mb-0.5 inline h-3 w-3" /> {apt.staff?.name || "Staff"}
                     </p>
                   </div>
                 </div>

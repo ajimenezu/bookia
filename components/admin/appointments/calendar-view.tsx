@@ -98,7 +98,7 @@ export function CalendarView({ dates, appointments }: CalendarViewProps) {
                           })}
                         </p>
                         <p className="mt-1 text-xs font-semibold text-card-foreground line-clamp-1">{apt.customer?.name || apt.customerName || "Cliente"}</p>
-                        <p className="text-[10px] text-muted-foreground line-clamp-1">{apt.service?.name}</p>
+                        <p className="text-[10px] text-muted-foreground line-clamp-1">{apt.services?.length > 0 ? apt.services.map((s: any) => s.name).join(', ') : apt.service?.name}</p>
                         <div className="mt-2">
                           <StatusBadge status={apt.status} />
                         </div>
@@ -212,7 +212,7 @@ export function CalendarView({ dates, appointments }: CalendarViewProps) {
                     <p className="text-sm font-semibold text-card-foreground truncate">
                       {apt.customer?.name || apt.customerName || "Cliente"}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate">{apt.service?.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{apt.services?.length > 0 ? apt.services.map((s: any) => s.name).join(', ') : apt.service?.name}</p>
                   </div>
                   <StatusBadge status={apt.status} />
                 </div>

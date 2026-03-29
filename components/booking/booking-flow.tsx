@@ -27,14 +27,16 @@ interface StaffData {
 interface BookingFlowProps {
   shopId: string
   shopName: string
+  whatsappPhone: string | null
   services: ServiceData[]
   staff: StaffData[]
 }
 
 type Step = "service" | "barber" | "date" | "time" | "info"
 
-export function BookingFlow({ shopId, shopName, services, staff }: BookingFlowProps) {
-  const [selectedService, setSelectedService] = useState<string | null>(null)
+export function BookingFlow({ shopId, shopName, whatsappPhone, services, staff }: BookingFlowProps) {
+  const [selectedServices, setSelectedServices] = useState<string[]>([])
+  const [isServiceStepDone, setIsServiceStepDone] = useState(false)
   const [selectedBarber, setSelectedBarber] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
@@ -49,7 +51,7 @@ export function BookingFlow({ shopId, shopName, services, staff }: BookingFlowPr
   const [isPending, startTransition] = useTransition()
   const [bookingError, setBookingError] = useState<string | null>(null)
 
-  const currentStep: Step = !selectedService
+  const currentStep: Step = !isServiceStepDone
     ? "service"
     : !selectedBarber
       ? "barber"
@@ -93,14 +95,14 @@ export function BookingFlow({ shopId, shopName, services, staff }: BookingFlowPr
   }
 
   const handleConfirm = () => {
-    if (!clientName || !clientPhone || !selectedService || !selectedBarber || !selectedDate || !selectedTime) return
+    if (!clientName || !clientPhone || selectedServices.length === 0 || !selectedBarber || !selectedDate || !selectedTime) return
 
     setBookingError(null)
     startTransition(async () => {
       const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
       const result = await createBooking({
         shopId,
-        serviceId: selectedService,
+        serviceIds: selectedServices,
         staffId: selectedBarber === "auto" && assignedAutoStaff ? assignedAutoStaff.id : selectedBarber,
         date: dateStr,
         time: selectedTime,
@@ -117,7 +119,8 @@ export function BookingFlow({ shopId, shopName, services, staff }: BookingFlowPr
   }
 
   const handleReset = () => {
-    setSelectedService(null)
+    setSelectedServices([])
+    setIsServiceStepDone(false)
     setSelectedBarber(null)
     setSelectedDate(undefined)
     setSelectedTime(null)
@@ -135,7 +138,9 @@ export function BookingFlow({ shopId, shopName, services, staff }: BookingFlowPr
     ...staff,
   ]
 
-  const service = services.find((s) => s.id === selectedService)
+  const selectedServicesDetails = services.filter((s) => selectedServices.includes(s.id))
+  const totalPrice = selectedServicesDetails.reduce((sum, s) => sum + s.price, 0)
+  const totalDuration = selectedServicesDetails.reduce((sum, s) => sum + s.duration, 0)
   const barber = allStaff.find((b) => b.id === selectedBarber)
 
   return (
@@ -177,32 +182,67 @@ export function BookingFlow({ shopId, shopName, services, staff }: BookingFlowPr
         {/* Step: Service Selection */}
         {currentStep === "service" && (
           <section>
-            <h2 className="mb-4 text-lg font-semibold text-foreground">Elige un servicio</h2>
+            <h2 className="mb-4 text-lg font-semibold text-foreground">Elige tus servicios</h2>
             <div className="grid gap-3">
-              {services.map((svc) => (
-                <button
-                  key={svc.id}
-                  onClick={() => setSelectedService(svc.id)}
-                  className={cn(
-                    "flex items-center gap-4 rounded-xl border p-4 text-left transition-colors cursor-pointer",
-                    selectedService === svc.id
-                      ? "border-primary bg-primary/10"
-                      : "border-border bg-card hover:border-primary/40"
-                  )}
-                >
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Scissors className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-card-foreground">{svc.name}</p>
-                    <p className="text-sm text-muted-foreground">{formatDuration(svc.duration)}</p>
-                  </div>
-                  <span className="text-lg font-semibold text-primary">{formatPrice(svc.price)}</span>
-                </button>
-              ))}
+              {services.map((svc) => {
+                const isSelected = selectedServices.includes(svc.id)
+                return (
+                  <button
+                    key={svc.id}
+                    onClick={() => {
+                      setSelectedServices(prev =>
+                        isSelected ? prev.filter(id => id !== svc.id) : [...prev, svc.id]
+                      )
+                    }}
+                    className={cn(
+                      "flex items-center gap-4 rounded-xl border p-4 text-left transition-colors cursor-pointer relative",
+                      isSelected
+                        ? "border-primary bg-primary/10"
+                        : "border-border bg-card hover:border-primary/40"
+                    )}
+                  >
+                    <div className={cn(
+                      "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl",
+                      isSelected ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"
+                    )}>
+                      {isSelected ? <CheckCircle2 className="h-6 w-6" /> : <Scissors className="h-5 w-5" />}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-card-foreground">{svc.name}</p>
+                      <p className="text-sm text-muted-foreground">{formatDuration(svc.duration)}</p>
+                    </div>
+                    <span className="text-lg font-semibold text-primary">{formatPrice(svc.price)}</span>
+                  </button>
+                )
+              })}
               {services.length === 0 && (
                 <p className="py-8 text-center text-muted-foreground">No hay servicios disponibles</p>
               )}
+            </div>
+            {whatsappPhone && (
+              <a
+                href={`https://wa.me/${whatsappPhone.replace(/\D/g, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button variant="outline" className="mt-4 w-full h-12 rounded-xl text-base">
+                  No estoy seguro, quiero preguntar por WhatsApp
+                </Button>
+              </a>
+            )}
+
+            <div className="mt-6 border-t border-border pt-4 sticky bottom-0 bg-background/95 backdrop-blur z-10 pb-4">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm text-muted-foreground">{selectedServices.length} {selectedServices.length === 1 ? 'servicio' : 'servicios'}</span>
+                <span className="font-bold text-lg text-primary">{totalPrice > 0 ? formatPrice(totalPrice) : ''}</span>
+              </div>
+              <Button
+                className="w-full h-12 rounded-xl text-base font-semibold"
+                onClick={() => setIsServiceStepDone(true)}
+                disabled={selectedServices.length === 0}
+              >
+                Continuar
+              </Button>
             </div>
           </section>
         )}
@@ -243,8 +283,8 @@ export function BookingFlow({ shopId, shopName, services, staff }: BookingFlowPr
             </div>
             <Button
               variant="outline"
-              className="mt-4 w-full"
-              onClick={() => { setSelectedService(null); setSelectedBarber(null) }}
+              className="mt-4 w-full h-12 rounded-xl"
+              onClick={() => { setIsServiceStepDone(false); setSelectedBarber(null) }}
             >
               Volver
             </Button>
@@ -300,7 +340,7 @@ export function BookingFlow({ shopId, shopName, services, staff }: BookingFlowPr
                         setLoadingStaff(true)
                         try {
                           const dateStr = `${selectedDate!.getFullYear()}-${String(selectedDate!.getMonth() + 1).padStart(2, '0')}-${String(selectedDate!.getDate()).padStart(2, '0')}`
-                          const availableStaff = await getAvailableStaffForSlot(shopId, dateStr, time, selectedService!)
+                          const availableStaff = await getAvailableStaffForSlot(shopId, dateStr, time, selectedServices)
                           if (availableStaff.length > 0) {
                             const randomStaff = availableStaff[Math.floor(Math.random() * availableStaff.length)]
                             setAssignedAutoStaff(randomStaff)
@@ -309,10 +349,10 @@ export function BookingFlow({ shopId, shopName, services, staff }: BookingFlowPr
                             setBookingError("Lo sentimos, este horario acaba de ser ocupado. Intenta otro.")
                             setSelectedTime(null)
                           }
-                        } catch(e) { 
-                          console.error(e) 
-                        } finally { 
-                          setLoadingStaff(false) 
+                        } catch (e) {
+                          console.error(e)
+                        } finally {
+                          setLoadingStaff(false)
                         }
                       } else {
                         setAssignedAutoStaff(null)
@@ -359,89 +399,100 @@ export function BookingFlow({ shopId, shopName, services, staff }: BookingFlowPr
               <>
                 {/* Summary */}
                 <div className="mb-6 rounded-xl border border-border bg-card p-4">
-              <h3 className="mb-3 text-sm font-medium text-muted-foreground">Resumen de tu cita</h3>
-              <div className="grid gap-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Servicio</span>
-                  <span className="font-medium text-card-foreground">{service?.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Profesional</span>
-                  <span className="font-medium text-card-foreground">
-                    {selectedBarber === "auto" ? assignedAutoStaff?.name : barber?.name}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Fecha</span>
-                  <span className="font-medium text-card-foreground">
-                    {selectedDate?.toLocaleDateString("es-ES", { day: "numeric", month: "long" })}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Hora</span>
-                  <span className="font-medium text-primary">{selectedTime}</span>
-                </div>
-                <div className="mt-1 border-t border-border pt-2">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Total</span>
-                    <span className="text-lg font-bold text-primary">{service ? formatPrice(service.price) : ""}</span>
+                  <h3 className="mb-3 text-sm font-medium text-muted-foreground">Resumen de tu cita</h3>
+                  <div className="grid gap-2 text-sm">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-muted-foreground">Servicios</span>
+                      <div className="pl-2 border-l-2 border-primary/20">
+                        {selectedServicesDetails.map(s => (
+                          <div key={s.id} className="flex justify-between font-medium text-card-foreground">
+                            <span>{s.name}</span>
+                            <span>{formatPrice(s.price)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex justify-between mt-2">
+                      <span className="text-muted-foreground">Profesional</span>
+                      <span className="font-medium text-card-foreground">
+                        {selectedBarber === "auto" ? assignedAutoStaff?.name : barber?.name}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Fecha</span>
+                      <span className="font-medium text-card-foreground">
+                        {selectedDate?.toLocaleDateString("es-ES", { day: "numeric", month: "long" })}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Hora</span>
+                      <span className="font-medium text-primary">{selectedTime}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Duración Total</span>
+                      <span className="font-medium text-card-foreground">{formatDuration(totalDuration)}</span>
+                    </div>
+                    <div className="mt-1 border-t border-border pt-2">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Total</span>
+                        <span className="text-lg font-bold text-primary">{formatPrice(totalPrice)}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="grid gap-4">
-              <div>
-                <Label htmlFor="name" className="mb-1.5 text-sm text-foreground">Nombre completo</Label>
-                <Input
-                  id="name"
-                  placeholder="Ej: Juan Pérez"
-                  value={clientName}
-                  onChange={(e) => setClientName(e.target.value)}
-                  className="bg-card"
-                />
-              </div>
-              <div>
-                <Label htmlFor="phone" className="mb-1.5 text-sm text-foreground">Teléfono (WhatsApp)</Label>
-                <Input
-                  id="phone"
-                  placeholder="+506 8888 8888"
-                  value={clientPhone}
-                  onChange={(e) => setClientPhone(e.target.value)}
-                  className="bg-card"
-                />
-              </div>
+                <div className="grid gap-4">
+                  <div>
+                    <Label htmlFor="name" className="mb-1.5 text-sm text-foreground">Nombre completo</Label>
+                    <Input
+                      id="name"
+                      placeholder="Ej: Juan Pérez"
+                      value={clientName}
+                      onChange={(e) => setClientName(e.target.value)}
+                      className="bg-card"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="phone" className="mb-1.5 text-sm text-foreground">Teléfono (WhatsApp)</Label>
+                    <Input
+                      id="phone"
+                      placeholder="+506 8888 8888"
+                      value={clientPhone}
+                      onChange={(e) => setClientPhone(e.target.value)}
+                      className="bg-card"
+                    />
+                  </div>
 
-              {bookingError && (
-                <p className="text-sm text-destructive">{bookingError}</p>
-              )}
+                  {bookingError && (
+                    <p className="text-sm text-destructive">{bookingError}</p>
+                  )}
 
-              <Button
-                className="mt-2 h-12 w-full rounded-xl text-base font-semibold"
-                onClick={handleConfirm}
-                disabled={!clientName || !clientPhone || isPending}
-              >
-                {isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Reservando...
-                  </>
-                ) : (
-                  "Confirmar Reserva"
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => { setSelectedTime(null) }}
-              >
-                Volver
-              </Button>
-            </div>
-          </>
+                  <Button
+                    className="mt-2 h-12 w-full rounded-xl text-base font-semibold"
+                    onClick={handleConfirm}
+                    disabled={!clientName || !clientPhone || isPending}
+                  >
+                    {isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Reservando...
+                      </>
+                    ) : (
+                      "Confirmar Reserva"
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => { setSelectedTime(null) }}
+                  >
+                    Volver
+                  </Button>
+                </div>
+              </>
+            )}
+          </section>
         )}
-      </section>
-    )}
       </main>
 
       {/* Success Dialog */}
@@ -463,8 +514,8 @@ export function BookingFlow({ shopId, shopName, services, staff }: BookingFlowPr
                 <span className="font-medium text-card-foreground">{clientName}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Servicio</span>
-                <span className="font-medium text-card-foreground">{service?.name}</span>
+                <span className="text-muted-foreground">Servicios</span>
+                <span className="font-medium text-card-foreground text-right">{selectedServicesDetails.map(s => s.name).join(", ")}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Profesional</span>

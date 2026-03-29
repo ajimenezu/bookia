@@ -41,6 +41,7 @@ export default async function BarberiaDemo() {
       <BookingFlow
         shopId={shopId}
         shopName={shop.name}
+        whatsappPhone={shop.whatsappPhone}
         services={services}
         staff={staff}
       />

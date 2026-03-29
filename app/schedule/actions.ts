@@ -5,7 +5,7 @@ import { getAvailableSlots, checkStaffConflict } from "@/lib/availability"
 
 interface CreateBookingData {
   shopId: string
-  serviceId: string
+  serviceIds: string[]
   staffId: string // "auto" or actual userId
   date: string    // "2026-03-20"
   time: string    // "09:00"
@@ -14,17 +14,20 @@ interface CreateBookingData {
 }
 
 export async function createBooking(data: CreateBookingData) {
-  const { shopId, serviceId, staffId, date, time, customerName, customerPhone } = data
+  const { shopId, serviceIds, staffId, date, time, customerName, customerPhone } = data
 
-  // 1. Get service to calculate end time and capture price
-  const service = await prisma.service.findUnique({ where: { id: serviceId } })
-  if (!service) {
+  // 1. Get services to calculate end time and capture total price
+  const services = await prisma.service.findMany({ where: { id: { in: serviceIds } } })
+  if (services.length === 0) {
     return { success: false, error: "Servicio no encontrado" }
   }
 
+  const totalDuration = services.reduce((acc, s) => acc + s.duration, 0)
+  const totalPrice = services.reduce((acc, s) => acc + s.price, 0)
+
   // 2. Calculate start and end times
   const startTime = new Date(`${date}T${time}:00`)
-  const endTime = new Date(startTime.getTime() + service.duration * 60 * 1000)
+  const endTime = new Date(startTime.getTime() + totalDuration * 60 * 1000)
 
   // 3. Resolve staff (if "auto", find the first available)
   let resolvedStaffId: string | null = null
@@ -84,13 +87,15 @@ export async function createBooking(data: CreateBookingData) {
   const appointment = await prisma.appointment.create({
     data: {
       shopId,
-      serviceId,
+      serviceId: serviceIds[0], // Keep for backward compatibility
+      services: {
+        connect: serviceIds.map(id => ({ id }))
+      },
       staffId: resolvedStaffId,
       customerId,
       startTime,
       endTime,
-      // @ts-ignore
-      priceAtBooking: service.price,
+      priceAtBooking: totalPrice,
       customerName,
       customerPhone,
       status: "CONFIRMED"
@@ -112,13 +117,15 @@ export async function getAvailableStaffForSlot(
   shopId: string,
   date: string,
   time: string,
-  serviceId: string
+  serviceIds: string[]
 ): Promise<{ id: string; name: string }[]> {
-  const service = await prisma.service.findUnique({ where: { id: serviceId } })
-  if (!service) return []
+  const services = await prisma.service.findMany({ where: { id: { in: serviceIds } } })
+  if (services.length === 0) return []
+
+  const totalDuration = services.reduce((acc, s) => acc + s.duration, 0)
 
   const startTime = new Date(`${date}T${time}:00`)
-  const endTime = new Date(startTime.getTime() + service.duration * 60 * 1000)
+  const endTime = new Date(startTime.getTime() + totalDuration * 60 * 1000)
 
   const staffMembers = await prisma.shopMember.findMany({
     where: { shopId, role: { in: ["STAFF", "OWNER"] } },

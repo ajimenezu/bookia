@@ -21,7 +21,7 @@ export default async function AdminLayout({ children, params }: LayoutProps) {
   const t = getTerminology(businessType)
 
   return (
-    <BusinessThemeProvider businessType={businessType}>
+    <BusinessThemeProvider businessType={businessType} businessSlug={slug}>
       <AdminSidebar terminology={t} shopSlug={slug}>{children}</AdminSidebar>
     </BusinessThemeProvider>
   )

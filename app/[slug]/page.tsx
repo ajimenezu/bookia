@@ -62,7 +62,7 @@ export default async function ShopPublicPage({ params }: PageProps) {
   }
 
   return (
-    <BusinessThemeProvider businessType={shop.businessType}>
+    <BusinessThemeProvider businessType={shop.businessType} businessSlug={shop.slug}>
       <ShopLanding shop={shopData} services={services} staff={staff} />
     </BusinessThemeProvider>
   )

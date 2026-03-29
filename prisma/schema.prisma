@@ -47,6 +47,7 @@ model User {
   name      String?
   phone     String?
   role      Role     @default(CUSTOMER) // Global role (e.g. SUPER_ADMIN)
+  needsPasswordChange Boolean @default(false)
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

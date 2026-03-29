@@ -6,12 +6,14 @@ import { getBusinessTokens } from "@/lib/tokens"
 
 export function BusinessThemeProvider({ 
   businessType, 
+  businessSlug,
   children 
 }: { 
   businessType: BusinessType, 
+  businessSlug?: string,
   children: React.ReactNode 
 }) {
-  const tokens = useMemo(() => getBusinessTokens(businessType), [businessType])
+  const tokens = useMemo(() => getBusinessTokens(businessType, businessSlug), [businessType, businessSlug])
 
   // Mapping tokens to CSS variables
   const cssVariables = useMemo(() => ({

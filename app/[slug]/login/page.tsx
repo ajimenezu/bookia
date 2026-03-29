@@ -22,7 +22,7 @@ export default async function ShopLoginPage({ params }: PageProps) {
   if (!shop) notFound()
 
   return (
-    <BusinessThemeProvider businessType={shop.businessType}>
+    <BusinessThemeProvider businessType={shop.businessType} businessSlug={slug}>
       <ShopLoginForm
         slug={slug}
         shopName={shop.name}

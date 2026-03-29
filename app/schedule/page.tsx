@@ -37,7 +37,7 @@ export default async function BarberiaDemo() {
   }))
 
   return (
-    <BusinessThemeProvider businessType={businessType}>
+    <BusinessThemeProvider businessType={businessType} businessSlug={shop.slug}>
       <BookingFlow
         shopId={shopId}
         shopName={shop.name}

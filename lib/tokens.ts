@@ -116,6 +116,37 @@ export const BUSINESS_TOKENS: Record<BusinessType, BusinessPalette> = {
   }
 }
 
-export function getBusinessTokens(businessType: BusinessType = "BARBERIA"): BusinessPalette {
+export const CUSTOM_BUSINESS_TOKENS: Record<string, BusinessPalette> = {
+  "vanity-studio": {
+    // Premium Light Violet & Gold theme
+    primary: "oklch(0.55 0.20 290)",
+    primaryForeground: "oklch(0.99 0.01 290)",
+    accent: "oklch(0.82 0.12 85)",
+    accentForeground: "oklch(0.35 0.05 85)",
+    ring: "oklch(0.55 0.20 290)",
+    background: "oklch(0.98 0.005 290)",
+    foreground: "oklch(0.15 0.03 290)",
+    card: "oklch(1.00 0 0)",
+    cardForeground: "oklch(0.15 0.03 290)",
+    secondary: "oklch(0.95 0.02 290)",
+    secondaryForeground: "oklch(0.35 0.08 290)",
+    muted: "oklch(0.96 0.01 290)",
+    mutedForeground: "oklch(0.45 0.05 290)",
+    border: "oklch(0.90 0.02 290)",
+    input: "oklch(0.95 0.01 290)",
+    sidebar: "oklch(0.99 0.005 290)",
+    sidebarForeground: "oklch(0.30 0.05 290)",
+    sidebarAccent: "oklch(0.94 0.03 290)",
+    sidebarBorder: "oklch(0.92 0.01 290)"
+  }
+}
+
+export function getBusinessTokens(
+  businessType: BusinessType = "BARBERIA",
+  slug?: string
+): BusinessPalette {
+  if (slug && CUSTOM_BUSINESS_TOKENS[slug]) {
+    return CUSTOM_BUSINESS_TOKENS[slug]
+  }
   return BUSINESS_TOKENS[businessType] || BUSINESS_TOKENS.SALON_BELLEZA
 }

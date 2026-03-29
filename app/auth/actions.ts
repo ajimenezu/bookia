@@ -28,7 +28,9 @@ export async function signIn(formData: FormData) {
 
   let redirectPath = "/"
   if (dbUser) {
-    if (dbUser.role === "SUPER_ADMIN" || dbUser.role === "OWNER" || dbUser.role === "STAFF") {
+    if (dbUser.needsPasswordChange) {
+      redirectPath = "/admin/perfil/cambiar-password"
+    } else if (dbUser.role === "SUPER_ADMIN" || dbUser.role === "OWNER" || dbUser.role === "STAFF") {
       redirectPath = "/admin"
     }
   }
@@ -73,7 +75,12 @@ export async function signInToShop(slug: string, formData: FormData) {
   // SUPER_ADMIN, Staff/Owner → admin panel of this shop
   // Customer or no membership → landing page (/{slug}/mi-perfil when built)
   const isAdmin = isSuperAdmin || !!membership
-  const redirectPath = isAdmin ? `/${slug}/admin` : `/${slug}`
+  let redirectPath = isAdmin ? `/${slug}/admin` : `/${slug}`
+
+  if (dbUser?.needsPasswordChange) {
+    redirectPath = `/admin/perfil/cambiar-password`
+  }
+
   return { success: true, redirectPath }
 }
 

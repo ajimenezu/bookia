@@ -35,10 +35,10 @@ export async function handleProxySession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Root-level protection for admin routes
+  // Root-level protection for all admin routes (global or shop-specific)
   if (
     !user &&
-    request.nextUrl.pathname.startsWith("/admin")
+    (request.nextUrl.pathname.startsWith("/admin") || request.nextUrl.pathname.includes("/admin"))
   ) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'

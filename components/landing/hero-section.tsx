@@ -24,7 +24,7 @@ export function HeroSection() {
             <Link href="/schedule">Ver Demo</Link>
           </Button>
           <Button asChild variant="outline" size="lg" className="h-12 rounded-full border-border px-8 text-base text-foreground hover:bg-secondary">
-            <Link href="/admin">Panel Admin</Link>
+            <Link href="/login">Panel Admin</Link>
           </Button>
         </div>
       </div>

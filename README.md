@@ -6,12 +6,12 @@ This project has evolved from a front-end demo into a functional full-stack appl
 - **Public Landing Page:** Feature highlights and live dashboard preview.
 - **Multitenant Architecture:** Shops can manage their own services, staff, and appointments.
 - **Real-time Data:** Integrated with Prisma ORM and Supabase PostgreSQL.
-- **Authentication:** Role-based access control (RBAC) via Supabase Auth.
+- **Authentication & RBAC:** Multi-level per-shop access control using Supabase Auth combined with a Prisma `ShopMember` model (Super Admin, Owner, Staff, Customer).
 - **Admin Panel:** Comprehensive management of appointments, clients, services, and staff.
 
 ## 🚀 Main Features
 
-- **Guided Booking Flow:** 5-step wizard for customers (Service -> Staff -> Date -> Time -> Confirmation).
+- **Guided Booking Flow:** 5-step wizard for customers featuring multiple-service selection and dynamic sub-totals (Service -> Staff -> Date -> Time -> Confirmation).
 - **Admin Dashboard:** Real-time stats (citas hoy, ingreso estimado) fetched directly from the database.
 - **Calendar Management:** Weekly and list views for appointment tracking.
 - **Performance Analytics:** Staff performance metrics (ratings, revenue, booking volume).
@@ -41,7 +41,9 @@ This project has evolved from a front-end demo into a functional full-stack appl
 │   └── ui/               # Reusable primitives (shadcn)
 ├── lib/                  # Shared utilities and clients
 │   ├── prisma.ts         # Prisma global client
-│   └── supabase/         # Supabase client configurations
+│   ├── supabase/         # Supabase client configurations
+│   ├── appointments.ts   # Centralized DB data fetching for schedules
+│   └── availability.ts   # Logic for calculating staff conflicts and slots
 ├── prisma/               # Database schema and migrations
 └── public/               # Static assets
 ```

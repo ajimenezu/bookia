@@ -18,7 +18,7 @@ export function LandingNav() {
           <Link href="#demo" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
             Demo
           </Link>
-          <Link href="/admin" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+          <Link href="/login" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
             Panel Admin
           </Link>
         </nav>

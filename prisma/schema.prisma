@@ -17,9 +17,9 @@ datasource db {
 // ---------------------------------------------
 
 model Shop {
-  id        String   @id
-  name      String
-  slug      String
+  id           String       @id
+  name         String
+  slug         String
   businessType BusinessType @default(BARBERIA)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
@@ -59,15 +59,15 @@ model User {
 }
 
 model ShopMember {
-  id        String   @id @default(cuid())
-  userId    String   @db.Uuid
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  shopId    String
-  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  
-  role      Role     @default(CUSTOMER) // Local role within this shop
-  
+  id     String @id @default(cuid())
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  shopId String
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  role Role @default(CUSTOMER) // Local role within this shop
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -92,9 +92,9 @@ model ShopSchedule {
   id           String  @id @default(cuid())
   shopId       String
   shop         Shop    @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  dayOfWeek    Int     // 0=Sunday, 1=Monday ... 6=Saturday
-  openTime     String  // "09:00"
-  closeTime    String  // "18:00"
+  dayOfWeek    Int // 0=Sunday, 1=Monday ... 6=Saturday
+  openTime     String // "09:00"
+  closeTime    String // "18:00"
   slotDuration Int     @default(30) // minutes
   isOpen       Boolean @default(true)
 
@@ -102,46 +102,48 @@ model ShopSchedule {
 }
 
 model Service {
-  id          String   @id
+  id          String  @id
   name        String
   description String?
   price       Float
-  duration    Int      // Duration in minutes
-  
-  shopId      String
-  shop        Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  duration    Int // Duration in minutes
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  shopId String
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relationships
-  appointments Appointment[]
+  appointments      Appointment[] @relation("LegacyService")
+  multiAppointments Appointment[] @relation("AppointmentServices")
 }
 
 model Appointment {
-  id             String   @id @default(cuid())
+  id             String            @id @default(cuid())
   startTime      DateTime
   endTime        DateTime
   status         AppointmentStatus @default(PENDING)
-  priceAtBooking Float?   // Snapshot of service price at booking time
-  customerName   String?  // For guest bookings (no account)
-  customerPhone  String?  // For guest bookings (no account)
+  priceAtBooking Float? // Snapshot of service price at booking time
+  customerName   String? // For guest bookings (no account)
+  customerPhone  String? // For guest bookings (no account)
 
   // Relationships
-  shopId      String
-  shop        Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shopId String
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
-  serviceId   String
-  service     Service  @relation(fields: [serviceId], references: [id])
+  serviceId String?
+  service   Service?  @relation("LegacyService", fields: [serviceId], references: [id])
+  services  Service[] @relation("AppointmentServices")
 
-  staffId     String?  @db.Uuid
-  staff       User?    @relation("StaffAppointments", fields: [staffId], references: [id])
+  staffId String? @db.Uuid
+  staff   User?   @relation("StaffAppointments", fields: [staffId], references: [id])
 
-  customerId  String?  @db.Uuid
-  customer    User?    @relation("CustomerAppointments", fields: [customerId], references: [id])
+  customerId String? @db.Uuid
+  customer   User?   @relation("CustomerAppointments", fields: [customerId], references: [id])
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([staffId, startTime])
 }

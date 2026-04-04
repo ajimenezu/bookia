@@ -25,6 +25,7 @@ export async function getAppointmentsInRange(startDate: Date, endDate: Date, sho
     include: {
       customer: true,
       service: true,
+      services: true,
       staff: true,
     },
   })

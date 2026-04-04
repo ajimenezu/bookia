@@ -331,6 +331,7 @@ export function ShopLanding({ shop, services, staff }: ShopLandingProps) {
           <BookingFlow
             shopId={shop.id}
             shopName={shop.name}
+            whatsappPhone={shop.whatsappPhone}
             services={services}
             staff={staff}
           />

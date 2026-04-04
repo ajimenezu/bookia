@@ -30,8 +30,18 @@ export async function signIn(formData: FormData) {
   if (dbUser) {
     if (dbUser.needsPasswordChange) {
       redirectPath = "/admin/perfil/cambiar-password"
-    } else if (dbUser.role === "SUPER_ADMIN" || dbUser.role === "OWNER" || dbUser.role === "STAFF") {
-      redirectPath = "/admin"
+    } else if (dbUser.role === "SUPER_ADMIN") {
+      const firstShop = await prisma.shop.findFirst()
+      if (firstShop) redirectPath = `/${firstShop.slug}/admin`
+    } else if (dbUser.role === "OWNER" || dbUser.role === "STAFF") {
+      const dbUserWithMemberships = await prisma.user.findUnique({
+        where: { id: user.id },
+        include: { memberships: { include: { shop: true }, where: { role: { in: ["OWNER", "STAFF"] } } } }
+      })
+      const firstMembership = dbUserWithMemberships?.memberships[0]
+      if (firstMembership?.shop) {
+        redirectPath = `/${firstMembership.shop.slug}/admin`
+      }
     }
   }
 

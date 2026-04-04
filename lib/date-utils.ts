@@ -37,3 +37,31 @@ export function getWeekRange(weekOffset: number) {
     rangeLabel: `${dates[0].day} ${dates[0].month} - ${dates[6].day} ${dates[6].month}, ${dates[0].fullDate.getFullYear()}`
   };
 }
+
+/**
+ * Calculates the week offset for a given date relative to the current week.
+ * @param selectedDate The date to calculate the offset for.
+ * @returns The number of weeks between the current week and the selected date's week.
+ */
+export function getWeekOffset(selectedDate: Date) {
+  const now = new Date();
+  
+  // Normalize both dates to the Monday of their respective weeks
+  const getMonday = (d: Date) => {
+    const date = new Date(d);
+    const day = date.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    date.setDate(date.getDate() + diff);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  };
+
+  const currentMonday = getMonday(now);
+  const selectedMonday = getMonday(selectedDate);
+  
+  // Calculate the difference in weeks
+  const diffInMs = selectedMonday.getTime() - currentMonday.getTime();
+  const msInWeek = 7 * 24 * 60 * 60 * 1000;
+  
+  return Math.round(diffInMs / msInWeek);
+}

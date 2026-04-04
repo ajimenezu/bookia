@@ -13,13 +13,18 @@ Toda la lógica de usuario y administración reside bajo el segmento dinámico `
 - **User**: Usuarios globales vinculados a Supabase Auth.
 - **ShopMember**: Relación N:M que asigna un `Role` a un `User` dentro de un `Shop`.
 
-## 3. Aislamiento de Datos
-Cualquier consulta a la base de datos **DEBE** incluir el filtro de `shopId`.
+## 3. Aislamiento de Datos (Regla de Oro)
+Cualquier consulta a la base de datos **DEBE** incluir el filtro de `shopId` en la misma query de Prisma. 
+- **Inseguro**: `findUnique({ where: { id } })` + check manual posterior.
+- **Seguro**: `findUnique({ where: { id, shopId } })`.
+
+## 4. Capa de Sanitización Obligatoria (Zod)
+Para prevenir inyecciones y asegurar la integridad del multi-tenancy, todos los inputs de usuario deben ser validados con `zod`:
+- **Validación Primaria**: Antes de procesar cualquier lógica, el input se pasa por un esquema estricto.
+- **Inyección de Tenant**: El `shopId` verificado se inyecta en el objeto de datos **antes** de la validación final.
+
 ```typescript
-// Ejemplo de consulta segura
-const services = await prisma.service.findMany({
-  where: { shopId: shop.id }
-});
+const validated = schema.parse({ ...formData, shopId: resolvedShopId });
 ```
 
 ## 4. Tipos de Negocio

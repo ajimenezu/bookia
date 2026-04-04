@@ -6,19 +6,22 @@ Bookia utiliza **Supabase Auth** para la gestión de identidades y **Prisma** pa
 - **ID de Usuario**: El `id` en Supabase Auth (UUID) se usa como clave primaria en la tabla `User` de Prisma.
 - **Flujo de Acceso**:
   1. El usuario se autentica en Supabase.
-  2. `getAdminUser()` extrae el usuario y sus metadatos.
-  3. Se consultan las membresías en la tabla `ShopMember` para determinar permisos locales.
+  2. `getAdminUser()` extrae el usuario y sus metadatos (app_metadata).
+  3. Se consultan las membresías en la tabla `ShopMember` para determinar permisos locales si los claims no están presentes.
 
 ## 2. Roles del Sistema
-Se definen en el enum `Role` de Prisma:
+Se definen en el enum `Role` de Prisma y se reflejan en Supabase Auth:
 
-- **SUPER_ADMIN**: Acceso global a todas las tiendas. No requiere membresía específica.
-- **OWNER**: Dueño de un negocio. Control total sobre su propia tienda (`Shop`).
-- **STAFF**: Empleado. Acceso a servicios y citas de la tienda asignada.
-- **CUSTOMER**: Cliente. Puede agendar citas en la tienda.
+- **SUPER_ADMIN**: Acceso global. Bypass de filtros de `shopId` locales.
+- **OWNER**: Dueño de tienda. Control total sobre su `shopId`.
+- **STAFF**: Empleado. Acceso operativo limitado a su `shopId`.
+- **CUSTOMER**: Cliente con membresía en la tienda.
 
-## 3. Utilidades de Validación
-Para proteger rutas administrativas, siempre usa `requireAdmin(shopId)` en Server Components:
+## 3. Validación de Acceso en Server Components
+La función `requireAdmin(targetShopId)` es la guardiana de las rutas administrativas:
+1.  **Verificación Global**: Si el usuario es Super Admin, tiene acceso total.
+2.  **Verificación Local**: Si no es Super Admin, se valida que tenga una membresía activa con rol `OWNER` o `STAFF` que **coincida exactamente** con el `targetShopId` solicitado.
+3.  **Redirección Forzada**: Si falla, redirige instantáneamente fuera del área administrativa.
 
 ```typescript
 import { requireAdmin } from "@/lib/auth-utils";

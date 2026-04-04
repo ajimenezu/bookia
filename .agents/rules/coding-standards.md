@@ -1,6 +1,10 @@
 # Estándares de Código y Calidad
 
-Para mantener la rapidez y la coherencia del proyecto Bookia, se deben seguir estas reglas:
+> [!IMPORTANT]
+> **REGLA MAESTRA (AUDITORÍA AUTOMÁTICA)**: 
+> Antes de dar por finalizada cualquier tarea de desarrollo o cambio significativo, el agente **DEBE** ejecutar y reportar los resultados de los workflows especializados:
+> 1.  **`/code-review`**: Para validar calidad, sanitización y consistencia UI.
+> 2.  **`/security-review`**: Para asegurar el aislamiento y protección del código.
 
 ## 1. Tipado de TypeScript
 - **Prohibido el uso de `any`**: Siempre define interfaces o tipos específicos, especialmente para los modelos de Prisma.

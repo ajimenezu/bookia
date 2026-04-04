@@ -4,18 +4,21 @@ RETURNS jsonb AS $$
 declare
   claims jsonb;
   uid uuid;
-  db_global_role text;
+  is_super_admin boolean;
   db_member_role text;
   db_shop_id text;
 begin
   claims := coalesce(event -> 'claims', '{}'::jsonb);
   uid := (event ->> 'user_id')::uuid;
 
-  -- 1. Obtenemos el rol global del usuario
-  select "role" into db_global_role from public."User" where id = uid;
-
+  -- 1. Verificamos si el usuario tiene rol SUPER_ADMIN en ALGUNA tienda
+  select exists(
+    select 1 from public."ShopMember" 
+    where "userId" = uid and "role" = 'SUPER_ADMIN'
+  ) into is_super_admin;
+  
   -- 2. Si es SUPER_ADMIN, le damos el rol global y acceso total (no necesita shop_id específico)
-  if db_global_role = 'SUPER_ADMIN' then
+  if is_super_admin then
     if jsonb_typeof(claims->'app_metadata') is null then
       claims := jsonb_set(claims, '{app_metadata}', '{}'::jsonb);
     end if;

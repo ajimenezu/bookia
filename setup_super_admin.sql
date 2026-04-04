@@ -7,11 +7,7 @@ ON CONFLICT (id) DO NOTHING;
 
 -- 3. Promueve a tu usuario a SUPER_ADMIN (reemplaza 'TU-ID-AQUÍ')
 -- Encuentra tu ID en Auth -> Users
-UPDATE public."User" 
-SET role = 'SUPER_ADMIN' 
-WHERE id = 'TU-ID-AQUÍ';
-
--- 4. Opcional: Asígnate como Dueño de la barbería
+-- Ahora los Super Admins se definen en la tabla ShopMember
 INSERT INTO public."ShopMember" (id, "userId", "shopId", role, "updatedAt")
-VALUES ('mem-1', 'TU-ID-AQUÍ', 'shop-1', 'OWNER', NOW())
-ON CONFLICT DO NOTHING;
+VALUES ('sa-' || gen_random_uuid(), 'TU-ID-AQUÍ', 'shop-1', 'SUPER_ADMIN', NOW())
+ON CONFLICT ("userId", "shopId") DO UPDATE SET role = 'SUPER_ADMIN';

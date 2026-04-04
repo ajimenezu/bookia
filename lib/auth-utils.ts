@@ -30,10 +30,13 @@ export const getAdminUser = cache(async () => {
       }
     })
     
+    const memberships = dbUser?.memberships || []
+    const isSuperAdmin = memberships.some(m => m.role === "SUPER_ADMIN")
+    
     return { 
       user, 
-      role: dbUser?.role || "CUSTOMER",
-      memberships: dbUser?.memberships || []
+      role: isSuperAdmin ? "SUPER_ADMIN" : "CUSTOMER",
+      memberships
     }
   }
 

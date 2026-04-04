@@ -24,23 +24,25 @@ export async function signIn(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error("Login failed: User not found after authentication")
 
-  const dbUser = await prisma.user.findUnique({ where: { id: user.id } })
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    include: { memberships: { include: { shop: true } } }
+  })
 
   let redirectPath = "/"
   if (dbUser) {
     if (dbUser.needsPasswordChange) {
       redirectPath = "/admin/perfil/cambiar-password"
-    } else if (dbUser.role === "SUPER_ADMIN") {
-      const firstShop = await prisma.shop.findFirst()
-      if (firstShop) redirectPath = `/${firstShop.slug}/admin`
-    } else if (dbUser.role === "OWNER" || dbUser.role === "STAFF") {
-      const dbUserWithMemberships = await prisma.user.findUnique({
-        where: { id: user.id },
-        include: { memberships: { include: { shop: true }, where: { role: { in: ["OWNER", "STAFF"] } } } }
-      })
-      const firstMembership = dbUserWithMemberships?.memberships[0]
-      if (firstMembership?.shop) {
-        redirectPath = `/${firstMembership.shop.slug}/admin`
+    } else {
+      const isSuperAdmin = dbUser.memberships.some(m => m.role === "SUPER_ADMIN")
+      if (isSuperAdmin) {
+        const firstShop = await prisma.shop.findFirst()
+        if (firstShop) redirectPath = `/${firstShop.slug}/admin`
+      } else {
+        const adminMembership = dbUser.memberships.find(m => m.role === "OWNER" || m.role === "STAFF")
+        if (adminMembership?.shop) {
+          redirectPath = `/${adminMembership.shop.slug}/admin`
+        }
       }
     }
   }
@@ -70,21 +72,20 @@ export async function signInToShop(slug: string, formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error("Login fallido")
 
-  // Check if the user has a staff/owner role in this specific shop
-  const dbUser = await prisma.user.findUnique({ where: { id: user.id } })
-  const isSuperAdmin = dbUser?.role === "SUPER_ADMIN"
-
-  const membership = !isSuperAdmin
-    ? await prisma.shopMember.findFirst({
-        where: { userId: user.id, shop: { slug }, role: { in: ["OWNER", "STAFF"] } }
-      })
-    : null
+  // Check memberships for admin roles
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    include: { memberships: { include: { shop: true } } }
+  })
+  
+  const isSuperAdmin = dbUser?.memberships.some(m => m.role === "SUPER_ADMIN")
+  const hasShopAdminRole = dbUser?.memberships.some(m => m.shop.slug === slug && (m.role === "OWNER" || m.role === "STAFF"))
 
   revalidatePath("/", "layout")
 
-  // SUPER_ADMIN, Staff/Owner → admin panel of this shop
-  // Customer or no membership → landing page (/{slug}/mi-perfil when built)
-  const isAdmin = isSuperAdmin || !!membership
+  // SUPER_ADMIN, Staff/Owner -> admin panel of this shop
+  // Customer or no membership -> landing page
+  const isAdmin = isSuperAdmin || hasShopAdminRole
   let redirectPath = isAdmin ? `/${slug}/admin` : `/${slug}`
 
   if (dbUser?.needsPasswordChange) {

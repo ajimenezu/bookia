@@ -63,8 +63,6 @@ export async function createUser(formData: FormData) {
         id: authUser.id,
         name,
         phone,
-        role: role === "SUPER_ADMIN" ? "SUPER_ADMIN" : "CUSTOMER",
-        // Only force password change if they are brand new or if we say so
         needsPasswordChange: true 
       },
       create: {
@@ -72,13 +70,12 @@ export async function createUser(formData: FormData) {
         email,
         name,
         phone,
-        role: role === "SUPER_ADMIN" ? "SUPER_ADMIN" : "CUSTOMER",
         needsPasswordChange: true
       }
     })
 
-    // 3. Link to Shop
-    if (role !== "SUPER_ADMIN" && targetShopId && targetShopId !== "ALL") {
+    // 3. Link to Shop (including SUPER_ADMIN roles)
+    if (targetShopId && targetShopId !== "ALL") {
       await prisma.shopMember.upsert({
         where: { userId_shopId: { userId: user.id, shopId: targetShopId } },
         update: { role },

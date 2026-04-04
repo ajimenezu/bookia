@@ -20,7 +20,14 @@ export default async function AdminDashboard({ params }: PageProps) {
   const { businessType, shopId } = await requireAdmin(shop.id)
   const t = getTerminology(businessType)
   const appointments = await getAppointmentsData(shopId)
-  const todayIncome = appointments.reduce((acc, curr) => acc + (curr.service?.price || 0), 0)
+  const todayIncome = appointments.reduce((acc, curr) => {
+    // If services (plural) is present, sum them up
+    if (curr.services && curr.services.length > 0) {
+      return acc + curr.services.reduce((sAcc: number, s: any) => sAcc + (s.price || 0), 0)
+    }
+    // Fallback to single service
+    return acc + (curr.service?.price || 0)
+  }, 0)
 
   const stats = [
     { label: `${t.appointmentPlural} hoy`, value: appointments.length.toString(), icon: CalendarDays, change: "Actualizado" },
@@ -74,7 +81,9 @@ export default async function AdminDashboard({ params }: PageProps) {
                   <div>
                     <p className="font-medium text-card-foreground">{apt.customer?.name || t.client}</p>
                     <p className="text-sm text-muted-foreground">
-                      {apt.service?.name} &middot; <User className="mb-0.5 inline h-3 w-3" /> {apt.staff ? (apt.staff.name || (apt.staff as any).email?.split('@')[0] || "Staff") : "Sin asignar"}
+                      {apt.services && apt.services.length > 0 
+                        ? apt.services.map((s: any) => s.name).join(", ") 
+                        : (apt.service?.name || "Sin servicio")} &middot; <User className="mb-0.5 inline h-3 w-3" /> {apt.staff ? (apt.staff.name || (apt.staff as any).email?.split('@')[0] || "Staff") : "Sin asignar"}
                     </p>
                   </div>
                 </div>

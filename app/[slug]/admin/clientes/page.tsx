@@ -1,8 +1,7 @@
-import { Users } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import prisma from "@/lib/prisma"
 import { requireAdmin } from "@/lib/auth-utils"
-import { formatDistanceToNow, isToday, isYesterday, differenceInDays } from "date-fns"
+import { isToday, isYesterday, differenceInDays } from "date-fns"
 import { ClientSearch } from "@/components/admin/client-search"
 import { CreateUserModal } from "@/components/admin/create-user-modal"
 import { Role } from "@prisma/client"
@@ -38,18 +37,20 @@ export default async function ClientesPage({ params, searchParams }: PageProps) 
   const dbUsers = await prisma.user.findMany({
     where: {
       AND: [
-        isSuperAdmin ? {} : { OR: [{ memberships: { some: { shopId } } }, { appointmentsAsCustomer: { some: { shopId } } }] },
+        // Only users who have a CUSTOMER membership for this shop
+        { memberships: { some: { shopId, role: Role.CUSTOMER } } },
         q ? { OR: [{ name: { contains: q, mode: 'insensitive' } }, { email: { contains: q, mode: 'insensitive' } }, { phone: { contains: q, mode: 'insensitive' } }] } : {}
       ]
     },
     include: {
+      memberships: true,
       appointmentsAsCustomer: {
         where: isSuperAdmin ? { status: "COMPLETED" } : { shopId, status: "COMPLETED" },
         include: { service: true },
         orderBy: { startTime: "desc" }
       }
     }
-  })
+  }) as any[]
 
   const clients = dbUsers.map((user: any) => {
     const completedApps = user.appointmentsAsCustomer || []

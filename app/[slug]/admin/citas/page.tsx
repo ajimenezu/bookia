@@ -9,6 +9,7 @@ import { HoyButton } from "@/components/admin/appointments/hoy-button"
 import { WeekNavigation } from "@/components/admin/appointments/week-navigation"
 import { AppointmentsContent } from "@/components/admin/appointments/appointments-content"
 import { AppointmentsSkeleton } from "@/components/admin/appointments/appointments-skeleton"
+import { AdminStatsContainer } from "@/components/admin/admin-stats-container"
 import prisma from "@/lib/prisma"
 import { notFound } from "next/navigation"
 
@@ -32,6 +33,8 @@ export default async function CitasPage({ params, searchParams }: PageProps) {
 
   return (
     <div>
+      <AdminStatsContainer shopId={shopId} />
+
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground md:text-3xl">{t.appointmentPlural}</h1>

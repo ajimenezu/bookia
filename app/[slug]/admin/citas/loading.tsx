@@ -3,6 +3,19 @@ import { Skeleton } from "@/components/ui/skeleton"
 export default function Loading() {
   return (
     <div className="animate-in fade-in duration-500">
+      {/* Admin Stats Skeleton */}
+      <div className="mb-8 grid gap-4 lg:grid-cols-2">
+        {[1, 2].map((i) => (
+          <div key={i} className="flex items-center gap-4 rounded-xl border border-border bg-card p-5 shadow-sm">
+            <div className="h-12 w-12 shrink-0 rounded-xl bg-muted" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-8 w-24" />
+            </div>
+          </div>
+        ))}
+      </div>
+
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <Skeleton className="h-9 w-32 mb-2" />

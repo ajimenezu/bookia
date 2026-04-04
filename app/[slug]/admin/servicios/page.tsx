@@ -1,7 +1,9 @@
 import prisma from "@/lib/prisma"
 import { requireAdmin } from "@/lib/auth-utils"
 import { notFound } from "next/navigation"
-import { ServicesList } from "@/components/admin/services-list"
+import { Suspense } from "react"
+import { ServicesContent } from "@/components/admin/services-content"
+import { ServicesSkeleton } from "@/components/admin/services-skeleton"
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -12,17 +14,11 @@ export default async function ServiciosPage({ params }: PageProps) {
   const shop = await prisma.shop.findFirst({ where: { slug } })
   if (!shop) notFound()
 
-  const { businessType } = await requireAdmin(shop.id)
-
-  const services = await prisma.service.findMany({
-    where: { shopId: shop.id },
-    orderBy: { createdAt: "desc" },
-    include: { shop: true }
-  }) as any[]
+  const { businessType, shopId } = await requireAdmin(shop.id)
 
   return (
-    <div>
-      <ServicesList services={services} slug={slug} businessType={businessType} />
-    </div>
+    <Suspense fallback={<ServicesSkeleton />}>
+      <ServicesContent shopId={shopId} slug={slug} businessType={businessType as any} />
+    </Suspense>
   )
 }

@@ -1,76 +1,107 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
-// For Supabase, we use PostgreSQL and the Transaction Pooler (pgbouncer=true string)
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
-// ---------------------------------------------
-// Multi-tenant Models
-// ---------------------------------------------
-
 model Shop {
-  id           String       @id
-  name         String
-  slug         String
-  businessType BusinessType @default(BARBERIA)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-
-  // Landing page personalization (optional)
+  id            String         @id
+  name          String
+  slug          String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  businessType  BusinessType   @default(BARBERIA)
+  address       String?
+  description   String?
+  facebookUrl   String?
+  instagramUrl  String?
   logoUrl       String?
   tagline       String?
-  description   String?
-  address       String?
   whatsappPhone String?
-  instagramUrl  String?
-  facebookUrl   String?
-
-  // Relationships
-  memberships  ShopMember[]
-  services     Service[]
-  appointments Appointment[]
-  schedules    ShopSchedule[]
+  appointments  Appointment[]
+  services      Service[]
+  memberships   ShopMember[]
+  schedules     ShopSchedule[]
 }
 
-// Users are tied to Supabase Auth by `id`
 model User {
-  id        String   @id @db.Uuid @default(dbgenerated("uuid_generate_v4()"))
-  email     String   @unique
-  name      String?
-  phone     String?
-  needsPasswordChange Boolean @default(false)
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relationships
-  memberships            ShopMember[]
-  appointmentsAsStaff    Appointment[] @relation("StaffAppointments")
+  id                     String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  email                  String        @unique
+  name                   String?
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+  phone                  String?
+  needsPasswordChange    Boolean       @default(false)
   appointmentsAsCustomer Appointment[] @relation("CustomerAppointments")
+  appointmentsAsStaff    Appointment[] @relation("StaffAppointments")
+  memberships            ShopMember[]
 }
 
 model ShopMember {
-  id     String @id @default(cuid())
-  userId String @db.Uuid
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  shopId String
-  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
-
-  role Role @default(CUSTOMER) // Local role within this shop
-
+  id        String   @id @default(cuid())
+  userId    String   @db.Uuid
+  shopId    String
+  role      Role     @default(CUSTOMER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, shopId]) // A user can only have one role per shop
+  @@unique([userId, shopId])
+}
+
+model ShopSchedule {
+  id           String  @id @default(cuid())
+  shopId       String
+  dayOfWeek    Int
+  openTime     String
+  closeTime    String
+  slotDuration Int     @default(30)
+  isOpen       Boolean @default(true)
+  shop         Shop    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@unique([shopId, dayOfWeek])
+}
+
+model Service {
+  id                String        @id
+  name              String
+  description       String?
+  price             Float
+  duration          Int
+  shopId            String
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  appointments      Appointment[] @relation("LegacyService")
+  shop              Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  multiAppointments Appointment[] @relation("AppointmentServices")
+}
+
+model Appointment {
+  id             String            @id @default(cuid())
+  startTime      DateTime
+  endTime        DateTime
+  status         AppointmentStatus @default(PENDING)
+  shopId         String
+  serviceId      String?
+  staffId        String?           @db.Uuid
+  customerId     String?           @db.Uuid
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  customerName   String?
+  customerPhone  String?
+  priceAtBooking Float?
+  customer       User?             @relation("CustomerAppointments", fields: [customerId], references: [id])
+  service        Service?          @relation("LegacyService", fields: [serviceId], references: [id])
+  shop           Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  staff          User?             @relation("StaffAppointments", fields: [staffId], references: [id])
+  services       Service[]         @relation("AppointmentServices")
+
+  @@index([staffId, startTime])
 }
 
 enum Role {
@@ -85,66 +116,6 @@ enum BusinessType {
   SALON_BELLEZA
   SPA
   CLINICA
-}
-
-model ShopSchedule {
-  id           String  @id @default(cuid())
-  shopId       String
-  shop         Shop    @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  dayOfWeek    Int // 0=Sunday, 1=Monday ... 6=Saturday
-  openTime     String // "09:00"
-  closeTime    String // "18:00"
-  slotDuration Int     @default(30) // minutes
-  isOpen       Boolean @default(true)
-
-  @@unique([shopId, dayOfWeek])
-}
-
-model Service {
-  id          String  @id
-  name        String
-  description String?
-  price       Float
-  duration    Int // Duration in minutes
-
-  shopId String
-  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relationships
-  appointments      Appointment[] @relation("LegacyService")
-  multiAppointments Appointment[] @relation("AppointmentServices")
-}
-
-model Appointment {
-  id             String            @id @default(cuid())
-  startTime      DateTime
-  endTime        DateTime
-  status         AppointmentStatus @default(PENDING)
-  priceAtBooking Float? // Snapshot of service price at booking time
-  customerName   String? // For guest bookings (no account)
-  customerPhone  String? // For guest bookings (no account)
-
-  // Relationships
-  shopId String
-  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
-
-  serviceId String?
-  service   Service?  @relation("LegacyService", fields: [serviceId], references: [id])
-  services  Service[] @relation("AppointmentServices")
-
-  staffId String? @db.Uuid
-  staff   User?   @relation("StaffAppointments", fields: [staffId], references: [id])
-
-  customerId String? @db.Uuid
-  customer   User?   @relation("CustomerAppointments", fields: [customerId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([staffId, startTime])
 }
 
 enum AppointmentStatus {

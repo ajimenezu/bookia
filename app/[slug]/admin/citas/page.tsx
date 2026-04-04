@@ -6,6 +6,8 @@ import { getWeekRange } from "@/lib/date-utils"
 import { requireAdmin } from "@/lib/auth-utils"
 import { getTerminology } from "@/lib/dictionaries"
 import { HoyButton } from "@/components/admin/appointments/hoy-button"
+import { DateSelector } from "@/components/admin/appointments/date-selector"
+import { ViewSwitcher } from "@/components/admin/appointments/view-switcher"
 import { WeekNavigation } from "@/components/admin/appointments/week-navigation"
 import { AppointmentsContent } from "@/components/admin/appointments/appointments-content"
 import { AppointmentsSkeleton } from "@/components/admin/appointments/appointments-skeleton"
@@ -42,22 +44,12 @@ export default async function CitasPage({ params, searchParams }: PageProps) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <HoyButton />
-          <Button variant={view === "calendar" ? "default" : "outline"} size="sm" asChild>
-            <Link href={`?week=${weekOffset}&view=calendar`}>
-              <CalendarDays className="mr-1.5 h-4 w-4" />
-              <span className="md:hidden">Día</span>
-              <span className="hidden md:inline">Semana</span>
-            </Link>
-          </Button>
-          <Button variant={view === "list" ? "default" : "outline"} size="sm" asChild>
-            <Link href={`?week=${weekOffset}&view=list`}>
-              <List className="mr-1.5 h-4 w-4" /> Lista
-            </Link>
-          </Button>
+          <DateSelector />
+          <ViewSwitcher currentView={view} weekOffset={weekOffset} />
         </div>
       </div>
       <WeekNavigation weekOffset={weekOffset} view={view} rangeLabel={rangeLabel} />
-      <Suspense fallback={<AppointmentsSkeleton view={view} />}>
+      <Suspense key={`${weekOffset}-${view}`} fallback={<AppointmentsSkeleton view={view} />}>
         <AppointmentsContent shopId={shopId} weekOffset={weekOffset} view={view} />
       </Suspense>
     </div>

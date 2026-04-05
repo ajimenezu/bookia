@@ -8,9 +8,11 @@ interface PageProps {
   params: Promise<{ slug: string }>
 }
 
+import { getShopBySlug } from "@/lib/shop"
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params
-  const shop = await prisma.shop.findFirst({ where: { slug } })
+  const shop = await getShopBySlug(slug)
   if (!shop) return {}
   return { title: `Iniciar Sesión — ${shop.name}` }
 }
@@ -18,7 +20,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function ShopLoginPage({ params }: PageProps) {
   const { slug } = await params
 
-  const shop = await prisma.shop.findFirst({ where: { slug } })
+  const shop = await getShopBySlug(slug)
   if (!shop) notFound()
 
   return (

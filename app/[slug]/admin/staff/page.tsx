@@ -10,9 +10,11 @@ interface PageProps {
   params: Promise<{ slug: string }>
 }
 
+import { getShopBySlug } from "@/lib/shop"
+
 export default async function StaffPage({ params }: PageProps) {
   const { slug } = await params
-  const shop = await prisma.shop.findFirst({ where: { slug } })
+  const shop = await getShopBySlug(slug)
   if (!shop) notFound()
 
   const { role, shopId, isSuperAdmin, businessType } = await requireAdmin(shop.id)

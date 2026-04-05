@@ -5,8 +5,16 @@
 > Antes de dar por finalizada cualquier tarea de desarrollo o cambio significativo, el agente **DEBE** ejecutar y reportar los resultados de los workflows especializados:
 > 1.  **`/code-review`**: Para validar calidad, sanitización y consistencia UI.
 > 2.  **`/security-review`**: Para asegurar el aislamiento y protección del código.
+3.  **`/check-consistency`**: Para verificar la sincronía entre Layout, Page y Skeletons.
 
-## 1. Tipado de TypeScript
+## 0. Rendimiento y Caching (Request-Level)
+- **`react.cache`**: Se debe usar `react.cache` en utilidades fundamentales que se llamen múltiples veces por renderizado.
+    - **Dictionaries**: `getTerminology` en `lib/dictionaries.ts` está cacheado.
+    - **Shop Lookups**: `getShopBySlug` y `getShopById` en `lib/shop.ts`.
+- **Regla**: Nunca llamar a `prisma.shop` directamente desde un componente si existe una versión cacheada en `lib/`.
+
+## 1. Organización del Código y Estándares JS/TS
+- **Imports**: Los imports deben estar **siempre** en la parte superior del archivo. Nunca añadas imports dentro de funciones o en medio del código a menos que sea un `import()` dinámico justificado.
 - **Prohibido el uso de `any`**: Siempre define interfaces o tipos específicos, especialmente para los modelos de Prisma.
 - **Acceso Directo**: Evita el uso de `@ts-ignore` o casting forzado a menos que sea estrictamente necesario.
 
@@ -25,6 +33,11 @@
 - **Componentes React Reutilizables**: Sigue las mejores prácticas de React (Props claras, composición, separación de lógica y presentación) para maximizar la reutilización y minimizar la generación de código redundante.
 - **Components Folder**: Separar componentes por responsabilidad (`admin/`, `booking/`, `shop/`).
 - **Server Actions**: Usar archivos `actions.ts` en cada ruta para las mutaciones, manteniendo las páginas limpias.
+    - **CRÍTICO: Validación Zod**: **Toda** Server Action debe validar sus inputs con un esquema de Zod (`safeParse`) antes de cualquier operación.
+    - **Aislamiento Multi-tenant**: Si la acción requiere un `shopId`, este debe ser validado contra la sesión del usuario o inyectado desde una fuente confiable, nunca aceptado ciegamente desde el cliente sin verificación.
+- **Gold Standard (Admin)**: Referencia `app/[slug]/admin/servicios/actions.ts`.
+- **Gold Standard (Data Fetching)**: `app/[slug]/admin/layout.tsx` (Uso de `getShopBySlug`).
+
 
 ---
 > [!WARNING]

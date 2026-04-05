@@ -1,7 +1,4 @@
 import { Suspense } from "react"
-import { CalendarDays, List } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
 import { getWeekRange } from "@/lib/date-utils"
 import { requireAdmin } from "@/lib/auth-utils"
 import { getTerminology } from "@/lib/dictionaries"
@@ -12,17 +9,18 @@ import { WeekNavigation } from "@/components/admin/appointments/week-navigation"
 import { AppointmentsContent } from "@/components/admin/appointments/appointments-content"
 import { AppointmentsSkeleton } from "@/components/admin/appointments/appointments-skeleton"
 import { AdminStatsContainer } from "@/components/admin/admin-stats-container"
-import prisma from "@/lib/prisma"
 import { notFound } from "next/navigation"
+import { getShopBySlug } from "@/lib/shop"
 
 interface PageProps {
   params: Promise<{ slug: string }>
   searchParams: Promise<{ week?: string; view?: string }>
 }
 
+
 export default async function CitasPage({ params, searchParams }: PageProps) {
   const { slug } = await params
-  const shop = await prisma.shop.findFirst({ where: { slug } })
+  const shop = await getShopBySlug(slug)
   if (!shop) notFound()
 
   const { businessType, shopId } = await requireAdmin(shop.id)

@@ -27,79 +27,102 @@ async function validateServiceOwnership(serviceId: string, membershipShopId: str
 }
 
 export async function createService(formData: FormData) {
-  const { shopId: membershipShopId, isSuperAdmin } = await requireAdmin()
+  try {
+    const { shopId: membershipShopId, isSuperAdmin } = await requireAdmin()
 
-  const resolvedShopId = isSuperAdmin ? (formData.get("shopId") as string || membershipShopId) : membershipShopId
+    const resolvedShopId = isSuperAdmin ? (formData.get("shopId") as string || membershipShopId) : membershipShopId
 
-  const rawData = {
-    name: formData.get("name"),
-    description: formData.get("description"),
-    price: parseFloat(formData.get("price") as string),
-    duration: parseInt(formData.get("duration") as string, 10),
-    shopId: resolvedShopId, // Inyectamos el tenant resuelto
+    const rawData = {
+      name: formData.get("name"),
+      description: formData.get("description"),
+      price: parseFloat(formData.get("price") as string),
+      duration: parseInt(formData.get("duration") as string, 10),
+      shopId: resolvedShopId,
+    }
+
+    const validated = serviceSchema.safeParse(rawData)
+    if (!validated.success) {
+      return { success: false, error: validated.error.errors[0].message }
+    }
+
+    const targetShopId = isSuperAdmin ? (validated.data.shopId || membershipShopId) : membershipShopId
+
+    if (targetShopId === "ALL" && isSuperAdmin) {
+      return { success: false, error: "Super Admin debe especificar una tienda para crear servicios" }
+    }
+
+    await prisma.service.create({
+      data: {
+        id: crypto.randomUUID(),
+        name: validated.data.name,
+        description: validated.data.description,
+        price: validated.data.price,
+        duration: validated.data.duration,
+        shopId: targetShopId,
+      },
+    })
+
+    revalidatePath("/", "layout")
+    return { success: true }
+  } catch (error: any) {
+    console.error("CREATE_SERVICE_ERROR:", error)
+    return { success: false, error: error.message || "Error al crear el servicio" }
   }
-
-  // REGLA CODE-REVIEW: Sanitización obligatoria con Zod (Alineada con Multi-tenant)
-  const validated = serviceSchema.parse(rawData)
-
-  const targetShopId = isSuperAdmin ? (validated.shopId || membershipShopId) : membershipShopId
-
-  if (targetShopId === "ALL" && isSuperAdmin) {
-    throw new Error("Super Admin debe especificar una tienda para crear servicios")
-  }
-
-  await prisma.service.create({
-    data: {
-      id: crypto.randomUUID(),
-      name: validated.name,
-      description: validated.description,
-      price: validated.price,
-      duration: validated.duration,
-      shopId: targetShopId,
-    },
-  })
-
-  revalidatePath("/", "layout")
 }
 
 export async function updateService(formData: FormData) {
-  const serviceId = formData.get("id") as string
-  const { shopId: membershipShopId, isSuperAdmin } = await requireAdmin()
+  try {
+    const serviceId = formData.get("id") as string
+    const { shopId: membershipShopId, isSuperAdmin } = await requireAdmin()
 
-  // REGLA SEGURIDAD: Validación de propiedad centralizada
-  const service = await validateServiceOwnership(serviceId, membershipShopId, isSuperAdmin)
+    const service = await validateServiceOwnership(serviceId, membershipShopId, isSuperAdmin)
 
-  const rawData = {
-    name: formData.get("name"),
-    description: formData.get("description"),
-    price: parseFloat(formData.get("price") as string),
-    duration: parseInt(formData.get("duration") as string, 10),
-    shopId: service.shopId, // Mantenemos consistencia con el esquema obligatorio
+    const rawData = {
+      name: formData.get("name"),
+      description: formData.get("description"),
+      price: parseFloat(formData.get("price") as string),
+      duration: parseInt(formData.get("duration") as string, 10),
+      shopId: service.shopId,
+    }
+
+    const validated = serviceSchema.safeParse(rawData)
+    if (!validated.success) {
+      return { success: false, error: validated.error.errors[0].message }
+    }
+
+    await prisma.service.update({
+      where: { id: serviceId },
+      data: {
+        name: validated.data.name,
+        description: validated.data.description,
+        price: validated.data.price,
+        duration: validated.data.duration,
+      },
+    })
+
+    revalidatePath("/", "layout")
+    return { success: true }
+  } catch (error: any) {
+    console.error("UPDATE_SERVICE_ERROR:", error)
+    return { success: false, error: error.message || "Error al actualizar el servicio" }
   }
-
-  const validated = serviceSchema.parse(rawData)
-
-  await prisma.service.update({
-    where: { id: serviceId },
-    data: {
-      name: validated.name,
-      description: validated.description,
-      price: validated.price,
-      duration: validated.duration,
-    },
-  })
-
-  revalidatePath("/", "layout")
 }
 
 export async function deleteService(serviceId: string) {
-  const { shopId: membershipShopId, isSuperAdmin } = await requireAdmin()
+  try {
+    const { shopId: membershipShopId, isSuperAdmin } = await requireAdmin()
 
-  await validateServiceOwnership(serviceId, membershipShopId, isSuperAdmin)
+    await validateServiceOwnership(serviceId, membershipShopId, isSuperAdmin)
 
-  await prisma.service.delete({
-    where: { id: serviceId },
-  })
+    await prisma.service.delete({
+      where: { id: serviceId },
+    })
 
-  revalidatePath("/", "layout")
+    revalidatePath("/", "layout")
+    return { success: true }
+  } catch (error: any) {
+    console.error("DELETE_SERVICE_ERROR:", error)
+    return { success: false, error: error.message || "Error al eliminar el servicio" }
+  }
 }
+

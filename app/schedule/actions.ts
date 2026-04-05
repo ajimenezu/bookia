@@ -2,24 +2,37 @@
 
 import prisma from "@/lib/prisma"
 import { getAvailableSlots, checkStaffConflict } from "@/lib/availability"
+import { z } from "zod"
 
-interface CreateBookingData {
-  shopId: string
-  serviceIds: string[]
-  staffId: string // "auto" or actual userId
-  date: string    // "2026-03-20"
-  time: string    // "09:00"
-  customerName: string
-  customerPhone: string
-}
+const bookingSchema = z.object({
+  shopId: z.string().min(1),
+  serviceIds: z.array(z.string().min(1)).min(1),
+  staffId: z.string().min(1),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  time: z.string().regex(/^\d{2}:\d{2}$/),
+  customerName: z.string().min(2),
+  customerPhone: z.string().min(8),
+})
 
-export async function createBooking(data: CreateBookingData) {
-  const { shopId, serviceIds, staffId, date, time, customerName, customerPhone } = data
+export async function createBooking(rawData: unknown) {
+  const validated = bookingSchema.safeParse(rawData)
+  if (!validated.success) {
+    return { success: false, error: "Datos de reserva inválidos" }
+  }
+
+  const { shopId, serviceIds, staffId, date, time, customerName, customerPhone } = validated.data
 
   // 1. Get services to calculate end time and capture total price
-  const services = await prisma.service.findMany({ where: { id: { in: serviceIds } } })
-  if (services.length === 0) {
-    return { success: false, error: "Servicio no encontrado" }
+  // SECURITY FIX: Mandatory shopId filter to prevent cross-tenant service selection
+  const services = await prisma.service.findMany({ 
+    where: { 
+      id: { in: serviceIds },
+      shopId: shopId
+    } 
+  })
+  
+  if (services.length !== serviceIds.length) {
+    return { success: false, error: "Uno o más servicios no son válidos para esta tienda" }
   }
 
   const totalDuration = services.reduce((acc, s) => acc + s.duration, 0)
@@ -45,7 +58,7 @@ export async function createBooking(data: CreateBookingData) {
     }
 
     for (const member of staffMembers) {
-      const hasConflict = await checkStaffConflict(member.userId, startTime, endTime)
+      const hasConflict = await checkStaffConflict(shopId, member.userId, startTime, endTime)
       if (!hasConflict) {
         resolvedStaffId = member.userId
         break
@@ -57,7 +70,7 @@ export async function createBooking(data: CreateBookingData) {
     }
   } else {
     // Validate the specific staff is still available
-    const hasConflict = await checkStaffConflict(staffId, startTime, endTime)
+    const hasConflict = await checkStaffConflict(shopId, staffId, startTime, endTime)
 
     if (hasConflict) {
       return { success: false, error: "Este horario ya fue reservado" }
@@ -119,7 +132,13 @@ export async function getAvailableStaffForSlot(
   time: string,
   serviceIds: string[]
 ): Promise<{ id: string; name: string }[]> {
-  const services = await prisma.service.findMany({ where: { id: { in: serviceIds } } })
+  // SECURITY FIX: Mandatory shopId filter
+  const services = await prisma.service.findMany({ 
+    where: { 
+      id: { in: serviceIds },
+      shopId: shopId
+    } 
+  })
   if (services.length === 0) return []
 
   const totalDuration = services.reduce((acc, s) => acc + s.duration, 0)
@@ -134,7 +153,7 @@ export async function getAvailableStaffForSlot(
 
   const availableStaff = []
   for (const member of staffMembers) {
-    const hasConflict = await checkStaffConflict(member.userId, startTime, endTime)
+    const hasConflict = await checkStaffConflict(shopId, member.userId, startTime, endTime)
     if (!hasConflict) {
       availableStaff.push({ id: member.userId, name: member.user.name || "Sin nombre" })
     }

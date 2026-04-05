@@ -3,12 +3,18 @@
 import prisma from "@/lib/prisma"
 
 export async function checkStaffConflict(
+  shopId: string,
   staffId: string,
   startTime: Date,
   endTime: Date
 ): Promise<boolean> {
+  if (!shopId) {
+    throw new Error("shopId is required for checkStaffConflict");
+  }
+
   const conflict = await prisma.appointment.findFirst({
     where: {
+      shopId,
       staffId,
       status: { not: "CANCELLED" },
       startTime: { lt: endTime },
@@ -17,6 +23,7 @@ export async function checkStaffConflict(
   })
   return !!conflict;
 }
+
 
 /**
  * Generate time slots between open and close times with a given interval.

@@ -1,10 +1,37 @@
 import { Badge } from "@/components/ui/badge"
 import { CalendarDays, BadgeCent, User, CheckCircle2 } from "lucide-react"
-import { getAppointmentsData } from "@/lib/appointments"
 import { StatusBadge } from "@/components/admin/appointments/status-badge"
 
 export async function DashboardPreview() {
-  const appointmentsData = await getAppointmentsData()
+  const appointmentsData: any[] = [
+
+    {
+      id: "1",
+      startTime: new Date(new Date().setHours(9, 0, 0, 0)),
+      customer: { name: "Juan Pérez" },
+      service: { name: "Corte de Cabello", price: 12000 },
+      staff: { name: "Marco" },
+      status: "CONFIRMED"
+    },
+    {
+      id: "2",
+      startTime: new Date(new Date().setHours(11, 30, 0, 0)),
+      customer: { name: "Andrés M." },
+      service: { name: "Barba & Ritual", price: 8000 },
+      staff: { name: "Elena" },
+      status: "PENDING"
+    },
+    {
+      id: "3",
+      startTime: new Date(new Date().setHours(15, 0, 0, 0)),
+      customer: { name: "Roberto R." },
+      service: { name: "Corte Senior", price: 10000 },
+      staff: { name: "Marco" },
+      status: "COMPLETED"
+    }
+  ]
+
+
 
   return (
     <section className="px-4 py-20 md:py-28">

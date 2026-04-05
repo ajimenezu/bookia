@@ -10,12 +10,18 @@ interface PageProps {
   params: Promise<{ slug: string }>
 }
 
+import { getShopBySlug } from "@/lib/shop"
+
 export default async function AdminDashboard({ params }: PageProps) {
   const { slug } = await params
-  const shop = await prisma.shop.findFirst({ where: { slug } })
+  
+  // 1. Get the shop by slug first (this is public info anyway)
+  const shop = await getShopBySlug(slug)
   if (!shop) notFound()
 
+  // 2. IMMEDIATELY verify admin rights for THIS specific shop
   const { businessType, shopId } = await requireAdmin(shop.id)
+
   const t = getTerminology(businessType as any)
 
   return (

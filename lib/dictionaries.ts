@@ -79,6 +79,8 @@ export const DICTIONARIES: Record<BusinessType, Terminology> = {
   }
 }
 
-export function getTerminology(businessType: BusinessType = "BARBERIA"): Terminology {
+import { cache } from "react"
+
+export const getTerminology = cache((businessType: BusinessType = "BARBERIA"): Terminology => {
   return DICTIONARIES[businessType] || DICTIONARIES.BARBERIA
-}
+})

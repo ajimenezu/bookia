@@ -66,6 +66,12 @@ export async function signInToShop(slug: string, formData: FormData) {
     throw new Error("Email y contraseña son requeridos")
   }
 
+  // HARDENING: Verify shop existence first
+  const shop = await prisma.shop.findFirst({ where: { slug } })
+  if (!shop) {
+    throw new Error("La tienda no existe o el enlace es incorrecto")
+  }
+
   const { error } = await supabase.auth.signInWithPassword({ email, password })
   if (error) throw new Error(error.message)
 

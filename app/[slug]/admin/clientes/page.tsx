@@ -6,15 +6,17 @@ import { notFound } from "next/navigation"
 import { Suspense } from "react"
 import { ClientesContent } from "@/components/admin/clientes-content"
 import { ClientesSkeleton } from "@/components/admin/clientes-skeleton"
+import { getShopBySlug } from "@/lib/shop"
 
 interface PageProps {
   params: Promise<{ slug: string }>
   searchParams: Promise<{ q?: string }>
 }
 
+
 export default async function ClientesPage({ params, searchParams }: PageProps) {
   const { slug } = await params
-  const shop = await prisma.shop.findFirst({ where: { slug } })
+  const shop = await getShopBySlug(slug)
   if (!shop) notFound()
 
   const { shopId, isSuperAdmin, role, businessType } = await requireAdmin(shop.id)
@@ -34,11 +36,11 @@ export default async function ClientesPage({ params, searchParams }: PageProps) 
       </div>
 
       <Suspense key={q || 'all'} fallback={<ClientesSkeleton />}>
-        <ClientesContent 
-          shopId={shopId} 
-          isSuperAdmin={isSuperAdmin} 
-          businessType={businessType} 
-          q={q} 
+        <ClientesContent
+          shopId={shopId}
+          isSuperAdmin={isSuperAdmin}
+          businessType={businessType}
+          q={q}
         />
       </Suspense>
     </div>

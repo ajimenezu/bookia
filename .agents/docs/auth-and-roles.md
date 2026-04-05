@@ -21,7 +21,19 @@ Se definen en el enum `Role` de Prisma y se reflejan en Supabase Auth:
 La función `requireAdmin(targetShopId)` es la guardiana de las rutas administrativas:
 1.  **Verificación Global**: Si el usuario es Super Admin, tiene acceso total.
 2.  **Verificación Local**: Si no es Super Admin, se valida que tenga una membresía activa con rol `OWNER` o `STAFF` que **coincida exactamente** con el `targetShopId` solicitado.
-3.  **Redirección Forzada**: Si falla, redirige instantáneamente fuera del área administrativa.
+3.  **Mandatorio**: Se **DEBE** pasar el `shopId` o `slug` verificado de la URL a `requireAdmin()`. Llamar a esta función sin parámetros debilita el aislamiento multi-tenant en usuarios con acceso a múltiples tiendas.
+4.  **Redirección Forzada**: Si falla, redirige instantáneamente fuera del área administrativa.
+
+### 4. Hardening de Login Contextual
+En flujos de login por tienda (`signInToShop`), se debe validar la existencia del `slug` antes de la autenticación. 
+- **Razones**: Mejor UX (error instantáneo para URL errónea) e impedimento de ataques de enumeración sobre tenants no existentes.
+- **Implementación**: Ver `app/auth/actions.ts`.
+
+```typescript
+const shop = await getShopBySlug(slug);
+if (!shop) throw new Error("La tienda no existe o el enlace es incorrecto");
+```
+
 
 ```typescript
 import { requireAdmin } from "@/lib/auth-utils";

@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import prisma from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { cache } from "react"
+import { getShopById } from "@/lib/shop"
 
 /**
  * Gets the current authenticated user and their metadata.
@@ -86,9 +87,7 @@ export async function requireAdmin(targetShopId?: string) {
     }
   }
 
-  const shop = await prisma.shop.findUnique({
-    where: { id: activeMembership.shopId }
-  })
+  const shop = await getShopById(activeMembership.shopId)
 
   return {
     user: account.user,

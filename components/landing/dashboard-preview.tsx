@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge"
 import { CalendarDays, BadgeCent, User, CheckCircle2 } from "lucide-react"
 import { StatusBadge } from "@/components/admin/appointments/status-badge"
 

@@ -1,4 +1,3 @@
-import prisma from "@/lib/prisma"
 import { requireAdmin } from "@/lib/auth-utils"
 import { ClientSearch } from "@/components/admin/client-search"
 import { CreateUserModal } from "@/components/admin/create-user-modal"

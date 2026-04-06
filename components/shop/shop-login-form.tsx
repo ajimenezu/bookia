@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Mail, Lock, AlertCircle, ArrowRight, Scissors } from "lucide-react"
+import { Mail, Lock, AlertCircle, ArrowRight, Scissors, Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -20,6 +20,7 @@ export function ShopLoginForm({ slug, shopName, logoUrl }: ShopLoginFormProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -27,20 +28,27 @@ export function ShopLoginForm({ slug, shopName, logoUrl }: ShopLoginFormProps) {
     setError(null)
 
     const formData = new FormData(event.currentTarget)
+    // Email is already trimmed on the server, but let's be safe
 
     try {
       const result = await signInToShop(slug, formData)
-      if (result?.success) {
+      if (result?.error) {
+        setError(result.error)
+        setLoading(false)
+        return
+      }
+
+      if (result?.success && result?.redirectPath) {
         router.push(result.redirectPath)
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Credenciales inválidas")
+      setError("Ha ocurrido un error inesperado. Intenta de nuevo.")
       setLoading(false)
     }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-background to-background">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12 bg-[radial-gradient(ellipse_at_top,var(--tw-gradient-stops))] from-primary/5 via-background to-background">
       <div className="w-full max-w-md space-y-8">
         {/* Shop branding */}
         <div className="flex flex-col items-center text-center">
@@ -92,12 +100,20 @@ export function ShopLoginForm({ slug, shopName, logoUrl }: ShopLoginFormProps) {
                   <Input
                     id="password"
                     name="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     required
                     disabled={loading}
-                    className="pl-10 bg-background/50 border-border"
+                    className="pl-10 pr-10 bg-background/50 border-border"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 h-4 w-4 text-muted-foreground hover:text-foreground transition-colors outline-none cursor-pointer focus:ring-0"
+                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
               </div>
 
@@ -121,6 +137,12 @@ export function ShopLoginForm({ slug, shopName, logoUrl }: ShopLoginFormProps) {
                   </span>
                 )}
               </Button>
+              <p className="text-center text-sm text-muted-foreground">
+                ¿No tienes una cuenta?{" "}
+                <Link href={`/${slug}/register`} className="text-primary hover:underline font-semibold">
+                  Regístrate
+                </Link>
+              </p>
             </CardFooter>
           </Card>
         </form>

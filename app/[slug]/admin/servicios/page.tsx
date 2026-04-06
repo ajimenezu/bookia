@@ -1,4 +1,3 @@
-import prisma from "@/lib/prisma"
 import { requireAdmin } from "@/lib/auth-utils"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"

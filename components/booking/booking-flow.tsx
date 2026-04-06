@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useTransition } from "react"
-import { Scissors, UserCheck, CalendarDays, Clock, CheckCircle2, Loader2 } from "lucide-react"
+import { useState, useTransition, useEffect, useCallback } from "react"
+import { Scissors, UserCheck, CalendarDays, CheckCircle2, Loader2, LogIn, UserPlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -27,21 +27,34 @@ interface StaffData {
 interface BookingFlowProps {
   shopId: string
   shopName: string
+  shopSlug: string
   whatsappPhone: string | null
   services: ServiceData[]
   staff: StaffData[]
+  initialClientName?: string
+  initialClientPhone?: string
+  hideHeader?: boolean
 }
 
 type Step = "service" | "barber" | "date" | "time" | "info"
-
-export function BookingFlow({ shopId, shopName, whatsappPhone, services, staff }: BookingFlowProps) {
+export function BookingFlow({ 
+  shopId, 
+  shopName, 
+  shopSlug,
+  whatsappPhone, 
+  services, 
+  staff,
+  initialClientName,
+  initialClientPhone,
+  hideHeader = false
+}: BookingFlowProps) {
   const [selectedServices, setSelectedServices] = useState<string[]>([])
   const [isServiceStepDone, setIsServiceStepDone] = useState(false)
   const [selectedBarber, setSelectedBarber] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
-  const [clientName, setClientName] = useState("")
-  const [clientPhone, setClientPhone] = useState("")
+  const [clientName, setClientName] = useState(initialClientName || "")
+  const [clientPhone, setClientPhone] = useState(initialClientPhone || "")
   const [showConfirmation, setShowConfirmation] = useState(false)
 
   const [availableSlots, setAvailableSlots] = useState<string[]>([])
@@ -50,7 +63,6 @@ export function BookingFlow({ shopId, shopName, whatsappPhone, services, staff }
   const [loadingStaff, setLoadingStaff] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [bookingError, setBookingError] = useState<string | null>(null)
-
   const currentStep: Step = !isServiceStepDone
     ? "service"
     : !selectedBarber
@@ -60,6 +72,68 @@ export function BookingFlow({ shopId, shopName, whatsappPhone, services, staff }
         : !selectedTime
           ? "time"
           : "info"
+
+  // 1. Persistence Logic
+  const saveBookingState = useCallback((step?: Step) => {
+    const state = {
+      shopId,
+      selectedServices,
+      selectedBarber,
+      selectedDate: selectedDate?.toISOString(),
+      selectedTime,
+      step: step || currentStep,
+      isServiceStepDone: step === 'barber' || isServiceStepDone,
+      createdAt: Date.now() // Add timestamp for TTL
+    }
+    localStorage.setItem(`pending_booking_${shopId}`, JSON.stringify(state))
+  }, [shopId, selectedServices, selectedBarber, selectedDate, selectedTime, currentStep, isServiceStepDone])
+
+  const [, setIsRestoringState] = useState(false)
+
+  const clearBookingState = useCallback(() => {
+    localStorage.removeItem(`pending_booking_${shopId}`)
+  }, [shopId])
+
+  // Restore state on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(`pending_booking_${shopId}`)
+    if (saved) {
+      try {
+        const state = JSON.parse(saved)
+        
+        // TTL Check: 15 minutes (15 * 60 * 1000 ms)
+        const expirationTime = 15 * 60 * 1000
+        const isExpired = !state.createdAt || (Date.now() - state.createdAt > expirationTime)
+
+        if (isExpired) {
+          localStorage.removeItem(`pending_booking_${shopId}`)
+          return
+        }
+
+        setIsRestoringState(true)
+        if (state.selectedServices) setSelectedServices(state.selectedServices)
+        if (state.isServiceStepDone) setIsServiceStepDone(true)
+        if (state.selectedBarber) setSelectedBarber(state.selectedBarber)
+        if (state.selectedDate) setSelectedDate(new Date(state.selectedDate))
+        if (state.selectedTime) setSelectedTime(state.selectedTime)
+        
+        // Final cleanup after state is applied
+        setTimeout(() => {
+           setIsRestoringState(false)
+        }, 100)
+      } catch (e) {
+        console.error("Failed to restore booking state", e)
+        localStorage.removeItem(`pending_booking_${shopId}`)
+        setIsRestoringState(false)
+      }
+    }
+  }, [shopId])
+
+  const handleAuthRedirect = (type: 'login' | 'register') => {
+    saveBookingState()
+    const path = type === 'login' ? 'login' : 'register'
+    window.location.href = `/${shopSlug}/${path}`
+  }
 
   const stepNumber = { service: 1, barber: 2, date: 3, time: 4, info: 5 }
 
@@ -112,6 +186,7 @@ export function BookingFlow({ shopId, shopName, whatsappPhone, services, staff }
 
       if (result.success) {
         setShowConfirmation(true)
+        clearBookingState()
       } else {
         setBookingError(result.error || "Error al crear la reserva")
       }
@@ -124,12 +199,13 @@ export function BookingFlow({ shopId, shopName, whatsappPhone, services, staff }
     setSelectedBarber(null)
     setSelectedDate(undefined)
     setSelectedTime(null)
-    setClientName("")
-    setClientPhone("")
+    setClientName(initialClientName || "")
+    setClientPhone(initialClientPhone || "")
     setShowConfirmation(false)
     setBookingError(null)
     setAvailableSlots([])
     setAssignedAutoStaff(null)
+    clearBookingState()
   }
 
   // Add "auto" option to staff list
@@ -144,18 +220,30 @@ export function BookingFlow({ shopId, shopName, whatsappPhone, services, staff }
   const barber = allStaff.find((b) => b.id === selectedBarber)
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto flex h-16 max-w-lg items-center justify-between px-4">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Scissors className="h-4 w-4" />
-            </div>
-            <span className="text-lg font-bold text-foreground">BookIA</span>
-          </Link>
-        </div>
-      </header>
+    <div className={cn(!hideHeader && "min-h-screen bg-background")}>
+      {!hideHeader && (
+        <header className="border-b border-border bg-card">
+          <div className="mx-auto flex h-16 max-w-lg items-center justify-between px-4">
+            <Link href="/" className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <Scissors className="h-4 w-4" />
+              </div>
+              <span className="text-lg font-bold text-foreground">BookIA</span>
+            </Link>
+
+            {initialClientName && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-muted-foreground hidden sm:inline">
+                  {initialClientName.split(' ')[0]}
+                </span>
+                <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
+                  {initialClientName.charAt(0)}
+                </div>
+              </div>
+            )}
+          </div>
+        </header>
+      )}
 
       <main className="mx-auto max-w-lg px-4 py-8">
         {/* Shop name */}
@@ -241,8 +329,36 @@ export function BookingFlow({ shopId, shopName, whatsappPhone, services, staff }
                 onClick={() => setIsServiceStepDone(true)}
                 disabled={selectedServices.length === 0}
               >
-                Continuar
+                Continuar sin cuenta
               </Button>
+              
+              {!initialClientName && (
+                <div className="mt-4 flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="h-px flex-1 bg-border" />
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">o para guardar tus citas</span>
+                    <span className="h-px flex-1 bg-border" />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      className="flex-1 h-10 rounded-xl text-xs gap-2"
+                      onClick={() => handleAuthRedirect('login')}
+                    >
+                      <LogIn className="h-3.5 w-3.5" />
+                      Iniciar sesión
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="flex-1 h-10 rounded-xl text-xs gap-2"
+                      onClick={() => handleAuthRedirect('register')}
+                    >
+                      <UserPlus className="h-3.5 w-3.5" />
+                      Registrarse
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
         )}
@@ -389,6 +505,18 @@ export function BookingFlow({ shopId, shopName, whatsappPhone, services, staff }
         {currentStep === "info" && (
           <section>
             <h2 className="mb-4 text-lg font-semibold text-foreground">Tus datos</h2>
+            
+            {initialClientName && (
+              <div className="mb-4 p-3 rounded-lg bg-primary/5 border border-primary/10 flex items-center gap-3">
+                <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs">
+                  {initialClientName.charAt(0)}
+                </div>
+                <div className="text-sm">
+                  <p className="font-medium text-foreground">¡Hola, {initialClientName.split(' ')[0]}!</p>
+                  <p className="text-muted-foreground text-xs">Hemos pre-completado tus datos.</p>
+                </div>
+              </div>
+            )}
 
             {loadingStaff ? (
               <div className="flex flex-col items-center justify-center py-12 rounded-xl border border-border bg-card">
@@ -488,6 +616,33 @@ export function BookingFlow({ shopId, shopName, whatsappPhone, services, staff }
                   >
                     Volver
                   </Button>
+
+                  {!initialClientName && (
+                    <div className="mt-6 p-4 rounded-xl border border-primary/20 bg-primary/5 space-y-4">
+                      <div className="text-center space-y-1">
+                        <p className="text-sm font-bold text-foreground">¿Quieres guardar esta cita?</p>
+                        <p className="text-xs text-muted-foreground">Accede a tu cuenta para no volver a escribir tus datos.</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="secondary" 
+                          className="flex-1 h-10 rounded-lg text-xs gap-2 bg-background hover:bg-background/80"
+                          onClick={() => handleAuthRedirect('login')}
+                        >
+                          <LogIn className="h-3.5 w-3.5" />
+                          Iniciar sesión
+                        </Button>
+                        <Button 
+                          variant="secondary" 
+                          className="flex-1 h-10 rounded-lg text-xs gap-2 bg-background hover:bg-background/80"
+                          onClick={() => handleAuthRedirect('register')}
+                        >
+                          <UserPlus className="h-3.5 w-3.5" />
+                          Registrarse
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </>
             )}

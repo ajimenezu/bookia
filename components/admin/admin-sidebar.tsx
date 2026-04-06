@@ -1,25 +1,41 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Scissors, LayoutDashboard, CalendarDays, Users, Wrench, UserRound, Menu, X, LogOut } from "lucide-react"
+import { Scissors, LayoutDashboard, CalendarDays, Users, Wrench, UserRound, Menu, X, LogOut, Bell } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { signOut } from "@/app/auth/actions"
 import { Terminology } from "@/lib/dictionaries"
+import { getPendingRequests } from "@/app/[slug]/admin/staff/actions"
+import { ApprovalSidePanel } from "./approval-side-panel"
 
 export function AdminSidebar({ 
   children,
   terminology: t,
   shopSlug,
+  shopId,
 }: { 
   children: React.ReactNode,
   terminology: Terminology,
   shopSlug: string | null,
+  shopId?: string,
 }) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [pendingRequests, setPendingRequests] = useState<{ schedules: any[], timeOff: any[] }>({ schedules: [], timeOff: [] })
+  const [isPanelOpen, setIsPanelOpen] = useState(false)
+
+  useEffect(() => {
+    if (shopId) {
+      getPendingRequests(shopId).then(data => {
+        if (data) setPendingRequests(data as any)
+      })
+    }
+  }, [shopId])
+
+  const pendingCount = (pendingRequests?.schedules?.length || 0) + (pendingRequests?.timeOff?.length || 0)
 
   const navItems = [
     { href: `/${shopSlug}/admin`, label: "Dashboard", icon: LayoutDashboard },
@@ -33,12 +49,28 @@ export function AdminSidebar({
     <div className="flex min-h-screen bg-background">
       {/* Mobile header */}
       <header className="fixed inset-x-0 top-0 z-50 flex h-14 items-center justify-between border-b border-sidebar-border bg-sidebar px-4 lg:hidden">
-        <Link href={`/${shopSlug}/admin`} className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Scissors className="h-3.5 w-3.5" />
-          </div>
-          <span className="font-bold text-sidebar-foreground">BookIA</span>
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href={`/${shopSlug}/admin`} className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Scissors className="h-3.5 w-3.5" />
+            </div>
+            <span className="font-bold text-sidebar-foreground">BookIA</span>
+          </Link>
+          
+          {shopId && (
+            <button 
+              onClick={() => setIsPanelOpen(true)}
+              className="relative p-2 rounded-full hover:bg-muted/10 transition-colors cursor-pointer"
+            >
+              <Bell className="h-4.5 w-4.5 text-sidebar-foreground/70 transition-colors" />
+              {pendingCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 h-3 w-3 bg-primary text-[8px] font-bold text-primary-foreground rounded-full flex items-center justify-center border border-sidebar">
+                  {pendingCount}
+                </span>
+              )}
+            </button>
+          )}
+        </div>
         <Button variant="ghost" size="icon" onClick={() => setMobileOpen(!mobileOpen)} className="text-sidebar-foreground">
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </Button>
@@ -56,11 +88,27 @@ export function AdminSidebar({
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-6">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Scissors className="h-4 w-4" />
+        <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-6">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Scissors className="h-4 w-4" />
+            </div>
+            <span className="text-lg font-bold text-sidebar-foreground">BookIA</span>
           </div>
-          <span className="text-lg font-bold text-sidebar-foreground">BookIA</span>
+
+          {shopId && (
+            <button 
+              onClick={() => setIsPanelOpen(true)}
+              className="relative p-2 rounded-full hover:bg-sidebar-accent transition-colors cursor-pointer group"
+            >
+              <Bell className="h-5 w-5 text-sidebar-foreground/70 group-hover:text-sidebar-foreground transition-colors" />
+              {pendingCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 h-4 w-4 bg-primary text-[9px] font-bold text-primary-foreground rounded-full flex items-center justify-center border-2 border-sidebar">
+                  {pendingCount}
+                </span>
+              )}
+            </button>
+          )}
         </div>
 
         <nav className="flex-1 px-3 py-4">
@@ -114,6 +162,15 @@ export function AdminSidebar({
           {children}
         </main>
       </div>
+
+      {shopId && (
+        <ApprovalSidePanel 
+          shopId={shopId}
+          open={isPanelOpen}
+          onOpenChange={setIsPanelOpen}
+          initialRequests={pendingRequests}
+        />
+      )}
     </div>
   )
 }

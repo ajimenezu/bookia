@@ -1,6 +1,7 @@
 
 
 import prisma from "@/lib/prisma"
+import { z } from "zod"
 
 export async function checkStaffConflict(
   shopId: string,
@@ -8,9 +9,12 @@ export async function checkStaffConflict(
   startTime: Date,
   endTime: Date
 ): Promise<boolean> {
-  if (!shopId) {
-    throw new Error("shopId is required for checkStaffConflict");
-  }
+  const validated = z.object({
+    shopId: z.string().min(1),
+    staffId: z.string().min(1),
+  }).safeParse({ shopId, staffId })
+  
+  if (!validated.success) return true // Treat as conflict if invalid
 
   const conflict = await prisma.appointment.findFirst({
     where: {
@@ -53,56 +57,94 @@ function generateSlots(openTime: string, closeTime: string, slotDuration: number
 export async function getAvailableSlots(
   shopId: string,
   staffId: string,
-  dateStr: string // ISO date string "2026-03-20"
+  dateStr: string
 ): Promise<string[]> {
   const [year, month, day] = dateStr.split("-").map(Number)
   const date = new Date(year, month - 1, day)
-  const dayOfWeek = date.getDay() // 0=Sunday
+  const dayOfWeek = date.getDay()
 
-  // 1. Get shop schedule for this day
-  // @ts-ignore
   const schedule = await prisma.shopSchedule.findUnique({
     where: { shopId_dayOfWeek: { shopId, dayOfWeek } }
   })
 
-  if (!schedule || !schedule.isOpen) {
-    return [] // Shop is closed this day
-  }
+  if (!schedule || !schedule.isOpen) return []
 
-  // 2. Generate all possible slots
   const allSlots = generateSlots(schedule.openTime, schedule.closeTime, schedule.slotDuration)
-
-  // 3. Get start/end of the selected day for querying appointments
   const dayStart = new Date(dateStr + "T00:00:00")
   const dayEnd = new Date(dateStr + "T23:59:59")
 
   if (staffId === "auto") {
-    // Get all staff for this shop
     const staffMembers = await prisma.shopMember.findMany({
       where: { shopId, role: { in: ["STAFF", "OWNER"] } },
-      select: { userId: true }
+      include: { 
+        user: { 
+          include: { 
+            staffSchedules: { 
+              where: { shopId, dayOfWeek, status: "APPROVED" },
+              include: { breaks: true }
+            },
+            staffTimeOff: {
+              where: { 
+                shopId, 
+                status: "APPROVED",
+                startDate: { lte: dayEnd },
+                endDate: { gte: dayStart }
+              }
+            }
+          } 
+        } 
+      } as any
     })
 
-    // Get all appointments for all staff on this date
     const appointments = await prisma.appointment.findMany({
       where: {
         shopId,
-        staffId: { in: staffMembers.map((s: any) => s.userId) },
+        staffId: { in: staffMembers.map(s => s.userId) },
         startTime: { gte: dayStart, lte: dayEnd },
         status: { not: "CANCELLED" }
       },
       select: { staffId: true, startTime: true, endTime: true }
     })
 
-    // A slot is available if at least one staff member is free
     return allSlots.filter((slot: string) => {
       const slotStart = new Date(dateStr + `T${slot}:00`)
       const slotEnd = new Date(slotStart.getTime() + schedule.slotDuration * 60000)
 
-      return staffMembers.some((staff: any) => {
-        // Check if this staff member has a conflicting appointment
+      return staffMembers.some((member: any) => {
+        const individualSchedule = member.user.staffSchedules[0]
+        const timeOff = member.user.staffTimeOff
+
+        // 1. Check Vacation/Time Off
+        const hasTimeOff = timeOff.some((to: any) => {
+          const toStart = to.startTime ? new Date(dateStr + `T${to.startTime}:00`) : dayStart
+          const toEnd = to.endTime ? new Date(dateStr + `T${to.endTime}:00`) : dayEnd
+          return slotStart < toEnd && slotEnd > toStart
+        })
+        if (hasTimeOff) return false
+
+        // 2. Check Custom Working Hours (if Approved schedule exists)
+        if (individualSchedule) {
+          if (!individualSchedule.isOpen) return false
+          
+          // Check breaks
+          const inBreak = individualSchedule.breaks.some((b: any) => {
+            const bStart = new Date(dateStr + `T${b.startTime}:00`)
+            const bEnd = new Date(dateStr + `T${b.endTime}:00`)
+            return slotStart < bEnd && slotEnd > bStart
+          })
+          if (inBreak) return false
+
+          // Check custom open/close
+          if (individualSchedule.openTime || individualSchedule.closeTime) {
+            const sOpen = individualSchedule.openTime ? new Date(dateStr + `T${individualSchedule.openTime}:00`) : dayStart
+            const sClose = individualSchedule.closeTime ? new Date(dateStr + `T${individualSchedule.closeTime}:00`) : dayEnd
+            if (slotStart < sOpen || slotEnd > sClose) return false
+          }
+        }
+
+        // 3. Check Conflict with Appointments
         const hasConflict = appointments.some((app: any) =>
-          app.staffId === staff.userId &&
+          app.staffId === member.userId &&
           slotStart < app.endTime &&
           slotEnd > app.startTime
         )
@@ -110,7 +152,23 @@ export async function getAvailableSlots(
       })
     })
   } else {
-    // Specific staff member
+    // Specific staff member check
+    const [staffSchedule, staffTimeOff] = await Promise.all([
+      prisma.staffSchedule.findFirst({
+        where: { staffId, shopId, dayOfWeek, status: "APPROVED" },
+        include: { breaks: true }
+      }),
+      prisma.staffTimeOff.findMany({
+        where: { 
+          staffId, 
+          shopId, 
+          status: "APPROVED",
+          startDate: { lte: dayEnd },
+          endDate: { gte: dayStart }
+        }
+      })
+    ])
+
     const appointments = await prisma.appointment.findMany({
       where: {
         shopId,
@@ -124,6 +182,31 @@ export async function getAvailableSlots(
     return allSlots.filter((slot: string) => {
       const slotStart = new Date(dateStr + `T${slot}:00`)
       const slotEnd = new Date(slotStart.getTime() + schedule.slotDuration * 60000)
+
+      // 1. Time off check
+      const hasTimeOff = staffTimeOff.some((to: any) => {
+        const toStart = to.startTime ? new Date(dateStr + `T${to.startTime}:00`) : dayStart
+        const toEnd = to.endTime ? new Date(dateStr + `T${to.endTime}:00`) : dayEnd
+        return slotStart < toEnd && slotEnd > toStart
+      })
+      if (hasTimeOff) return false
+
+      // 2. Schedule check
+      if (staffSchedule) {
+        if (!staffSchedule.isOpen) return false
+        const inBreak = staffSchedule.breaks.some((b: any) => {
+          const bStart = new Date(dateStr + `T${b.startTime}:00`)
+          const bEnd = new Date(dateStr + `T${b.endTime}:00`)
+          return slotStart < bEnd && slotEnd > bStart
+        })
+        if (inBreak) return false
+
+        if (staffSchedule.openTime || staffSchedule.closeTime) {
+          const sOpen = staffSchedule.openTime ? new Date(dateStr + `T${staffSchedule.openTime}:00`) : dayStart
+          const sClose = staffSchedule.closeTime ? new Date(dateStr + `T${staffSchedule.closeTime}:00`) : dayEnd
+          if (slotStart < sOpen || slotEnd > sClose) return false
+        }
+      }
 
       const hasConflict = appointments.some((app: any) =>
         slotStart < app.endTime && slotEnd > app.startTime

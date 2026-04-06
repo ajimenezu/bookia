@@ -2,6 +2,7 @@
 
 import prisma from "@/lib/prisma"
 import { getAvailableSlots, checkStaffConflict } from "@/lib/availability"
+import { createClient } from "@/lib/supabase/server"
 import { z } from "zod"
 
 const bookingSchema = z.object({
@@ -12,6 +13,14 @@ const bookingSchema = z.object({
   time: z.string().regex(/^\d{2}:\d{2}$/),
   customerName: z.string().min(2),
   customerPhone: z.string().min(8),
+})
+
+const querySchema = z.object({
+  shopId: z.string().min(1),
+  staffId: z.string().min(1).optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  serviceIds: z.array(z.string().min(1)).optional(),
 })
 
 export async function createBooking(rawData: unknown) {
@@ -79,20 +88,34 @@ export async function createBooking(rawData: unknown) {
     resolvedStaffId = staffId
   }
 
-  // 4. Find or create customer by phone
-  let customerId: string | null = null
-  const existingUser = await prisma.user.findFirst({
-    where: { phone: customerPhone }
-  })
+  // 4. Find or create customer by session or phone
+  const supabase = await createClient()
+  const { data: { user: authUser } } = await supabase.auth.getUser()
 
-  if (existingUser) {
-    customerId = existingUser.id
-    // Update name if it was missing
-    if (!existingUser.name && customerName) {
-      await prisma.user.update({
-        where: { id: existingUser.id },
-        data: { name: customerName }
-      })
+  // SECURITY: If authenticated, must have verified email
+  if (authUser && !authUser.email_confirmed_at) {
+    return { 
+      success: false, 
+      error: "Por favor, confirma tu correo electrónico antes de realizar una reserva." 
+    }
+  }
+
+  let customerId: string | null = authUser?.id || null
+
+  if (!customerId) {
+    const existingUser = await prisma.user.findFirst({
+      where: { phone: customerPhone }
+    })
+
+    if (existingUser) {
+      customerId = existingUser.id
+      // Update name if it was missing
+      if (!existingUser.name && customerName) {
+        await prisma.user.update({
+          where: { id: existingUser.id },
+          data: { name: customerName }
+        })
+      }
     }
   }
 
@@ -123,6 +146,9 @@ export async function fetchAvailableSlots(
   staffId: string,
   dateStr: string
 ): Promise<string[]> {
+  const validated = querySchema.safeParse({ shopId, staffId, date: dateStr })
+  if (!validated.success) return []
+
   return getAvailableSlots(shopId, staffId, dateStr)
 }
 
@@ -132,7 +158,10 @@ export async function getAvailableStaffForSlot(
   time: string,
   serviceIds: string[]
 ): Promise<{ id: string; name: string }[]> {
-  // SECURITY FIX: Mandatory shopId filter
+  const validated = querySchema.safeParse({ shopId, date, time, serviceIds })
+  if (!validated.success) return []
+
+  // 1. Get services to calculate total duration
   const services = await prisma.service.findMany({ 
     where: { 
       id: { in: serviceIds },
@@ -142,20 +171,53 @@ export async function getAvailableStaffForSlot(
   if (services.length === 0) return []
 
   const totalDuration = services.reduce((acc, s) => acc + s.duration, 0)
-
   const startTime = new Date(`${date}T${time}:00`)
-  const endTime = new Date(startTime.getTime() + totalDuration * 60 * 1000)
+  const endTime = new Date(startTime.getTime() + totalDuration * 60000)
 
+  // 2. Fetch all shop members and their schedules in a single query
+  const dayOfWeek = startTime.getDay()
   const staffMembers = await prisma.shopMember.findMany({
     where: { shopId, role: { in: ["STAFF", "OWNER"] } },
-    include: { user: { select: { id: true, name: true } } }
+    include: { 
+      user: {
+        include: {
+          staffSchedules: {
+            where: { shopId, dayOfWeek }
+          }
+        }
+      }
+    } as any
+  })
+
+  // 3. PERFORMANCE OPTIMIZATION: Fetch ALL appointments for this shop on this day once
+  const dayStart = new Date(`${date}T00:00:00`)
+  const dayEnd = new Date(`${date}T23:59:59`)
+  const allAppointments = await prisma.appointment.findMany({
+    where: {
+      shopId,
+      startTime: { gte: dayStart, lte: dayEnd },
+      status: { not: "CANCELLED" }
+    },
+    select: { staffId: true, startTime: true, endTime: true }
   })
 
   const availableStaff = []
-  for (const member of staffMembers) {
-    const hasConflict = await checkStaffConflict(shopId, member.userId, startTime, endTime)
+  for (const member of (staffMembers as any)) {
+    const staffId = member.userId
+    const staffSchedule = member.user.staffSchedules[0]
+
+    // OFF-DUTY LOGIC: If a staff schedule exists and it's closed, they are off-duty
+    if (staffSchedule && !staffSchedule.isOpen) continue
+
+    // Check if appointment overlaps with any of this staff's existing appointments
+    const hasConflict = allAppointments.some(app => 
+      app.staffId === staffId &&
+      startTime < app.endTime &&
+      endTime > app.startTime
+    )
+
     if (!hasConflict) {
-      availableStaff.push({ id: member.userId, name: member.user.name || "Sin nombre" })
+      availableStaff.push({ id: staffId, name: member.user.name || "Sin nombre" })
     }
   }
 

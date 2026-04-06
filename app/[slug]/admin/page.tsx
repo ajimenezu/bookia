@@ -1,4 +1,3 @@
-import prisma from "@/lib/prisma"
 import { requireAdmin } from "@/lib/auth-utils"
 import { getTerminology } from "@/lib/dictionaries"
 import { notFound } from "next/navigation"

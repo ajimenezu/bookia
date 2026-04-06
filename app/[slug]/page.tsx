@@ -1,3 +1,5 @@
+import { getShopBySlug } from "@/lib/shop"
+import { getAdminUser } from "@/lib/auth-utils"
 import prisma from "@/lib/prisma"
 import { BusinessThemeProvider } from "@/components/admin/business-theme-provider"
 import { ShopLanding } from "@/components/shop/shop-landing"
@@ -7,8 +9,6 @@ import type { Metadata } from "next"
 interface PageProps {
   params: Promise<{ slug: string }>
 }
-
-import { getShopBySlug } from "@/lib/shop"
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params
@@ -22,6 +22,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ShopPublicPage({ params }: PageProps) {
   const { slug } = await params
+  const account = await getAdminUser()
+  const user = account?.user ? {
+    name: account.user.user_metadata?.full_name || account.user.email,
+    phone: account.user.user_metadata?.phone || null
+  } : null
 
   // Note: We use a raw query here instead of getShopBySlug because we need specific includes
   const shop = await prisma.shop.findFirst({
@@ -66,7 +71,13 @@ export default async function ShopPublicPage({ params }: PageProps) {
 
   return (
     <BusinessThemeProvider businessType={shop.businessType} businessSlug={shop.slug}>
-      <ShopLanding shop={shopData} services={services} staff={staff} />
+      <ShopLanding 
+        shop={shopData} 
+        services={services} 
+        staff={staff} 
+        user={user}
+        role={account?.role}
+      />
     </BusinessThemeProvider>
   )
 }

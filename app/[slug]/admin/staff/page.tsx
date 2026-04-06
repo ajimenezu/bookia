@@ -1,6 +1,5 @@
 import { requireAdmin } from "@/lib/auth-utils"
 import { getTerminology } from "@/lib/dictionaries"
-import prisma from "@/lib/prisma"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
 import { StaffContent } from "@/components/admin/staff-content"

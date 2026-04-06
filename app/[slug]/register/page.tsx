@@ -1,22 +1,21 @@
 import { BusinessThemeProvider } from "@/components/admin/business-theme-provider"
-import { ShopLoginForm } from "@/components/shop/shop-login-form"
+import { ShopSignUpForm } from "@/components/shop/shop-signup-form"
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
+import { getShopBySlug } from "@/lib/shop"
 
 interface PageProps {
   params: Promise<{ slug: string }>
 }
 
-import { getShopBySlug } from "@/lib/shop"
-
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params
   const shop = await getShopBySlug(slug)
   if (!shop) return {}
-  return { title: `Iniciar Sesión — ${shop.name}` }
+  return { title: `Registrarse — ${shop.name}` }
 }
 
-export default async function ShopLoginPage({ params }: PageProps) {
+export default async function ShopRegisterPage({ params }: PageProps) {
   const { slug } = await params
 
   const shop = await getShopBySlug(slug)
@@ -24,7 +23,7 @@ export default async function ShopLoginPage({ params }: PageProps) {
 
   return (
     <BusinessThemeProvider businessType={shop.businessType} businessSlug={slug}>
-      <ShopLoginForm
+      <ShopSignUpForm
         slug={slug}
         shopName={shop.name}
         logoUrl={(shop as any).logoUrl ?? null}

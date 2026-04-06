@@ -1,8 +1,6 @@
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import {
   MapPin,
   Phone,
@@ -12,12 +10,11 @@ import {
   ChevronDown,
   Scissors,
   Sparkles,
-  Star,
+  Star
 } from "lucide-react"
-import { BookingFlow } from "@/components/booking/booking-flow"
 import { getTerminology } from "@/lib/dictionaries"
 import type { BusinessType } from "@/lib/dictionaries"
-import { cn } from "@/lib/utils"
+import { ShopNavbar } from "./shop-navbar"
 
 interface ServiceData {
   id: string
@@ -50,6 +47,11 @@ interface ShopLandingProps {
   shop: ShopData
   services: ServiceData[]
   staff: StaffData[]
+  user?: {
+    name?: string | null
+    phone?: string | null
+  } | null
+  role?: string | null
 }
 
 function formatPrice(price: number) {
@@ -65,8 +67,7 @@ function formatDuration(minutes: number) {
   return m > 0 ? `${h}h ${m}min` : `${h}h`
 }
 
-export function ShopLanding({ shop, services, staff }: ShopLandingProps) {
-  const [showBooking, setShowBooking] = useState(false)
+export function ShopLanding({ shop, services, staff, user, role }: ShopLandingProps) {
   const t = getTerminology(shop.businessType)
 
   const whatsappHref = shop.whatsappPhone
@@ -76,47 +77,7 @@ export function ShopLanding({ shop, services, staff }: ShopLandingProps) {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* ─── NAVBAR ─── */}
-      <header className="sticky top-0 z-40 border-b border-border bg-card/80 backdrop-blur-sm">
-        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
-          <div className="flex items-center gap-3">
-            {shop.logoUrl ? (
-              <Image
-                src={shop.logoUrl}
-                alt={shop.name}
-                width={36}
-                height={36}
-                className="rounded-lg object-cover"
-              />
-            ) : (
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <Scissors className="h-4 w-4" />
-              </div>
-            )}
-            <span className="text-lg font-bold">{shop.name}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href={`/${shop.slug}/login`}
-              id="nav-login-btn"
-              className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              Iniciar sesión
-            </Link>
-            <button
-              id="nav-book-btn"
-              onClick={() => {
-                setShowBooking(true)
-                setTimeout(() => {
-                  document.getElementById("booking-section")?.scrollIntoView({ behavior: "smooth" })
-                }, 50)
-              }}
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
-            >
-              Reservar ahora
-            </button>
-          </div>
-        </div>
-      </header>
+      <ShopNavbar shop={shop} user={user} role={role || undefined} showScheduleButton={true} />
 
       {/* ─── HERO ─── */}
       <section className="relative overflow-hidden border-b border-border">
@@ -155,18 +116,13 @@ export function ShopLanding({ shop, services, staff }: ShopLandingProps) {
 
             {/* CTA Buttons */}
             <div className="flex flex-wrap justify-center gap-3 pt-2">
-              <button
+              <Link
+                href={`/${shop.slug}/schedule`}
                 id="hero-book-btn"
-                onClick={() => {
-                  setShowBooking(true)
-                  setTimeout(() => {
-                    document.getElementById("booking-section")?.scrollIntoView({ behavior: "smooth" })
-                  }, 50)
-                }}
-                className="h-12 rounded-xl bg-primary px-8 text-base font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                className="h-12 rounded-xl bg-primary px-8 text-base font-semibold text-primary-foreground transition-opacity hover:opacity-90 flex items-center justify-center"
               >
-                Reservar {t.appointment.toLowerCase()}
-              </button>
+                Reservar cita
+              </Link>
               {whatsappHref && (
                 <a
                   href={whatsappHref}
@@ -233,15 +189,10 @@ export function ShopLanding({ shop, services, staff }: ShopLandingProps) {
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {services.map((svc) => (
-            <button
+            <Link
               key={svc.id}
+              href={`/${shop.slug}/schedule`}
               id={`service-${svc.id}`}
-              onClick={() => {
-                setShowBooking(true)
-                setTimeout(() => {
-                  document.getElementById("booking-section")?.scrollIntoView({ behavior: "smooth" })
-                }, 50)
-              }}
               className="group flex flex-col gap-3 rounded-xl border border-border bg-card p-5 text-left transition-all hover:border-primary/50 hover:shadow-lg cursor-pointer"
             >
               <div className="flex items-start justify-between gap-2">
@@ -264,7 +215,7 @@ export function ShopLanding({ shop, services, staff }: ShopLandingProps) {
                 <Clock className="h-3.5 w-3.5" />
                 {formatDuration(svc.duration)}
               </div>
-            </button>
+            </Link>
           ))}
         </div>
       </section>
@@ -313,30 +264,6 @@ export function ShopLanding({ shop, services, staff }: ShopLandingProps) {
         </section>
       )}
 
-      {/* ─── BOOKING SECTION ─── */}
-      <section
-        id="booking-section"
-        className={cn("border-t border-border py-16 transition-all", !showBooking && "hidden")}
-      >
-        <div className="mx-auto max-w-5xl px-4">
-          <div className="mb-8 text-center">
-            <h2 className="text-2xl font-bold md:text-3xl">
-              Reserva tu {t.appointment.toLowerCase()}
-            </h2>
-            <p className="mt-2 text-muted-foreground">
-              Agenda en segundos, sin llamadas
-            </p>
-          </div>
-          {/* Reuse existing BookingFlow – it already handles all steps */}
-          <BookingFlow
-            shopId={shop.id}
-            shopName={shop.name}
-            whatsappPhone={shop.whatsappPhone}
-            services={services}
-            staff={staff}
-          />
-        </div>
-      </section>
 
       {/* ─── FOOTER ─── */}
       <footer className="border-t border-border bg-card">

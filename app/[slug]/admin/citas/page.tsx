@@ -9,8 +9,10 @@ import { WeekNavigation } from "@/components/admin/appointments/week-navigation"
 import { AppointmentsContent } from "@/components/admin/appointments/appointments-content"
 import { AppointmentsSkeleton } from "@/components/admin/appointments/appointments-skeleton"
 import { AdminStatsContainer } from "@/components/admin/admin-stats-container"
+import { AddAppointmentSheet } from "@/components/admin/appointments/add-appointment-sheet"
 import { notFound } from "next/navigation"
 import { getShopBySlug } from "@/lib/shop"
+import prisma from "@/lib/prisma"
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -31,6 +33,22 @@ export default async function CitasPage({ params, searchParams }: PageProps) {
   const view = (sp.view as "calendar" | "list") || "calendar"
   const { rangeLabel } = getWeekRange(weekOffset)
 
+  const [services, staffData, clientsData] = await Promise.all([
+    prisma.service.findMany({ where: { shopId }, orderBy: { price: "asc" } }),
+    prisma.shopMember.findMany({
+      where: { shopId, role: { in: ["STAFF", "OWNER"] } },
+      include: { user: { select: { id: true, name: true } } }
+    }),
+    prisma.shopMember.findMany({
+      where: { shopId, role: "CUSTOMER" },
+      include: { user: { select: { id: true, name: true, phone: true } } }
+    })
+  ])
+
+  const mappedServices = services.map(s => ({ id: s.id, name: s.name, price: s.price, duration: s.duration }))
+  const mappedStaff = staffData.map(m => ({ id: m.user.id, name: m.user.name || "Sin nombre" }))
+  const mappedClients = clientsData.map(m => ({ id: m.user.id, name: m.user.name || "Sin nombre", phone: m.user.phone }))
+
   return (
     <div>
       <AdminStatsContainer shopId={shopId} />
@@ -44,6 +62,15 @@ export default async function CitasPage({ params, searchParams }: PageProps) {
           <HoyButton />
           <DateSelector />
           <ViewSwitcher currentView={view} weekOffset={weekOffset} />
+          <AddAppointmentSheet
+            shopId={shopId}
+            shopName={shop.name}
+            shopSlug={slug}
+            whatsappPhone={shop.whatsappPhone}
+            services={mappedServices}
+            staff={mappedStaff}
+            clients={mappedClients}
+          />
         </div>
       </div>
       <WeekNavigation weekOffset={weekOffset} view={view} rangeLabel={rangeLabel} />

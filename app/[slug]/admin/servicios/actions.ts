@@ -28,27 +28,24 @@ async function validateServiceOwnership(serviceId: string, membershipShopId: str
 
 export async function createService(formData: FormData) {
   try {
-    const { shopId: membershipShopId, isSuperAdmin } = await requireAdmin()
+    const inputShopId = formData.get("shopId") as string
+    const { shopId: targetShopId } = await requireAdmin(inputShopId || undefined)
 
-    const resolvedShopId = isSuperAdmin ? (formData.get("shopId") as string || membershipShopId) : membershipShopId
+    if (targetShopId === "ALL") {
+      return { success: false, error: "Debe especificar una tienda válida" }
+    }
 
     const rawData = {
       name: formData.get("name"),
       description: formData.get("description"),
       price: parseFloat(formData.get("price") as string),
       duration: parseInt(formData.get("duration") as string, 10),
-      shopId: resolvedShopId,
+      shopId: targetShopId,
     }
 
     const validated = serviceSchema.safeParse(rawData)
     if (!validated.success) {
       return { success: false, error: validated.error.errors[0].message }
-    }
-
-    const targetShopId = isSuperAdmin ? (validated.data.shopId || membershipShopId) : membershipShopId
-
-    if (targetShopId === "ALL" && isSuperAdmin) {
-      return { success: false, error: "Super Admin debe especificar una tienda para crear servicios" }
     }
 
     await prisma.service.create({
@@ -73,9 +70,10 @@ export async function createService(formData: FormData) {
 export async function updateService(formData: FormData) {
   try {
     const serviceId = formData.get("id") as string
-    const { shopId: membershipShopId, isSuperAdmin } = await requireAdmin()
+    const inputShopId = formData.get("shopId") as string
+    const { shopId: targetShopId, isSuperAdmin } = await requireAdmin(inputShopId || undefined)
 
-    const service = await validateServiceOwnership(serviceId, membershipShopId, isSuperAdmin)
+    const service = await validateServiceOwnership(serviceId, targetShopId, isSuperAdmin)
 
     const rawData = {
       name: formData.get("name"),

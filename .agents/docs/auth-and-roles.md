@@ -52,3 +52,36 @@ export default async function AdminPage({ params }) {
 ---
 > [!IMPORTANT]
 > Un usuario puede ser `OWNER` de una tienda y `CUSTOMER` de otra. Las membresías son aisladas por `shopId`.
+
+## 5. Super Admin en Server Actions Públicas (Patrón Crítico)
+
+En Server Actions que **no usan `requireAdmin`** (como `createBooking` en `app/schedule/actions.ts`), la verificación de Super Admin **NO** puede depender únicamente de `app_metadata.role` del JWT. El rol puede haberse asignado directamente en la DB sin actualizar el claim JWT.
+
+**Patrón correcto — doble cobertura:**
+```typescript
+const globalRoleFromJwt = authUser.app_metadata?.role as string | undefined
+
+const membership = await prisma.shopMember.findUnique({
+  where: { userId_shopId: { userId: authUser.id, shopId } }
+})
+
+const isSuperAdmin =
+  globalRoleFromJwt === "SUPER_ADMIN" || membership?.role === "SUPER_ADMIN"
+
+const isAuthorized =
+  isSuperAdmin || (membership && ["OWNER", "STAFF"].includes(membership.role))
+```
+
+> [!CAUTION]
+> Nunca verificar solo el JWT claim para Super Admin en acciones críticas. Siempre incluir el fallback de DB.
+
+## 6. Acceso por Rol en Configuración (OWNER-only)
+
+Para funcionalidades restringidas a `OWNER` y `SUPER_ADMIN` (y no `STAFF`), usa `requireAdmin` normalmente y luego verifica el rol devuelto:
+
+```typescript
+const session = await requireAdmin(shopId)
+if (!session.isSuperAdmin && session.role !== "OWNER") {
+  redirect(`/${slug}/admin`) // o throw new Error()
+}
+```

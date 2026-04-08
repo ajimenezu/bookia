@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Scissors, LayoutDashboard, CalendarDays, Users, Wrench, UserRound, Menu, X, LogOut, Bell } from "lucide-react"
+import { Scissors, LayoutDashboard, CalendarDays, Users, Wrench, UserRound, Menu, X, LogOut, Bell, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { signOut } from "@/app/auth/actions"
@@ -143,6 +143,15 @@ export function AdminSidebar({
               className="flex items-center justify-center gap-2 rounded-lg bg-sidebar-accent px-3 py-2.5 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent/80 cursor-pointer"
             >
               Ver página pública
+            </Link>
+          )}
+          {shopSlug && (
+            <Link
+              href={`/${shopSlug}/admin/configuracion`}
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors cursor-pointer"
+            >
+              <Settings className="h-4 w-4" />
+              Configuración
             </Link>
           )}
           <Button

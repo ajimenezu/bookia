@@ -12,7 +12,9 @@ const bookingSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   time: z.string().regex(/^\d{2}:\d{2}$/),
   customerName: z.string().min(2),
-  customerPhone: z.string().min(8),
+  customerPhone: z.string().optional(),
+  customerId: z.string().optional(),
+  isAdminBooking: z.boolean().optional(),
 })
 
 const querySchema = z.object({
@@ -29,7 +31,7 @@ export async function createBooking(rawData: unknown) {
     return { success: false, error: "Datos de reserva inválidos" }
   }
 
-  const { shopId, serviceIds, staffId, date, time, customerName, customerPhone } = validated.data
+  const { shopId, serviceIds, staffId, date, time, customerName, customerPhone, customerId: inputCustomerId, isAdminBooking } = validated.data
 
   // 1. Get services to calculate end time and capture total price
   // SECURITY FIX: Mandatory shopId filter to prevent cross-tenant service selection
@@ -92,29 +94,59 @@ export async function createBooking(rawData: unknown) {
   const supabase = await createClient()
   const { data: { user: authUser } } = await supabase.auth.getUser()
 
-  // SECURITY: If authenticated, must have verified email
-  if (authUser && !authUser.email_confirmed_at) {
-    return { 
-      success: false, 
-      error: "Por favor, confirma tu correo electrónico antes de realizar una reserva." 
+  let customerId: string | null = null
+
+  if (isAdminBooking) {
+    // SECURITY: Validate that the request maker is an admin of the shop
+    if (!authUser) {
+      return { success: false, error: "Debes iniciar sesión" }
     }
-  }
 
-  let customerId: string | null = authUser?.id || null
+    // Check 1: JWT app_metadata claim (set via Supabase Admin API)
+    const globalRoleFromJwt = authUser.app_metadata?.role as string | undefined
 
-  if (!customerId) {
-    const existingUser = await prisma.user.findFirst({
-      where: { phone: customerPhone }
+    // Check 2: DB membership fallback (same logic used in requireAdmin/getAdminUser)
+    const membership = await prisma.shopMember.findUnique({
+      where: { userId_shopId: { userId: authUser.id, shopId } }
     })
 
-    if (existingUser) {
-      customerId = existingUser.id
-      // Update name if it was missing
-      if (!existingUser.name && customerName) {
-        await prisma.user.update({
-          where: { id: existingUser.id },
-          data: { name: customerName }
-        })
+    const isSuperAdmin =
+      globalRoleFromJwt === "SUPER_ADMIN" || membership?.role === "SUPER_ADMIN"
+
+    const isAuthorized =
+      isSuperAdmin || (membership && ["OWNER", "STAFF"].includes(membership.role))
+
+    if (!isAuthorized) {
+      return { success: false, error: "No tienes permisos de administrador para esta tienda" }
+    }
+
+    // Trust the provided customerId or leave it null (unregistered client created by admin)
+    customerId = inputCustomerId || null
+  } else {
+    // SECURITY: If authenticated, must have verified email
+    if (authUser && !authUser.email_confirmed_at) {
+      return { 
+        success: false, 
+        error: "Por favor, confirma tu correo electrónico antes de realizar una reserva." 
+      }
+    }
+
+    customerId = authUser?.id || null
+
+    if (!customerId && customerPhone) {
+      const existingUser = await prisma.user.findFirst({
+        where: { phone: customerPhone }
+      })
+
+      if (existingUser) {
+        customerId = existingUser.id
+        // Update name if it was missing
+        if (!existingUser.name && customerName) {
+          await prisma.user.update({
+            where: { id: existingUser.id },
+            data: { name: customerName }
+          })
+        }
       }
     }
   }

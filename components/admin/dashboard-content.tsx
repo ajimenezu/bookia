@@ -4,16 +4,50 @@ import { Button } from "@/components/ui/button"
 import { getAppointmentsData } from "@/lib/appointments"
 import { StatusBadge } from "@/components/admin/appointments/status-badge"
 import { getTerminology } from "@/lib/dictionaries"
+import { AddAppointmentSheet } from "@/components/admin/appointments/add-appointment-sheet"
+import prisma from "@/lib/prisma"
 
 interface DashboardContentProps {
   shopId: string
   businessType: string
+  slug: string
+  shopName: string
+  whatsappPhone: string | null
 }
 
-export async function DashboardContent({ shopId, businessType }: DashboardContentProps) {
+export async function DashboardContent({ shopId, businessType, slug, shopName, whatsappPhone }: DashboardContentProps) {
   const t = getTerminology(businessType as any)
   const appointments = await getAppointmentsData(shopId)
   
+  const [services, staffData, clientsData] = await Promise.all([
+    prisma.service.findMany({ where: { shopId }, orderBy: { price: "asc" } }),
+    prisma.shopMember.findMany({
+      where: { shopId, role: { in: ["STAFF", "OWNER"] } },
+      include: { user: { select: { id: true, name: true } } }
+    }),
+    prisma.shopMember.findMany({
+      where: { shopId, role: "CUSTOMER" },
+      include: { user: { select: { id: true, name: true, phone: true } } }
+    })
+  ])
+
+  const mappedServices = services.map(s => ({
+    id: s.id,
+    name: s.name,
+    price: s.price,
+    duration: s.duration,
+  }))
+
+  const mappedStaff = staffData.map(m => ({
+    id: m.user.id,
+    name: m.user.name || "Sin nombre",
+  }))
+
+  const mappedClients = clientsData.map(m => ({
+    id: m.user.id,
+    name: m.user.name || "Sin nombre",
+    phone: m.user.phone,
+  }))
   const todayIncome = appointments.reduce((acc, curr) => {
     // If services (plural) is present, sum them up
     if (curr.services && curr.services.length > 0) {
@@ -31,6 +65,22 @@ export async function DashboardContent({ shopId, businessType }: DashboardConten
 
   return (
     <>
+      <div className="mb-8 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground md:text-3xl">Dashboard</h1>
+          <p className="mt-1 text-muted-foreground italic text-sm">Resumen de tu negocio hoy</p>
+        </div>
+        <AddAppointmentSheet 
+          shopId={shopId}
+          shopName={shopName}
+          shopSlug={slug}
+          whatsappPhone={whatsappPhone}
+          services={mappedServices}
+          staff={mappedStaff}
+          clients={mappedClients}
+        />
+      </div>
+
       <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {stats.map((stat) => (
           <div key={stat.label} className="flex items-center gap-4 rounded-xl border border-border bg-card p-5 shadow-sm transition-all hover:border-primary/20">

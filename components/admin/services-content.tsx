@@ -16,6 +16,6 @@ export async function ServicesContent({ shopId, slug, businessType }: ServicesCo
   }) as any[]
 
   return (
-    <ServicesList services={services} slug={slug} businessType={businessType} />
+    <ServicesList services={services} slug={slug} shopId={shopId} businessType={businessType} />
   )
 }

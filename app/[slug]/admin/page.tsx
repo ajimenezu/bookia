@@ -25,13 +25,8 @@ export default async function AdminDashboard({ params }: PageProps) {
 
   return (
     <div className="animate-in fade-in duration-500">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-foreground md:text-3xl">Dashboard</h1>
-        <p className="mt-1 text-muted-foreground italic text-sm">{t.dashboardDesc}</p>
-      </div>
-
       <Suspense fallback={<DashboardSkeleton />}>
-        <DashboardContent shopId={shopId} businessType={businessType} />
+        <DashboardContent shopId={shopId} businessType={businessType} slug={slug} shopName={shop.name} whatsappPhone={shop.whatsappPhone} />
       </Suspense>
     </div>
   )

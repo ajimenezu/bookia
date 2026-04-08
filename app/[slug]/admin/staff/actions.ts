@@ -44,12 +44,17 @@ export async function updateStaffSchedule(
   // If staff edits, it's PENDING. If owner edits, it's APPROVED.
   const targetStatus = isprivileged ? "APPROVED" : "PENDING"
 
-  // Process each day in a transaction
+  // Fetch all existing schedules for this staff/shop once
+  const existingSchedules = await prisma.staffSchedule.findMany({
+    where: { staffId, shopId }
+  })
+  
+  const existingMap = new Map(existingSchedules.map(s => [s.dayOfWeek, s]))
+
+  // Process each day in a transaction with increased timeout
   await prisma.$transaction(async (tx) => {
     for (const sched of schedules) {
-      const existing = await tx.staffSchedule.findUnique({
-        where: { staffId_shopId_dayOfWeek: { staffId, shopId, dayOfWeek: sched.dayOfWeek } }
-      })
+      const existing = existingMap.get(sched.dayOfWeek)
 
       if (existing) {
         // Update existing
@@ -90,6 +95,8 @@ export async function updateStaffSchedule(
         })
       }
     }
+  }, {
+    timeout: 15000 // 15 seconds safety margin
   })
 
   revalidatePath(`/${shopId}/admin/staff`)

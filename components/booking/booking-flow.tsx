@@ -1,12 +1,13 @@
 "use client"
 
 import { useState, useTransition, useEffect, useCallback } from "react"
-import { Scissors, UserCheck, CalendarDays, CheckCircle2, Loader2, LogIn, UserPlus } from "lucide-react"
+import { Scissors, UserCheck, CalendarDays, CheckCircle2, Loader2, LogIn, UserPlus, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Calendar } from "@/components/ui/calendar"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { es } from "date-fns/locale"
@@ -24,6 +25,12 @@ interface StaffData {
   name: string
 }
 
+interface ClientData {
+  id: string
+  name: string
+  phone: string | null
+}
+
 interface BookingFlowProps {
   shopId: string
   shopName: string
@@ -34,6 +41,8 @@ interface BookingFlowProps {
   initialClientName?: string
   initialClientPhone?: string
   hideHeader?: boolean
+  isAdmin?: boolean
+  clients?: ClientData[]
 }
 
 type Step = "service" | "barber" | "date" | "time" | "info"
@@ -46,7 +55,9 @@ export function BookingFlow({
   staff,
   initialClientName,
   initialClientPhone,
-  hideHeader = false
+  hideHeader = false,
+  isAdmin = false,
+  clients = []
 }: BookingFlowProps) {
   const [selectedServices, setSelectedServices] = useState<string[]>([])
   const [isServiceStepDone, setIsServiceStepDone] = useState(false)
@@ -55,6 +66,9 @@ export function BookingFlow({
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
   const [clientName, setClientName] = useState(initialClientName || "")
   const [clientPhone, setClientPhone] = useState(initialClientPhone || "")
+  const [clientType, setClientType] = useState<"registered" | "unregistered">(isAdmin ? "registered" : "unregistered")
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
+  const [clientSearch, setClientSearch] = useState("")
   const [showConfirmation, setShowConfirmation] = useState(false)
 
   const [availableSlots, setAvailableSlots] = useState<string[]>([])
@@ -182,6 +196,7 @@ export function BookingFlow({
         time: selectedTime,
         customerName: clientName,
         customerPhone: clientPhone,
+        ...(isAdmin ? { isAdminBooking: true, customerId: clientType === 'registered' ? selectedClientId || undefined : undefined } : {})
       })
 
       if (result.success) {
@@ -329,10 +344,10 @@ export function BookingFlow({
                 onClick={() => setIsServiceStepDone(true)}
                 disabled={selectedServices.length === 0}
               >
-                Continuar sin cuenta
+                {isAdmin ? "Continuar" : "Continuar sin cuenta"}
               </Button>
               
-              {!initialClientName && (
+              {!initialClientName && !isAdmin && (
                 <div className="mt-4 flex flex-col gap-2">
                   <div className="flex items-center gap-2">
                     <span className="h-px flex-1 bg-border" />
@@ -570,26 +585,99 @@ export function BookingFlow({
                 </div>
 
                 <div className="grid gap-4">
-                  <div>
-                    <Label htmlFor="name" className="mb-1.5 text-sm text-foreground">Nombre completo</Label>
-                    <Input
-                      id="name"
-                      placeholder="Ej: Juan Pérez"
-                      value={clientName}
-                      onChange={(e) => setClientName(e.target.value)}
-                      className="bg-card"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="phone" className="mb-1.5 text-sm text-foreground">Teléfono (WhatsApp)</Label>
-                    <Input
-                      id="phone"
-                      placeholder="+506 8888 8888"
-                      value={clientPhone}
-                      onChange={(e) => setClientPhone(e.target.value)}
-                      className="bg-card"
-                    />
-                  </div>
+                  {isAdmin ? (
+                    <Tabs value={clientType} onValueChange={(v: any) => {
+                      setClientType(v);
+                      if (v === 'unregistered') {
+                        setSelectedClientId(null);
+                        setClientName("");
+                        setClientPhone("");
+                      }
+                    }}>
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="registered">Cliente Registrado</TabsTrigger>
+                        <TabsTrigger value="unregistered">Cliente Nuevo</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="registered" className="mt-4 space-y-4">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Buscar cliente por nombre o teléfono..."
+                            value={clientSearch}
+                            onChange={(e) => setClientSearch(e.target.value)}
+                            className="pl-9 bg-card"
+                          />
+                        </div>
+                        <div className="max-h-[200px] overflow-y-auto space-y-2 border border-border rounded-xl p-2 bg-card">
+                          {clients.filter(c => c.name.toLowerCase().includes(clientSearch.toLowerCase()) || (c.phone && c.phone.includes(clientSearch))).map(client => (
+                            <button
+                              key={client.id}
+                              onClick={() => {
+                                setSelectedClientId(client.id);
+                                setClientName(client.name);
+                                setClientPhone(client.phone || "");
+                              }}
+                              className={cn(
+                                "w-full text-left p-3 rounded-lg flex flex-col transition-colors cursor-pointer border",
+                                selectedClientId === client.id ? "bg-primary/5 border-primary" : "hover:bg-muted/50 border-transparent bg-transparent"
+                              )}
+                            >
+                              <span className="font-semibold text-sm text-foreground">{client.name}</span>
+                              {client.phone && <span className="text-xs text-muted-foreground">{client.phone}</span>}
+                            </button>
+                          ))}
+                          {clients.length === 0 && (
+                            <div className="p-4 text-center text-sm text-muted-foreground">No hay clientes</div>
+                          )}
+                        </div>
+                      </TabsContent>
+                      <TabsContent value="unregistered" className="mt-4 space-y-4">
+                        <div>
+                          <Label htmlFor="name" className="mb-1.5 text-sm text-foreground">Nombre completo</Label>
+                          <Input
+                            id="name"
+                            placeholder="Ej: Juan Pérez"
+                            value={clientName}
+                            onChange={(e) => setClientName(e.target.value)}
+                            className="bg-card"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="phone" className="mb-1.5 text-sm text-foreground">Teléfono (WhatsApp)</Label>
+                          <Input
+                            id="phone"
+                            placeholder="+506 8888 8888"
+                            value={clientPhone}
+                            onChange={(e) => setClientPhone(e.target.value)}
+                            className="bg-card"
+                          />
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+                  ) : (
+                    <>
+                      <div>
+                        <Label htmlFor="name" className="mb-1.5 text-sm text-foreground">Nombre completo</Label>
+                        <Input
+                          id="name"
+                          placeholder="Ej: Juan Pérez"
+                          value={clientName}
+                          onChange={(e) => setClientName(e.target.value)}
+                          className="bg-card"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="phone" className="mb-1.5 text-sm text-foreground">Teléfono (WhatsApp)</Label>
+                        <Input
+                          id="phone"
+                          placeholder="+506 8888 8888"
+                          value={clientPhone}
+                          onChange={(e) => setClientPhone(e.target.value)}
+                          className="bg-card"
+                        />
+                      </div>
+                    </>
+                  )}
 
                   {bookingError && (
                     <p className="text-sm text-destructive">{bookingError}</p>
@@ -598,7 +686,7 @@ export function BookingFlow({
                   <Button
                     className="mt-2 h-12 w-full rounded-xl text-base font-semibold"
                     onClick={handleConfirm}
-                    disabled={!clientName || !clientPhone || isPending}
+                    disabled={(isAdmin && clientType === 'registered' && !selectedClientId) || !clientName || (!isAdmin && !clientPhone) || isPending}
                   >
                     {isPending ? (
                       <>
@@ -617,7 +705,7 @@ export function BookingFlow({
                     Volver
                   </Button>
 
-                  {!initialClientName && (
+                  {!initialClientName && !isAdmin && (
                     <div className="mt-6 p-4 rounded-xl border border-primary/20 bg-primary/5 space-y-4">
                       <div className="text-center space-y-1">
                         <p className="text-sm font-bold text-foreground">¿Quieres guardar esta cita?</p>

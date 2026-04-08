@@ -67,9 +67,17 @@ export async function getAvailableSlots(
     where: { shopId_dayOfWeek: { shopId, dayOfWeek } }
   })
 
-  if (!schedule || !schedule.isOpen) return []
+  // FALLBACK: If no shop schedule exists, use standard business hours (08:00 - 20:00)
+  const effectiveSchedule = schedule || {
+    openTime: "08:00",
+    closeTime: "20:00",
+    slotDuration: 30,
+    isOpen: true
+  }
 
-  const allSlots = generateSlots(schedule.openTime, schedule.closeTime, schedule.slotDuration)
+  if (!effectiveSchedule.isOpen) return []
+
+  const allSlots = generateSlots(effectiveSchedule.openTime, effectiveSchedule.closeTime, effectiveSchedule.slotDuration)
   const dayStart = new Date(dateStr + "T00:00:00")
   const dayEnd = new Date(dateStr + "T23:59:59")
 
@@ -80,7 +88,7 @@ export async function getAvailableSlots(
         user: { 
           include: { 
             staffSchedules: { 
-              where: { shopId, dayOfWeek, status: "APPROVED" },
+              where: { shopId, dayOfWeek, status: { in: ["APPROVED", "PENDING"] } },
               include: { breaks: true }
             },
             staffTimeOff: {
@@ -108,7 +116,7 @@ export async function getAvailableSlots(
 
     return allSlots.filter((slot: string) => {
       const slotStart = new Date(dateStr + `T${slot}:00`)
-      const slotEnd = new Date(slotStart.getTime() + schedule.slotDuration * 60000)
+      const slotEnd = new Date(slotStart.getTime() + effectiveSchedule.slotDuration * 60000)
 
       return staffMembers.some((member: any) => {
         const individualSchedule = member.user.staffSchedules[0]
@@ -155,7 +163,7 @@ export async function getAvailableSlots(
     // Specific staff member check
     const [staffSchedule, staffTimeOff] = await Promise.all([
       prisma.staffSchedule.findFirst({
-        where: { staffId, shopId, dayOfWeek, status: "APPROVED" },
+        where: { staffId, shopId, dayOfWeek, status: { in: ["APPROVED", "PENDING"] } },
         include: { breaks: true }
       }),
       prisma.staffTimeOff.findMany({
@@ -181,7 +189,7 @@ export async function getAvailableSlots(
 
     return allSlots.filter((slot: string) => {
       const slotStart = new Date(dateStr + `T${slot}:00`)
-      const slotEnd = new Date(slotStart.getTime() + schedule.slotDuration * 60000)
+      const slotEnd = new Date(slotStart.getTime() + effectiveSchedule.slotDuration * 60000)
 
       // 1. Time off check
       const hasTimeOff = staffTimeOff.some((to: any) => {

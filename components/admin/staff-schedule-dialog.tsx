@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus, Trash2, Clock, CalendarDays, Loader2 } from "lucide-react"
 import { updateStaffSchedule, addStaffTimeOff } from "@/app/[slug]/admin/staff/actions"
@@ -67,6 +68,7 @@ export function StaffScheduleDialog({
     endDate: new Date(),
     startTime: "",
     endTime: "",
+    isFullDay: true,
     type: "VACATION",
     note: ""
   })
@@ -89,8 +91,8 @@ export function StaffScheduleDialog({
           ...timeOffData,
           startDate: timeOffData.startDate.toISOString(),
           endDate: timeOffData.endDate.toISOString(),
-          startTime: timeOffData.startTime || null,
-          endTime: timeOffData.endTime || null
+          startTime: timeOffData.isFullDay ? null : (timeOffData.startTime || null),
+          endTime: timeOffData.isFullDay ? null : (timeOffData.endTime || null)
         })
         toast.success(isOwner ? "Tiempo libre registrado" : "Solicitud de tiempo libre enviada")
       } catch (e: any) {
@@ -127,25 +129,29 @@ export function StaffScheduleDialog({
           Configurar Horario
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0 border-border bg-background shadow-2xl [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:border-none [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40 transition-colors">
+        <div className="p-6 sm:p-10 pb-0">
+          <DialogHeader>
           <DialogTitle>Horario de {staffName}</DialogTitle>
           <DialogDescription>
             Configura tus horas de trabajo, descansos y vacaciones.
             {!isOwner && " Los cambios requieren la aprobación del propietario."}
           </DialogDescription>
         </DialogHeader>
+      </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="weekly">Horario Semanal</TabsTrigger>
-            <TabsTrigger value="timeoff">Ausencias / Vacaciones</TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4 flex-1 flex flex-col min-h-0">
+          <div className="px-6 sm:px-10">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="weekly">Horario Semanal</TabsTrigger>
+              <TabsTrigger value="timeoff">Ausencias / Vacaciones</TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="weekly" className="space-y-6 pt-4">
-            <div className="space-y-4">
+            <div className="space-y-4 px-6 sm:px-10 pb-6">
               {schedules.map((day, idx) => (
-                <div key={idx} className="rounded-xl border border-border bg-muted/30 p-4">
+                <div key={idx} className="rounded-xl border border-border bg-muted/30 p-4 shadow-sm">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
                       <span className={cn("font-bold", !day.isOpen && "text-muted-foreground")}>{DAYS[idx]}</span>
@@ -223,45 +229,47 @@ export function StaffScheduleDialog({
                 </div>
               ))}
             </div>
-            <DialogFooter className="sticky bottom-0 bg-background pt-4 border-t">
-              <Button onClick={handleSaveWeekly} disabled={isPending} className="w-full sm:w-auto">
+            <DialogFooter className="sticky bottom-0 bg-background/95 backdrop-blur-md px-6 py-4 sm:px-10 border-t border-border z-10 shadow-sm">
+              <Button onClick={handleSaveWeekly} disabled={isPending} className="w-full sm:w-auto font-bold shadow-lg shadow-primary/20">
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Guardar Horario Semanal
               </Button>
             </DialogFooter>
           </TabsContent>
 
-          <TabsContent value="timeoff" className="space-y-6 pt-4">
-            <div className="rounded-xl border border-border p-4 space-y-4">
-              <h3 className="font-semibold text-sm flex items-center gap-2">
+          <TabsContent value="timeoff" className="space-y-6 pt-4 px-6 sm:px-10 pb-10">
+            <div className="rounded-xl border border-border p-5 space-y-5 bg-card shadow-sm">
+              <h3 className="font-bold text-sm flex items-center gap-2 text-primary">
                 <CalendarDays className="h-4 w-4" /> Solicitar Nueva Ausencia
               </h3>
               
-              <div className="grid gap-4">
+              <div className="grid gap-5">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-xs">Desde</Label>
+                    <Label className="text-xs font-semibold">Desde</Label>
                     <Input 
                       type="date" 
+                      className="bg-background"
                       value={timeOffData.startDate.toISOString().split('T')[0]}
                       onChange={(e) => setTimeOffData(prev => ({ ...prev, startDate: new Date(e.target.value) }))}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs">Hasta</Label>
+                    <Label className="text-xs font-semibold">Hasta</Label>
                     <Input 
                       type="date" 
+                      className="bg-background"
                       value={timeOffData.endDate.toISOString().split('T')[0]}
                       onChange={(e) => setTimeOffData(prev => ({ ...prev, endDate: new Date(e.target.value) }))}
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-6 items-end">
                   <div className="space-y-2">
-                    <Label className="text-xs">Tipo</Label>
+                    <Label className="text-xs font-semibold">Motivo</Label>
                     <select 
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:ring-1 focus:ring-primary outline-none transition-all cursor-pointer"
                       value={timeOffData.type}
                       onChange={(e) => setTimeOffData(prev => ({ ...prev, type: e.target.value }))}
                     >
@@ -270,24 +278,55 @@ export function StaffScheduleDialog({
                       <option value="SICK">Enfermedad</option>
                     </select>
                   </div>
-                  <div className="space-y-2 text-center flex flex-col justify-end">
-                    <span className="text-[10px] text-muted-foreground mb-1 italic">Si es todo el día, deja las horas vacías</span>
+                  <div className="flex items-center justify-between space-x-2 h-10 px-3 rounded-lg border border-border/60 bg-muted/30">
+                    <Label htmlFor="full-day" className="text-xs font-medium cursor-pointer">Todo el día</Label>
+                    <Switch 
+                      id="full-day"
+                      checked={timeOffData.isFullDay}
+                      onCheckedChange={(checked) => setTimeOffData(prev => ({ ...prev, isFullDay: checked }))}
+                    />
                   </div>
                 </div>
 
+                {!timeOffData.isFullDay && (
+                  <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-300">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold">Hora Inicio</Label>
+                      <Input 
+                        type="time" 
+                        required
+                        className="bg-background"
+                        value={timeOffData.startTime}
+                        onChange={(e) => setTimeOffData(prev => ({ ...prev, startTime: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold">Hora Fin</Label>
+                      <Input 
+                        type="time" 
+                        required
+                        className="bg-background"
+                        value={timeOffData.endTime}
+                        onChange={(e) => setTimeOffData(prev => ({ ...prev, endTime: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-2">
-                  <Label className="text-xs">Nota (Opcional)</Label>
+                  <Label className="text-xs font-semibold">Nota adicional (Opcional)</Label>
                   <Input 
                     placeholder="Ej: Trámite dental por la mañana"
+                    className="bg-background"
                     value={timeOffData.note}
                     onChange={(e) => setTimeOffData(prev => ({ ...prev, note: e.target.value }))}
                   />
                 </div>
               </div>
 
-              <Button onClick={handleTimeOffSubmit} disabled={isPending} className="w-full">
+              <Button onClick={handleTimeOffSubmit} disabled={isPending} className="w-full font-bold shadow-md active:scale-[0.98] transition-all">
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Enviar Solicitud
+                {isOwner ? "Registrar Ausencia" : "Enviar Solicitud"}
               </Button>
             </div>
 

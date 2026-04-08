@@ -11,10 +11,11 @@ import { Plus, Scissors } from "lucide-react"
 interface ServicesListProps {
   services: any[]
   slug: string
+  shopId: string
   businessType: BusinessType
 }
 
-export function ServicesList({ services, slug, businessType }: ServicesListProps) {
+export function ServicesList({ services, slug, shopId, businessType }: ServicesListProps) {
   const [selectedService, setSelectedService] = useState<any | null>(null)
   const [isOpen, setIsOpen] = useState(false)
 
@@ -89,6 +90,7 @@ export function ServicesList({ services, slug, businessType }: ServicesListProps
           <div className="px-6 sm:px-10 pb-10 flex-1">
             <ServiceForm 
               slug={slug} 
+              shopId={shopId}
               businessType={businessType}
               initialData={selectedService} 
               onSuccess={handleSuccess} 

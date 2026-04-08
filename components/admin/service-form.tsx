@@ -13,6 +13,7 @@ import { BusinessType } from "@/lib/dictionaries"
 
 interface ServiceFormProps {
   slug: string
+  shopId?: string
   businessType?: BusinessType
   initialData?: {
     id: string
@@ -24,7 +25,7 @@ interface ServiceFormProps {
   onSuccess?: () => void
 }
 
-export function ServiceForm({ slug, businessType = "BARBERIA", initialData, onSuccess }: ServiceFormProps) {
+export function ServiceForm({ slug, shopId, businessType = "BARBERIA", initialData, onSuccess }: ServiceFormProps) {
   const [loading, setLoading] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [previewData, setPreviewData] = useState({
@@ -52,16 +53,21 @@ export function ServiceForm({ slug, businessType = "BARBERIA", initialData, onSu
     setLoading(true)
     const formData = new FormData(event.currentTarget)
     formData.set("slug", slug)
+    if (shopId) {
+      formData.set("shopId", shopId)
+    }
     if (isEditing && initialData) {
       formData.set("id", initialData.id)
     }
 
     try {
       if (isEditing) {
-        await updateService(formData)
+        const result = await updateService(formData)
+        if (!result?.success) throw new Error(result?.error || "Error al actualizar")
         toast.success("Servicio actualizado correctamente")
       } else {
-        await createService(formData)
+        const result = await createService(formData)
+        if (!result?.success) throw new Error(result?.error || "Error al crear")
         toast.success("Servicio creado correctamente")
       }
       onSuccess?.()

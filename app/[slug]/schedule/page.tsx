@@ -58,6 +58,17 @@ export default async function ShopSchedulePage({ params }: PageProps) {
     name: m.user.name || "Sin nombre",
   }))
 
+  // Fetch all schedules for this shop to evaluate dynamically on the client
+  const shopSchedules = await prisma.shopSchedule.findMany({
+    where: { shopId: shop.id }
+  })
+  
+  const mappedSchedules = shopSchedules.map(s => ({
+    dayOfWeek: s.dayOfWeek,
+    closeTime: s.closeTime,
+    isOpen: s.isOpen
+  }))
+
   return (
     <BusinessThemeProvider businessType={shop.businessType} businessSlug={shop.slug}>
       <div className="min-h-screen bg-background flex flex-col">
@@ -84,6 +95,7 @@ export default async function ShopSchedulePage({ params }: PageProps) {
                 initialClientName={user?.name ?? undefined}
                 initialClientPhone={user?.phone ?? undefined}
                 hideHeader={true}
+                shopSchedules={mappedSchedules}
               />
             </div>
           </div>

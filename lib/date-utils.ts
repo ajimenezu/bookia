@@ -1,32 +1,50 @@
+export const TIMEZONE = "America/Costa_Rica";
+
+export function toCRDate(date: Date) {
+  return new Date(date.toLocaleString("en-US", { timeZone: TIMEZONE }));
+}
+
+export function fromCRDate(crDate: Date) {
+  const year = crDate.getFullYear();
+  const month = String(crDate.getMonth() + 1).padStart(2, '0');
+  const day = String(crDate.getDate()).padStart(2, '0');
+  const hours = String(crDate.getHours()).padStart(2, '0');
+  const minutes = String(crDate.getMinutes()).padStart(2, '0');
+  const seconds = String(crDate.getSeconds()).padStart(2, '0');
+  const ms = String(crDate.getMilliseconds()).padStart(3, '0');
+  return new Date(`${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${ms}-06:00`);
+}
+
 export const weekDays = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
 export function getWeekRange(weekOffset: number) {
   const now = new Date();
-  const dayOfWeek = now.getDay(); // 0 (Sun) to 6 (Sat)
+  const crNow = toCRDate(now);
+  const dayOfWeek = crNow.getDay(); // 0 (Sun) to 6 (Sat)
   
   // Find Monday of the current week
-  // If today is Sunday (0), we want to go back 6 days to Monday
-  // If today is Monday (1), we stay put (0 days diff)
-  // If today is Tuesday (2), we go back 1 day
   const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
   
-  const monday = new Date(now);
-  monday.setDate(now.getDate() + diffToMonday + weekOffset * 7);
-  monday.setHours(0, 0, 0, 0);
+  const crMonday = new Date(crNow);
+  crMonday.setDate(crNow.getDate() + diffToMonday + weekOffset * 7);
+  crMonday.setHours(0, 0, 0, 0);
 
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  sunday.setHours(23, 59, 59, 999);
+  const crSunday = new Date(crMonday);
+  crSunday.setDate(crMonday.getDate() + 6);
+  crSunday.setHours(23, 59, 59, 999);
+
+  const monday = fromCRDate(crMonday);
+  const sunday = fromCRDate(crSunday);
 
   const dates = weekDays.map((label, i) => {
-    const date = new Date(monday);
-    date.setDate(monday.getDate() + i);
+    const d = new Date(crMonday);
+    d.setDate(crMonday.getDate() + i);
     return {
       label,
-      day: date.getDate(),
-      month: date.toLocaleDateString("es-ES", { month: "short" }),
-      fullDate: date,
-      isToday: date.toDateString() === now.toDateString()
+      day: d.getDate(),
+      month: d.toLocaleDateString("es-ES", { month: "short" }),
+      fullDate: fromCRDate(d), // This returns an absolute date representing that day's CR midnight
+      isToday: d.toDateString() === crNow.toDateString()
     };
   });
 
@@ -40,11 +58,12 @@ export function getWeekRange(weekOffset: number) {
 
 /**
  * Calculates the week offset for a given date relative to the current week.
- * @param selectedDate The date to calculate the offset for.
- * @returns The number of weeks between the current week and the selected date's week.
+ * @param selectedDate The absolute date to calculate the offset for.
+ * @returns The number of weeks between the current week and the selected date's week in CR time.
  */
 export function getWeekOffset(selectedDate: Date) {
-  const now = new Date();
+  const crNow = toCRDate(new Date());
+  const crSelected = toCRDate(selectedDate);
   
   // Normalize both dates to the Monday of their respective weeks
   const getMonday = (d: Date) => {
@@ -56,8 +75,8 @@ export function getWeekOffset(selectedDate: Date) {
     return date;
   };
 
-  const currentMonday = getMonday(now);
-  const selectedMonday = getMonday(selectedDate);
+  const currentMonday = getMonday(crNow);
+  const selectedMonday = getMonday(crSelected);
   
   // Calculate the difference in weeks
   const diffInMs = selectedMonday.getTime() - currentMonday.getTime();

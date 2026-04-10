@@ -77,9 +77,29 @@ export async function getAvailableSlots(
 
   if (!effectiveSchedule.isOpen) return []
 
+  // Ensure we do not consider past times for today
+  // We use America/Costa_Rica as the system time zone reference
+  const now = new Date()
+  const crNowStr = now.toLocaleString("en-US", { timeZone: "America/Costa_Rica" })
+  const crNow = new Date(crNowStr)
+  const isToday = 
+    crNow.getFullYear() === date.getFullYear() &&
+    crNow.getMonth() === date.getMonth() &&
+    crNow.getDate() === date.getDate()
+
   const allSlots = generateSlots(effectiveSchedule.openTime, effectiveSchedule.closeTime, effectiveSchedule.slotDuration)
   const dayStart = new Date(dateStr + "T00:00:00")
   const dayEnd = new Date(dateStr + "T23:59:59")
+
+  // Filter out ALL past slots inherently if today
+  let validSlots = allSlots
+  if (isToday) {
+    const currentMinutes = crNow.getHours() * 60 + crNow.getMinutes()
+    validSlots = allSlots.filter(slot => {
+      const [h, m] = slot.split(":").map(Number)
+      return (h * 60 + m) > currentMinutes
+    })
+  }
 
   if (staffId === "auto") {
     const staffMembers = await prisma.shopMember.findMany({
@@ -114,7 +134,7 @@ export async function getAvailableSlots(
       select: { staffId: true, startTime: true, endTime: true }
     })
 
-    return allSlots.filter((slot: string) => {
+    return validSlots.filter((slot: string) => {
       const slotStart = new Date(dateStr + `T${slot}:00`)
       const slotEnd = new Date(slotStart.getTime() + effectiveSchedule.slotDuration * 60000)
 
@@ -187,7 +207,7 @@ export async function getAvailableSlots(
       select: { startTime: true, endTime: true }
     })
 
-    return allSlots.filter((slot: string) => {
+    return validSlots.filter((slot: string) => {
       const slotStart = new Date(dateStr + `T${slot}:00`)
       const slotEnd = new Date(slotStart.getTime() + effectiveSchedule.slotDuration * 60000)
 

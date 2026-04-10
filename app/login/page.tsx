@@ -25,7 +25,7 @@ export default function LoginPage() {
     try {
       const result = await signIn(formData)
       if (result?.success) {
-        router.push(result.redirectPath)
+        router.push(result.redirectPath || "/")
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Credenciales inválidas")

@@ -123,3 +123,13 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  .glass-card {
+    @apply bg-background/50 backdrop-blur-md border-border/50 shadow-xl;
+  }
+  
+  .glass-input {
+    @apply bg-background/40 backdrop-blur-sm border-border shadow-sm;
+  }
+}

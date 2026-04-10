@@ -25,15 +25,14 @@ interface StaffStats {
 
 export async function StaffContent({ shopId, role, isSuperAdmin, businessType }: StaffContentProps) {
 
-  let whereClause: Prisma.ShopMemberWhereInput = {}
-  if (isSuperAdmin) {
-    whereClause = shopId === "ALL" ? {} : { shopId }
-  } else if (role === "OWNER") {
-    whereClause = { shopId, role: { in: ["OWNER", "STAFF"] } }
-  } else if (role === "STAFF") {
-    whereClause = { shopId, role: "STAFF" }
+  let whereClause: any = {
+    role: { in: ["OWNER", "STAFF"] }
+  }
+  
+  if (isSuperAdmin && shopId === "ALL") {
+    // No additional filters needed, keeps just the role filter.
   } else {
-    whereClause = { shopId, id: "NONE" }
+    whereClause.shopId = shopId
   }
 
   const now = new Date()

@@ -24,6 +24,10 @@ export function ShopSignUpForm({ slug, shopName, logoUrl }: ShopSignUpFormProps)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [passwords, setPasswords] = useState({ password: "", confirm: "" })
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+  const [phone, setPhone] = useState("")
+  const [touched, setTouched] = useState({ name: false, email: false, phone: false })
 
   const isMatch = passwords.password.length > 0 && passwords.password === passwords.confirm
   const hasTypedConfirm = passwords.confirm.length > 0
@@ -115,8 +119,8 @@ export function ShopSignUpForm({ slug, shopName, logoUrl }: ShopSignUpFormProps)
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nombre Completo</Label>
+              <div className="space-y-1">
+                <Label htmlFor="name" className={touched.name && !name.trim() ? "text-destructive" : ""}>Nombre Completo</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -126,13 +130,19 @@ export function ShopSignUpForm({ slug, shopName, logoUrl }: ShopSignUpFormProps)
                     placeholder="Juan Pérez"
                     required
                     disabled={loading}
-                    className="pl-10 bg-background/50 border-border"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    onBlur={() => setTouched(prev => ({ ...prev, name: true }))}
+                    className={`pl-10 bg-background/50 border-border ${touched.name && !name.trim() ? "border-destructive focus-visible:ring-destructive" : ""}`}
                   />
                 </div>
+                {touched.name && !name.trim() && (
+                  <p className="text-xs text-destructive">El nombre es requerido</p>
+                )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email">Correo Electrónico</Label>
+              <div className="space-y-1">
+                <Label htmlFor="email" className={touched.email && !email.trim() ? "text-destructive" : ""}>Correo Electrónico</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -142,13 +152,19 @@ export function ShopSignUpForm({ slug, shopName, logoUrl }: ShopSignUpFormProps)
                     placeholder="tu@email.com"
                     required
                     disabled={loading}
-                    className="pl-10 bg-background/50 border-border"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onBlur={() => setTouched(prev => ({ ...prev, email: true }))}
+                    className={`pl-10 bg-background/50 border-border ${touched.email && !email.trim() ? "border-destructive focus-visible:ring-destructive" : ""}`}
                   />
                 </div>
+                {touched.email && !email.trim() && (
+                  <p className="text-xs text-destructive">El correo electrónico es requerido</p>
+                )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="phone">Teléfono (WhatsApp)</Label>
+              <div className="space-y-1">
+                <Label htmlFor="phone" className={touched.phone && !phone.trim() ? "text-destructive" : ""}>Teléfono (WhatsApp)</Label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -158,12 +174,18 @@ export function ShopSignUpForm({ slug, shopName, logoUrl }: ShopSignUpFormProps)
                     placeholder="+506 8888 8888"
                     required
                     disabled={loading}
-                    className="pl-10 bg-background/50 border-border"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    onBlur={() => setTouched(prev => ({ ...prev, phone: true }))}
+                    className={`pl-10 bg-background/50 border-border ${touched.phone && !phone.trim() ? "border-destructive focus-visible:ring-destructive" : ""}`}
                   />
                 </div>
+                {touched.phone && !phone.trim() && (
+                  <p className="text-xs text-destructive">El teléfono es requerido</p>
+                )}
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label htmlFor="password">Contraseña</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -188,7 +210,7 @@ export function ShopSignUpForm({ slug, shopName, logoUrl }: ShopSignUpFormProps)
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label htmlFor="confirmPassword">Confirmar Contraseña</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />

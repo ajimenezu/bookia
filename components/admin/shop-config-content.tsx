@@ -13,6 +13,14 @@ import { Loader2, Save, Store, Clock, Phone, MapPin } from "lucide-react"
 import { updateShopConfig, updateShopSchedules } from "@/app/[slug]/admin/configuracion/actions"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { TimeSelect } from "@/components/ui/time-select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface ShopConfigContentProps {
   shopId: string
@@ -25,21 +33,22 @@ const DAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "
 export function ShopConfigContent({ shopId, initialShop, initialSchedules }: ShopConfigContentProps) {
   const [isPending, startTransition] = useTransition()
   
-  // Shop Info State
-  const [shopInfo, setShopInfo] = useState({
+  const defaultShopInfo = {
     name: initialShop.name || "",
     description: initialShop.description || "",
     whatsappPhone: initialShop.whatsappPhone || "",
     address: initialShop.address || "",
-  })
+  }
+  const [shopInfo, setShopInfo] = useState(defaultShopInfo)
 
-  // Schedule State
-  const [schedules, setSchedules] = useState(
-    DAYS.map((_, i) => {
-      const existing = initialSchedules.find(s => s.dayOfWeek === i)
-      return existing || { dayOfWeek: i, openTime: "08:00", closeTime: "20:00", slotDuration: 30, isOpen: true }
-    })
-  )
+  const defaultSchedules = DAYS.map((_, i) => {
+    const existing = initialSchedules.find(s => s.dayOfWeek === i)
+    return existing || { dayOfWeek: i, openTime: "08:00", closeTime: "20:00", slotDuration: 30, isOpen: true }
+  })
+  const [schedules, setSchedules] = useState(defaultSchedules)
+
+  const isInfoDirty = JSON.stringify(shopInfo) !== JSON.stringify(defaultShopInfo)
+  const isScheduleDirty = JSON.stringify(schedules) !== JSON.stringify(defaultSchedules)
 
   const handleSaveInfo = async () => {
     startTransition(async () => {
@@ -139,7 +148,7 @@ export function ShopConfigContent({ shopId, initialShop, initialSchedules }: Sho
             </div>
           </CardContent>
           <CardFooter className="bg-muted/10 border-t border-border/50 py-4">
-            <Button onClick={handleSaveInfo} disabled={isPending} className="ml-auto gap-2">
+            <Button onClick={handleSaveInfo} disabled={isPending || !isInfoDirty} className="ml-auto gap-2">
               {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Guardar Cambios
             </Button>
@@ -180,36 +189,34 @@ export function ShopConfigContent({ shopId, initialShop, initialSchedules }: Sho
 
                   {day.isOpen && (
                     <div className="flex flex-wrap items-center gap-4">
-                      <div className="grid gap-1.5">
-                        <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Apertura</Label>
-                        <Input 
-                          type="time" 
-                          className="h-9 text-sm"
-                          value={day.openTime} 
-                          onChange={e => updateDay(idx, { openTime: e.target.value })}
-                        />
-                      </div>
-                      <div className="grid gap-1.5">
-                        <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Cierre</Label>
-                        <Input 
-                          type="time" 
-                          className="h-9 text-sm"
-                          value={day.closeTime} 
-                          onChange={e => updateDay(idx, { closeTime: e.target.value })}
-                        />
-                      </div>
-                      <div className="grid gap-1.5">
-                        <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Turnos</Label>
-                        <select 
-                          className="h-9 px-3 rounded-md border border-input bg-background text-sm"
-                          value={day.slotDuration}
-                          onChange={e => updateDay(idx, { slotDuration: parseInt(e.target.value) })}
+                      <TimeSelect
+                        label="Apertura"
+                        className="w-[140px]"
+                        value={day.openTime}
+                        onChange={(val) => updateDay(idx, { openTime: val })}
+                      />
+                      <TimeSelect
+                        label="Cierre"
+                        className="w-[140px]"
+                        value={day.closeTime}
+                        onChange={(val) => updateDay(idx, { closeTime: val })}
+                      />
+                      <div className="space-y-1.5 w-[160px]">
+                        <Label className="text-xs">Turnos (Duración)</Label>
+                        <Select
+                          value={day.slotDuration.toString()}
+                          onValueChange={(val) => updateDay(idx, { slotDuration: parseInt(val) })}
                         >
-                          <option value="15">Cada 15 min</option>
-                          <option value="30">Cada 30 min</option>
-                          <option value="45">Cada 45 min</option>
-                          <option value="60">Cada 1 hora</option>
-                        </select>
+                          <SelectTrigger className="bg-background/50 backdrop-blur-sm">
+                            <SelectValue placeholder="Duración" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="15">Cada 15 min</SelectItem>
+                            <SelectItem value="30">Cada 30 min</SelectItem>
+                            <SelectItem value="45">Cada 45 min</SelectItem>
+                            <SelectItem value="60">Cada 1 hora</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   )}
@@ -218,7 +225,7 @@ export function ShopConfigContent({ shopId, initialShop, initialSchedules }: Sho
             </div>
           </CardContent>
           <CardFooter className="bg-muted/10 border-t border-border/50 py-4">
-            <Button onClick={handleSaveSchedule} disabled={isPending} className="ml-auto gap-2">
+            <Button onClick={handleSaveSchedule} disabled={isPending || !isScheduleDirty} className="ml-auto gap-2">
               {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Guardar Horario General
             </Button>

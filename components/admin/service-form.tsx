@@ -28,11 +28,16 @@ interface ServiceFormProps {
 export function ServiceForm({ slug, shopId, businessType = "BARBERIA", initialData, onSuccess }: ServiceFormProps) {
   const [loading, setLoading] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const initialDuration = initialData?.duration || 30
+  const initialHours = Math.floor(initialDuration / 60)
+  const initialMinutes = initialDuration % 60
+
   const [previewData, setPreviewData] = useState({
     name: initialData?.name || "",
     description: initialData?.description || "",
     price: initialData?.price?.toString() || "",
-    duration: initialData?.duration?.toString() || ""
+    hours: initialHours.toString(),
+    minutes: initialMinutes.toString()
   })
 
   const isEditing = !!initialData
@@ -59,6 +64,10 @@ export function ServiceForm({ slug, shopId, businessType = "BARBERIA", initialDa
     if (isEditing && initialData) {
       formData.set("id", initialData.id)
     }
+
+    // Combine hours and minutes into total duration
+    const totalMinutes = (Number(previewData.hours) * 60) + Number(previewData.minutes)
+    formData.set("duration", totalMinutes.toString())
 
     try {
       if (isEditing) {
@@ -149,20 +158,45 @@ export function ServiceForm({ slug, shopId, businessType = "BARBERIA", initialDa
           </div>
           
           <div className="grid gap-2.5">
-            <Label htmlFor="duration" className="flex items-center gap-2 font-medium text-sm text-foreground/80">
-              <Clock className="h-4 w-4 text-primary" /> Duración (minutos)
+            <Label className="flex items-center gap-2 font-medium text-sm text-foreground/80">
+              <Clock className="h-4 w-4 text-primary" /> Duración estimada
             </Label>
-            <Input 
-              id="duration" 
-              name="duration" 
-              type="number" 
-              placeholder="30" 
-              required 
-              disabled={loading || deleting}
-              value={previewData.duration} 
-              onChange={(e) => setPreviewData({ ...previewData, duration: e.target.value })} 
-              className="h-11 bg-background border-border focus:ring-primary focus:border-primary transition-all shadow-xs"
-            />
+            <div className="flex items-center gap-3">
+              <div className="flex-1 space-y-1">
+                <div className="relative">
+                  <Input 
+                    id="hours" 
+                    type="number" 
+                    min="0"
+                    placeholder="0" 
+                    required 
+                    disabled={loading || deleting}
+                    value={previewData.hours} 
+                    onChange={(e) => setPreviewData({ ...previewData, hours: e.target.value })} 
+                    className="h-11 bg-background border-border focus:ring-primary focus:border-primary transition-all shadow-xs pr-8"
+                  />
+                  <span className="absolute right-3 top-3 text-[10px] font-bold text-muted-foreground uppercase pointer-events-none">h</span>
+                </div>
+              </div>
+              <div className="flex-1 space-y-1">
+                <div className="relative">
+                  <Input 
+                    id="minutes" 
+                    type="number" 
+                    min="0"
+                    max="59"
+                    step="5"
+                    placeholder="30" 
+                    required 
+                    disabled={loading || deleting}
+                    value={previewData.minutes} 
+                    onChange={(e) => setPreviewData({ ...previewData, minutes: e.target.value })} 
+                    className="h-11 bg-background border-border focus:ring-primary focus:border-primary transition-all shadow-xs pr-10"
+                  />
+                  <span className="absolute right-3 top-3 text-[10px] font-bold text-muted-foreground uppercase pointer-events-none">min</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -208,7 +242,7 @@ export function ServiceForm({ slug, shopId, businessType = "BARBERIA", initialDa
             name={previewData.name} 
             description={previewData.description}
             price={previewData.price ? `₡${Number(previewData.price).toLocaleString("es-CR")}` : "₡0"} 
-            duration={previewData.duration} 
+            duration={((Number(previewData.hours) * 60) + Number(previewData.minutes)).toString()} 
           />
         </div>
       </div>

@@ -32,6 +32,11 @@ interface AddAppointmentSheetProps {
   services: ServiceData[]
   staff: StaffData[]
   clients: ClientData[]
+  shopSchedules?: {
+    dayOfWeek: number
+    closeTime: string
+    isOpen: boolean
+  }[]
 }
 
 export function AddAppointmentSheet({
@@ -41,7 +46,8 @@ export function AddAppointmentSheet({
   whatsappPhone,
   services,
   staff,
-  clients
+  clients,
+  shopSchedules = []
 }: AddAppointmentSheetProps) {
   const [isOpen, setIsOpen] = useState(false)
 
@@ -77,6 +83,7 @@ export function AddAppointmentSheet({
               clients={clients}
               isAdmin={true}
               hideHeader={true}
+              shopSchedules={shopSchedules}
             />
           </div>
         </div>

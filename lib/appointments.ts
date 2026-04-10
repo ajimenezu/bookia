@@ -1,12 +1,14 @@
 import prisma from "@/lib/prisma"
 import { AppointmentStatus } from "@prisma/client"
+import { toCRDate, fromCRDate } from "@/lib/date-utils"
 
 export async function getAppointmentsData(shopId: string) {
   const now = new Date();
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  const crNow = toCRDate(now);
+  const startOfDayCR = new Date(crNow.getFullYear(), crNow.getMonth(), crNow.getDate());
+  const endOfDayCR = new Date(crNow.getFullYear(), crNow.getMonth(), crNow.getDate(), 23, 59, 59, 999);
 
-  return getAppointmentsInRange(startOfDay, endOfDay, shopId);
+  return getAppointmentsInRange(fromCRDate(startOfDayCR), fromCRDate(endOfDayCR), shopId);
 }
 
 export async function getAppointmentsInRange(

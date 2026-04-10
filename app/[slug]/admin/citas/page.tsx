@@ -49,6 +49,17 @@ export default async function CitasPage({ params, searchParams }: PageProps) {
   const mappedStaff = staffData.map(m => ({ id: m.user.id, name: m.user.name || "Sin nombre" }))
   const mappedClients = clientsData.map(m => ({ id: m.user.id, name: m.user.name || "Sin nombre", phone: m.user.phone }))
 
+  // Fetch all schedules to evaluate natively on the client
+  const shopSchedules = await prisma.shopSchedule.findMany({
+    where: { shopId: shop.id }
+  })
+  
+  const mappedSchedules = shopSchedules.map(s => ({
+    dayOfWeek: s.dayOfWeek,
+    closeTime: s.closeTime,
+    isOpen: s.isOpen
+  }))
+
   return (
     <div>
       <AdminStatsContainer shopId={shopId} />
@@ -70,6 +81,7 @@ export default async function CitasPage({ params, searchParams }: PageProps) {
             services={mappedServices}
             staff={mappedStaff}
             clients={mappedClients}
+            shopSchedules={mappedSchedules}
           />
         </div>
       </div>

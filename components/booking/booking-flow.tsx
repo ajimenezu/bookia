@@ -43,6 +43,11 @@ interface BookingFlowProps {
   hideHeader?: boolean
   isAdmin?: boolean
   clients?: ClientData[]
+  shopSchedules?: {
+    dayOfWeek: number
+    closeTime: string
+    isOpen: boolean
+  }[]
 }
 
 type Step = "service" | "barber" | "date" | "time" | "info"
@@ -57,7 +62,8 @@ export function BookingFlow({
   initialClientPhone,
   hideHeader = false,
   isAdmin = false,
-  clients = []
+  clients = [],
+  shopSchedules = []
 }: BookingFlowProps) {
   const [selectedServices, setSelectedServices] = useState<string[]>([])
   const [isServiceStepDone, setIsServiceStepDone] = useState(false)
@@ -69,6 +75,7 @@ export function BookingFlow({
   const [clientType, setClientType] = useState<"registered" | "unregistered">(isAdmin ? "registered" : "unregistered")
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
   const [clientSearch, setClientSearch] = useState("")
+  const [touched, setTouched] = useState({ name: false, phone: false })
   const [showConfirmation, setShowConfirmation] = useState(false)
 
   const [availableSlots, setAvailableSlots] = useState<string[]>([])
@@ -216,6 +223,7 @@ export function BookingFlow({
     setSelectedTime(null)
     setClientName(initialClientName || "")
     setClientPhone(initialClientPhone || "")
+    setTouched({ name: false, phone: false })
     setShowConfirmation(false)
     setBookingError(null)
     setAvailableSlots([])
@@ -432,7 +440,27 @@ export function BookingFlow({
                 selected={selectedDate}
                 onSelect={handleDateSelect}
                 locale={es}
-                disabled={(date) => date < new Date() || date.getDay() === 0}
+                disabled={(date) => {
+                  const crNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Costa_Rica" }))
+                  const isToday = 
+                    crNow.getFullYear() === date.getFullYear() &&
+                    crNow.getMonth() === date.getMonth() &&
+                    crNow.getDate() === date.getDate()
+                  
+                  if (date.getDay() === 0) return true
+                  if (date < new Date(crNow.setHours(0, 0, 0, 0))) return true
+
+                  if (isToday && shopSchedules.length > 0) {
+                    const todaySchedule = shopSchedules.find(s => s.dayOfWeek === crNow.getDay())
+                    const currentTime = `${new Date().toLocaleString("es-CR", { timeZone: "America/Costa_Rica", hour: '2-digit', minute: '2-digit', hour12: false })}`
+                    const closingTime = todaySchedule?.closeTime || "20:00"
+                    if (!todaySchedule?.isOpen || currentTime >= closingTime) {
+                      return true
+                    }
+                  }
+
+                  return false
+                }}
                 className="w-full"
               />
             </div>
@@ -632,49 +660,65 @@ export function BookingFlow({
                         </div>
                       </TabsContent>
                       <TabsContent value="unregistered" className="mt-4 space-y-4">
-                        <div>
-                          <Label htmlFor="name" className="mb-1.5 text-sm text-foreground">Nombre completo</Label>
+                        <div className="space-y-1">
+                          <Label htmlFor="name" className={touched.name && !clientName.trim() ? "text-sm text-destructive" : "text-sm text-foreground"}>Nombre completo *</Label>
                           <Input
                             id="name"
                             placeholder="Ej: Juan Pérez"
                             value={clientName}
                             onChange={(e) => setClientName(e.target.value)}
-                            className="bg-card"
+                            onBlur={() => setTouched(prev => ({ ...prev, name: true }))}
+                            className={touched.name && !clientName.trim() ? "bg-card border-destructive focus-visible:ring-destructive" : "bg-card"}
                           />
+                          {touched.name && !clientName.trim() && (
+                            <p className="text-xs text-destructive">El nombre es requerido</p>
+                          )}
                         </div>
-                        <div>
-                          <Label htmlFor="phone" className="mb-1.5 text-sm text-foreground">Teléfono (WhatsApp)</Label>
+                        <div className="space-y-1">
+                          <Label htmlFor="phone" className={touched.phone && !clientPhone.trim() ? "text-sm text-destructive" : "text-sm text-foreground"}>Teléfono (WhatsApp) *</Label>
                           <Input
                             id="phone"
                             placeholder="+506 8888 8888"
                             value={clientPhone}
                             onChange={(e) => setClientPhone(e.target.value)}
-                            className="bg-card"
+                            onBlur={() => setTouched(prev => ({ ...prev, phone: true }))}
+                            className={touched.phone && !clientPhone.trim() ? "bg-card border-destructive focus-visible:ring-destructive" : "bg-card"}
                           />
+                          {touched.phone && !clientPhone.trim() && (
+                            <p className="text-xs text-destructive">El teléfono es requerido</p>
+                          )}
                         </div>
                       </TabsContent>
                     </Tabs>
                   ) : (
                     <>
-                      <div>
-                        <Label htmlFor="name" className="mb-1.5 text-sm text-foreground">Nombre completo</Label>
+                      <div className="space-y-1">
+                        <Label htmlFor="name" className={touched.name && !clientName.trim() ? "text-sm text-destructive" : "text-sm text-foreground"}>Nombre completo *</Label>
                         <Input
                           id="name"
                           placeholder="Ej: Juan Pérez"
                           value={clientName}
                           onChange={(e) => setClientName(e.target.value)}
-                          className="bg-card"
+                          onBlur={() => setTouched(prev => ({ ...prev, name: true }))}
+                          className={touched.name && !clientName.trim() ? "bg-card border-destructive focus-visible:ring-destructive" : "bg-card"}
                         />
+                        {touched.name && !clientName.trim() && (
+                          <p className="text-xs text-destructive">El nombre es requerido</p>
+                        )}
                       </div>
-                      <div>
-                        <Label htmlFor="phone" className="mb-1.5 text-sm text-foreground">Teléfono (WhatsApp)</Label>
+                      <div className="space-y-1">
+                        <Label htmlFor="phone" className={touched.phone && !clientPhone.trim() ? "text-sm text-destructive" : "text-sm text-foreground"}>Teléfono (WhatsApp){!isAdmin && " *"}</Label>
                         <Input
                           id="phone"
                           placeholder="+506 8888 8888"
                           value={clientPhone}
                           onChange={(e) => setClientPhone(e.target.value)}
-                          className="bg-card"
+                          onBlur={() => setTouched(prev => ({ ...prev, phone: true }))}
+                          className={touched.phone && !clientPhone.trim() && !isAdmin ? "bg-card border-destructive focus-visible:ring-destructive" : "bg-card"}
                         />
+                        {touched.phone && !clientPhone.trim() && !isAdmin && (
+                          <p className="text-xs text-destructive">El teléfono es requerido</p>
+                        )}
                       </div>
                     </>
                   )}
@@ -685,8 +729,11 @@ export function BookingFlow({
 
                   <Button
                     className="mt-2 h-12 w-full rounded-xl text-base font-semibold"
-                    onClick={handleConfirm}
-                    disabled={(isAdmin && clientType === 'registered' && !selectedClientId) || !clientName || (!isAdmin && !clientPhone) || isPending}
+                    onClick={() => {
+                      setTouched({ name: true, phone: true })
+                      handleConfirm()
+                    }}
+                    disabled={(isAdmin && clientType === 'registered' && !selectedClientId) || !clientName || (!isAdmin && !clientPhone) || (isAdmin && clientType === 'unregistered' && !clientPhone) || isPending}
                   >
                     {isPending ? (
                       <>

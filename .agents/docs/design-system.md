@@ -32,6 +32,16 @@ El `businessType` influye en la iconografía y el estilo base, pero los tokens d
 2. **Animaciones**: Usar micro-animaciones para mejorar la interacción del usuario.
 3. **Consistencia Premium**: Mantener el estilo de bordes redondeados (`--radius`) y sombras sutiles.
 
+## 5. Patrones de Alineación y UI
+Para mantener una interfaz premium y cohesiva en vistas complejas (como el calendario o tablas), se deben seguir estos patrones:
+
+1.  **Alineación de Dropdowns**: Cuando un menú desplegable pertenece a una tarjeta o fila, su ancho debe coincidir con el del disparador (trigger). Usa la variable de Radix:
+    ```tsx
+    <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]">
+    ```
+2.  **Flexibilidad de Componentes de Estado**: Componentes como `StatusBadge` deben aceptar un `className` para poder alternar entre anchos automáticos (listas) y anchos completos (rejillas/grids) según el contexto del layout.
+3.  **Color de Iconografía Semántica**: Los iconos dentro de botones de acción o estados (ej. Completar/Cancelar) deben coincidir exactamente con el color del texto del token funcional (`text-emerald-600`, `text-destructive`).
+
 ---
 > [!TIP]
 > Al crear componentes nuevos, siempre revisa que funcionen correctamente tanto en modo claro como oscuro usando las variables del sistema.

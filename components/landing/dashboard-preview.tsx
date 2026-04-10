@@ -1,5 +1,6 @@
 import { CalendarDays, BadgeCent, User, CheckCircle2 } from "lucide-react"
 import { StatusBadge } from "@/components/admin/appointments/status-badge"
+import { formatTime } from "@/lib/date-utils"
 
 export async function DashboardPreview() {
   const appointmentsData: any[] = [
@@ -96,11 +97,7 @@ export async function DashboardPreview() {
                 >
                   <div className="flex items-center gap-4">
                     <span className="w-14 shrink-0 text-sm font-mono font-medium text-primary">
-                      {new Date(apt.startTime).toLocaleTimeString("es-ES", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        hour12: false,
-                      })}
+                      {formatTime(apt.startTime)}
                     </span>
                     <div>
                       <p className="font-medium text-card-foreground">{apt.customer?.name || "Cliente"}</p>

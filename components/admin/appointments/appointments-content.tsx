@@ -15,8 +15,8 @@ export async function AppointmentsContent({ shopId, weekOffset, view }: Appointm
   const appointments = await getAppointmentsInRange(monday, sunday, shopId)
 
   return view === "calendar" ? (
-    <CalendarView dates={dates} appointments={appointments} />
+    <CalendarView dates={dates} appointments={appointments} shopId={shopId} />
   ) : (
-    <ListView appointments={appointments} />
+    <ListView appointments={appointments} shopId={shopId} />
   )
 }

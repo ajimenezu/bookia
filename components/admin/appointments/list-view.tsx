@@ -1,11 +1,14 @@
 import { User } from "lucide-react"
 import { StatusBadge } from "./status-badge"
+import { formatTime, formatDate } from "@/lib/date-utils"
+import { AppointmentActions } from "./appointment-actions"
 
 interface ListViewProps {
   appointments: any[]
+  shopId: string
 }
 
-export function ListView({ appointments }: ListViewProps) {
+export function ListView({ appointments, shopId }: ListViewProps) {
   return (
     <div className="rounded-xl border border-border bg-card">
       {appointments.length === 0 ? (
@@ -24,16 +27,14 @@ export function ListView({ appointments }: ListViewProps) {
                 <div className="flex items-center gap-4">
                   <div className="w-12 text-center">
                     <p className="text-[10px] uppercase font-bold text-muted-foreground">
-                      {aptDate.toLocaleDateString("es-ES", { weekday: "short" })}
+                      {new Date(apt.startTime).toLocaleDateString("es-ES", { weekday: "short", timeZone: "UTC" })}
                     </p>
-                    <p className="text-sm font-bold text-card-foreground">{aptDate.getDate()}</p>
+                    <p className="text-sm font-bold text-card-foreground">
+                      {new Date(apt.startTime).toLocaleDateString("es-ES", { day: "2-digit", timeZone: "UTC" })}
+                    </p>
                   </div>
                   <span className="w-12 shrink-0 font-mono text-sm font-bold text-primary">
-                    {aptDate.toLocaleTimeString("es-ES", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      hour12: false,
-                    })}
+                    {formatTime(apt.startTime)}
                   </span>
                   <div>
                     <p className="font-semibold text-card-foreground">{apt.customer?.name || "Cliente"}</p>
@@ -43,7 +44,12 @@ export function ListView({ appointments }: ListViewProps) {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 pl-16 sm:pl-0">
-                  <StatusBadge status={apt.status} />
+                  <AppointmentActions 
+                    appointmentId={apt.id} 
+                    shopId={shopId} 
+                    currentStatus={apt.status} 
+                    startTime={apt.startTime}
+                  />
                 </div>
               </div>
             )

@@ -27,6 +27,7 @@
 - **Mobile First**: Diseñar siempre para móvil primero. Usa breakpoints de Tailwind (`md:`, `lg:`) solo para expansión, no para corrección.
 - **Loading & Skeleton Pattern**: Cada `page.tsx` **DEBE** tener su correspondiente `loading.tsx`. El layout del loading debe ser un "reflejo oscuro" (Skeleton) del de la página real para evitar saltos de layout (CLS).
 - **Rich Aesthetics**: Los componentes deben ser modernos, con micro-animaciones y layouts dinámicos (Glassmorphism). No se aceptan diseños planos o minimalistas extremos sin textura visual.
+- **Iconografía Coherente**: Asegurar que los iconos hereden o declaren explícitamente el color del token de texto asociado para mantener el balance visual y la cohesión.
 
 ## 4. Estructura de Archivos y Reusabilidad
 - **Patrón DRY (Don't Repeat Yourself)**: Antes de crear un componente, verifica si ya existe uno similar en `components/ui/` o en las carpetas de feature. Extrae lógica común a hooks o utilitarios.

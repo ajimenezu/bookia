@@ -5,13 +5,16 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { StatusBadge } from "./status-badge"
+import { formatTime } from "@/lib/date-utils"
+import { AppointmentActions } from "./appointment-actions"
 
 interface CalendarViewProps {
   dates: any[]
   appointments: any[]
+  shopId: string
 }
 
-export function CalendarView({ dates, appointments }: CalendarViewProps) {
+export function CalendarView({ dates, appointments, shopId }: CalendarViewProps) {
   const todayIndex = useMemo(
     () => Math.max(dates.findIndex((d) => d.isToday), 0),
     [dates]
@@ -36,7 +39,7 @@ export function CalendarView({ dates, appointments }: CalendarViewProps) {
       d
         ? appointments.filter(
           (a) =>
-            new Date(a.startTime).toDateString() === d.fullDate.toDateString()
+            new Date(a.startTime).toISOString().split('T')[0] === d.fullDate.toISOString().split('T')[0]
         )
         : [],
     [d, appointments]
@@ -70,7 +73,7 @@ export function CalendarView({ dates, appointments }: CalendarViewProps) {
           {/* Day columns */}
           {dates.map((d, dayIndex) => {
             const dayAppts = appointments.filter((a) =>
-              new Date(a.startTime).toDateString() === d.fullDate.toDateString()
+              new Date(a.startTime).toISOString().split('T')[0] === d.fullDate.toISOString().split('T')[0]
             )
             return (
               <div
@@ -91,16 +94,18 @@ export function CalendarView({ dates, appointments }: CalendarViewProps) {
                         className="group relative rounded-lg border border-border bg-secondary/30 p-2.5 transition-colors hover:bg-secondary/50"
                       >
                         <p className="font-mono text-[10px] font-bold text-primary">
-                          {new Date(apt.startTime).toLocaleTimeString("es-ES", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            hour12: false,
-                          })}
+                          {formatTime(apt.startTime)}
                         </p>
                         <p className="mt-1 text-xs font-semibold text-card-foreground line-clamp-1">{apt.customer?.name || apt.customerName || "Cliente"}</p>
                         <p className="text-[10px] text-muted-foreground line-clamp-1">{apt.services?.length > 0 ? apt.services.map((s: any) => s.name).join(', ') : apt.service?.name}</p>
-                        <div className="mt-2">
-                          <StatusBadge status={apt.status} />
+                        <div className="mt-2 block w-full">
+                          <AppointmentActions 
+                            appointmentId={apt.id} 
+                            shopId={shopId} 
+                            currentStatus={apt.status} 
+                            startTime={apt.startTime}
+                            className="w-full"
+                          />
                         </div>
                       </div>
                     ))}
@@ -202,11 +207,7 @@ export function CalendarView({ dates, appointments }: CalendarViewProps) {
               {dayAppts.map((apt) => (
                 <div key={apt.id} className="flex items-center gap-3 px-4 py-3.5">
                   <span className="w-12 shrink-0 font-mono text-sm font-bold text-primary">
-                    {new Date(apt.startTime).toLocaleTimeString("es-ES", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      hour12: false,
-                    })}
+                    {formatTime(apt.startTime)}
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-card-foreground truncate">
@@ -214,7 +215,14 @@ export function CalendarView({ dates, appointments }: CalendarViewProps) {
                     </p>
                     <p className="text-xs text-muted-foreground truncate">{apt.services?.length > 0 ? apt.services.map((s: any) => s.name).join(', ') : apt.service?.name}</p>
                   </div>
-                  <StatusBadge status={apt.status} />
+                  <div className="flex items-center gap-2">
+                    <AppointmentActions 
+                      appointmentId={apt.id} 
+                      shopId={shopId} 
+                      currentStatus={apt.status} 
+                      startTime={apt.startTime}
+                    />
+                  </div>
                 </div>
               ))}
             </div>

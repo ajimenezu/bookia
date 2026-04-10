@@ -3,7 +3,10 @@
 import prisma from "@/lib/prisma"
 import { getAvailableSlots, checkStaffConflict } from "@/lib/availability"
 import { createClient } from "@/lib/supabase/server"
+import { combineDateAndTime } from "@/lib/date-utils"
 import { z } from "zod"
+import { revalidatePath } from "next/cache"
+import { AppointmentStatus } from "@prisma/client"
 
 const bookingSchema = z.object({
   shopId: z.string().min(1),
@@ -50,7 +53,7 @@ export async function createBooking(rawData: unknown) {
   const totalPrice = services.reduce((acc, s) => acc + s.price, 0)
 
   // 2. Calculate start and end times
-  const startTime = new Date(`${date}T${time}:00`)
+  const startTime = combineDateAndTime(date, time)
   const endTime = new Date(startTime.getTime() + totalDuration * 60 * 1000)
 
   // 3. Resolve staff (if "auto", find the first available)
@@ -203,7 +206,7 @@ export async function getAvailableStaffForSlot(
   if (services.length === 0) return []
 
   const totalDuration = services.reduce((acc, s) => acc + s.duration, 0)
-  const startTime = new Date(`${date}T${time}:00`)
+  const startTime = combineDateAndTime(date, time)
   const endTime = new Date(startTime.getTime() + totalDuration * 60000)
 
   // 2. Fetch all shop members and their schedules in a single query
@@ -222,8 +225,8 @@ export async function getAvailableStaffForSlot(
   })
 
   // 3. PERFORMANCE OPTIMIZATION: Fetch ALL appointments for this shop on this day once
-  const dayStart = new Date(`${date}T00:00:00`)
-  const dayEnd = new Date(`${date}T23:59:59`)
+  const dayStart = combineDateAndTime(date, "00:00")
+  const dayEnd = combineDateAndTime(date, "23:59")
   const allAppointments = await prisma.appointment.findMany({
     where: {
       shopId,
@@ -254,4 +257,52 @@ export async function getAvailableStaffForSlot(
   }
 
   return availableStaff
+}
+
+export async function updateAppointmentStatus(
+  appointmentId: string,
+  status: AppointmentStatus,
+  shopId: string
+) {
+  // 1. SECURITY: Require admin session for this shop
+  const supabase = await createClient()
+  const { data: { user: authUser } } = await supabase.auth.getUser()
+
+  if (!authUser) {
+    return { success: false, error: "Debes iniciar sesión" }
+  }
+
+  // Check membership and role
+  const membership = await prisma.shopMember.findUnique({
+    where: { userId_shopId: { userId: authUser.id, shopId } }
+  })
+
+  // Also check if they are a Global Super Admin (via metadata)
+  const isSuperAdmin = authUser.app_metadata?.role === "SUPER_ADMIN"
+  
+  const isAuthorized = isSuperAdmin || (membership && ["OWNER", "STAFF"].includes(membership.role))
+
+  if (!isAuthorized) {
+    return { success: false, error: "No tienes permisos de administrador" }
+  }
+
+  // 2. Perform the update
+  try {
+    await prisma.appointment.update({
+      where: { 
+        id: appointmentId,
+        shopId // Extra security: ensure the appointment belongs to the reported shop
+      },
+      data: { status }
+    })
+
+    // 3. Revalidate relevant paths
+    revalidatePath(`/${shopId}/admin/citas`)
+    revalidatePath(`/${shopId}/admin`)
+
+    return { success: true }
+  } catch (error) {
+    console.error("Error updating appointment status:", error)
+    return { success: false, error: "Error al actualizar el estado de la cita" }
+  }
 }

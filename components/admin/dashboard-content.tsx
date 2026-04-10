@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button"
 import { getAppointmentsData } from "@/lib/appointments"
 import { StatusBadge } from "@/components/admin/appointments/status-badge"
 import { getTerminology } from "@/lib/dictionaries"
+import { formatTime } from "@/lib/date-utils"
+import { AppointmentActions } from "@/components/admin/appointments/appointment-actions"
 import { AddAppointmentSheet } from "@/components/admin/appointments/add-appointment-sheet"
 import prisma from "@/lib/prisma"
 
@@ -48,7 +50,8 @@ export async function DashboardContent({ shopId, businessType, slug, shopName, w
     name: m.user.name || "Sin nombre",
     phone: m.user.phone,
   }))
-  const todayIncome = appointments.reduce((acc, curr) => {
+  const activeAppointments = appointments.filter(a => a.status !== "CANCELLED")
+  const todayIncome = activeAppointments.reduce((acc, curr) => {
     // If services (plural) is present, sum them up
     if (curr.services && curr.services.length > 0) {
       return acc + curr.services.reduce((sAcc: number, s: any) => sAcc + (s.price || 0), 0)
@@ -115,7 +118,7 @@ export async function DashboardContent({ shopId, businessType, slug, shopName, w
               <div key={apt.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between hover:bg-muted/5 transition-colors">
                 <div className="flex items-center gap-4">
                   <span className="w-14 shrink-0 font-mono text-sm font-medium text-primary">
-                    {new Date(apt.startTime).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", hour12: false })}
+                    {formatTime(apt.startTime)}
                   </span>
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-secondary-foreground border border-border">
                     {(apt.customer?.name || "C").split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
@@ -130,12 +133,12 @@ export async function DashboardContent({ shopId, businessType, slug, shopName, w
                   </div>
                 </div>
                 <div className="flex items-center gap-3 pl-14 sm:pl-0">
-                  <StatusBadge status={apt.status} />
-                  {apt.status !== "COMPLETED" && (
-                    <Button size="sm" variant="outline" className="h-8 text-xs font-medium border-primary/20 hover:bg-primary/5 hover:text-primary transition-all">
-                      <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Completar
-                    </Button>
-                  )}
+                  <AppointmentActions 
+                    appointmentId={apt.id} 
+                    shopId={shopId} 
+                    currentStatus={apt.status} 
+                    startTime={apt.startTime}
+                  />
                 </div>
               </div>
             ))

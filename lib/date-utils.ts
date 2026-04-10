@@ -12,7 +12,7 @@ export function fromCRDate(crDate: Date) {
   const minutes = String(crDate.getMinutes()).padStart(2, '0');
   const seconds = String(crDate.getSeconds()).padStart(2, '0');
   const ms = String(crDate.getMilliseconds()).padStart(3, '0');
-  return new Date(`${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${ms}-06:00`);
+  return new Date(`${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${ms}Z`);
 }
 
 export const weekDays = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
@@ -83,4 +83,38 @@ export function getWeekOffset(selectedDate: Date) {
   const msInWeek = 7 * 24 * 60 * 60 * 1000;
   
   return Math.round(diffInMs / msInWeek);
+}
+
+/**
+ * Formats a Date object as a time string in the America/Costa_Rica timezone.
+ */
+export function formatTime(date: Date | string) {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleTimeString("es-ES", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "UTC",
+  });
+}
+
+/**
+ * Formats a Date object as a short date string in the America/Costa_Rica timezone.
+ */
+export function formatDate(date: Date | string) {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleDateString("es-ES", {
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  });
+}
+
+/**
+ * Combines a date string (YYYY-MM-DD) and a time string (HH:mm) into a Date object
+ * and forces it to be interpreted in the America/Costa_Rica timezone.
+ */
+export function combineDateAndTime(dateStr: string, timeStr: string) {
+  // In Naive Wall Time, we save as UTC to match the intended local time
+  return new Date(`${dateStr}T${timeStr}:00Z`);
 }

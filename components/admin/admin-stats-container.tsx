@@ -1,21 +1,27 @@
 import { AdminStats } from "./admin-stats"
 import { getAppointmentsInRange } from "@/lib/appointments"
+import { toCRDate } from "@/lib/date-utils"
 
 export async function AdminStatsContainer({ shopId }: { shopId: string }) {
   const now = new Date()
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-  const endOfTime = new Date(2100, 0, 1) // Any far date
+  const crNow = toCRDate(now)
+  const startOfMonthCR = new Date(crNow.getFullYear(), crNow.getMonth(), 1)
+  const endOfTime = new Date(2100, 0, 1) 
   
-  // Use the library function instead of raw prisma call
+  // Fetch both CONFIRMED and COMPLETED to show realistic monthly performance
   const monthlyAppointments = await getAppointmentsInRange(
-    startOfMonth,
+    startOfMonthCR,
     endOfTime,
-    shopId,
-    "COMPLETED"
+    shopId
   )
 
-  const totalBookings = monthlyAppointments.length
-  const totalRevenue = monthlyAppointments.reduce((sum: number, app: any) => {
+  // Filter to ensure we only count non-cancelled active appointments for revenue
+  const validAppointments = monthlyAppointments.filter(app => 
+    ["CONFIRMED", "COMPLETED"].includes(app.status)
+  )
+
+  const totalBookings = validAppointments.length
+  const totalRevenue = validAppointments.reduce((sum: number, app: any) => {
     // Check both legacy service and new multi-services Price logic
     const appPrice = app.priceAtBooking || app.service?.price || 0
     return sum + appPrice

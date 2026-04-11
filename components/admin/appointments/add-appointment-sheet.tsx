@@ -70,7 +70,7 @@ export function AddAppointmentSheet({
             Agenda una cita para un cliente registrado o uno nuevo.
           </SheetDescription>
         </SheetHeader>
-        
+
         <div className="flex-1 overflow-y-auto">
           <div className="py-2">
             <BookingFlow

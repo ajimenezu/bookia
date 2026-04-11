@@ -224,81 +224,113 @@ export function StaffScheduleDialog({
             </TabsList>
           </div>
 
-          <TabsContent value="weekly" className="space-y-6 pt-4">
-            <div className="space-y-4 px-6 sm:px-10 pb-6">
+          <TabsContent value="weekly" className="space-y-6 pt-4 flex-1 overflow-y-auto">
+            <div className="space-y-4 px-6 sm:px-10 pb-20">
               {schedules.map((day, idx) => (
-                <div key={idx} className="rounded-xl border border-border bg-muted/30 p-4 shadow-sm">
-                  <div className="flex items-center justify-between mb-3">
+                <div key={idx} className={cn(
+                  "rounded-2xl border transition-all duration-300 p-5 shadow-sm",
+                  day.isOpen 
+                    ? "border-primary/20 bg-primary/5 shadow-md shadow-primary/5" 
+                    : "border-border bg-muted/30 opacity-60"
+                )}>
+                  <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <span className={cn("font-bold", !day.isOpen && "text-muted-foreground")}>{DAYS[idx]}</span>
-                      {!day.isOpen && <Badge variant="secondary">Cerrado</Badge>}
+                      <div className={cn(
+                        "flex h-10 w-10 items-center justify-center rounded-xl font-black text-sm shadow-inner transition-colors",
+                        day.isOpen ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                      )}>
+                        {DAYS[idx].slice(0, 2).toUpperCase()}
+                      </div>
+                      <span className={cn("font-bold text-lg tracking-tight", !day.isOpen && "text-muted-foreground")}>{DAYS[idx]}</span>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => updateDay(idx, { isOpen: !day.isOpen })}
-                      className={day.isOpen ? "text-destructive" : "text-primary"}
-                    >
-                      {day.isOpen ? "Marcar como Cerrado" : "Marcar como Abierto"}
-                    </Button>
+                    <Switch
+                      checked={day.isOpen}
+                      onCheckedChange={(checked) => updateDay(idx, { isOpen: checked })}
+                      className="data-[state=checked]:bg-primary"
+                    />
                   </div>
 
                   {day.isOpen && (
-                    <div className="space-y-4">
+                    <div className="space-y-5 animate-in fade-in slide-in-from-top-2 duration-300">
                       <div className="grid grid-cols-2 gap-4">
                         <TimeSelect
                           label="Entrada"
+                          className="bg-background/80"
                           value={day.openTime}
                           onChange={(val) => updateDay(idx, { openTime: val })}
                         />
                         <TimeSelect
                           label="Salida"
+                          className="bg-background/80"
                           value={day.closeTime}
                           onChange={(val) => updateDay(idx, { closeTime: val })}
                         />
                       </div>
 
-                      <div className="space-y-2">
+                      <div className="space-y-3 pt-3 border-t border-primary/10">
                         <div className="flex items-center justify-between">
-                          <Label className="text-xs font-semibold">Descansos / Almuerzo</Label>
-                          <Button variant="ghost" size="sm" onClick={() => addBreak(idx)} className="h-7 text-xs gap-1">
-                            <Plus className="h-3 w-3" /> Añadir descanso
+                          <Label className="text-[10px] uppercase font-black text-primary/60 tracking-widest">Descansos / Almuerzo</Label>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => addBreak(idx)} 
+                            className="h-8 text-[10px] uppercase font-bold gap-1.5 rounded-lg border-primary/20 text-primary hover:bg-primary/5 active:scale-95 transition-all"
+                          >
+                            <Plus className="h-3.5 w-3.5" /> Añadir
                           </Button>
                         </div>
-                        {day.breaks.map((brk, bIdx) => (
-                          <div key={bIdx} className="flex items-center gap-2">
-                            <TimeSelect
-                              value={brk.startTime}
-                              onChange={(val) => {
-                                const newBreaks = [...day.breaks]
-                                newBreaks[bIdx].startTime = val
-                                updateDay(idx, { breaks: newBreaks })
-                              }}
-                            />
-                            <span className="text-muted-foreground">a</span>
-                            <TimeSelect
-                              value={brk.endTime}
-                              onChange={(val) => {
-                                const newBreaks = [...day.breaks]
-                                newBreaks[bIdx].endTime = val
-                                updateDay(idx, { breaks: newBreaks })
-                              }}
-                            />
-                            <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive" onClick={() => removeBreak(idx, bIdx)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
+                        
+                        {day.breaks.length === 0 && (
+                          <p className="text-[10px] text-muted-foreground italic">No hay descansos programados</p>
+                        )}
+
+                        <div className="grid gap-3">
+                          {day.breaks.map((brk, bIdx) => (
+                            <div key={bIdx} className="flex items-center gap-3 bg-background/40 p-2.5 rounded-xl border border-primary/5 shadow-sm">
+                              <TimeSelect
+                                className="flex-1"
+                                value={brk.startTime}
+                                onChange={(val) => {
+                                  const newBreaks = [...day.breaks]
+                                  newBreaks[bIdx].startTime = val
+                                  updateDay(idx, { breaks: newBreaks })
+                                }}
+                              />
+                              <div className="h-px w-3 bg-muted-foreground/30 shrink-0" />
+                              <TimeSelect
+                                className="flex-1"
+                                value={brk.endTime}
+                                onChange={(val) => {
+                                  const newBreaks = [...day.breaks]
+                                  newBreaks[bIdx].endTime = val
+                                  updateDay(idx, { breaks: newBreaks })
+                                }}
+                              />
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-10 w-10 shrink-0 text-destructive hover:bg-destructive/10 rounded-xl active:scale-90 transition-all" 
+                                onClick={() => removeBreak(idx, bIdx)}
+                              >
+                                <Trash2 className="h-4.5 w-4.5" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}
                 </div>
               ))}
             </div>
-            <DialogFooter className="sticky bottom-0 bg-background/95 backdrop-blur-md px-6 py-4 sm:px-10 border-t border-border z-10 shadow-sm">
-              <Button onClick={handleSaveWeekly} disabled={isPending || !isScheduleDirty} className="w-full sm:w-auto font-bold shadow-lg shadow-primary/20">
+            <DialogFooter className="sticky bottom-0 bg-background/95 backdrop-blur-md px-6 py-5 sm:px-10 border-t border-border z-10 shadow-2xl">
+              <Button 
+                onClick={handleSaveWeekly} 
+                disabled={isPending || !isScheduleDirty} 
+                className="w-full font-black uppercase tracking-widest text-xs h-12 shadow-lg shadow-primary/20 active:scale-[0.98] transition-all rounded-xl"
+              >
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Guardar Horario Semanal
+                {isPending ? "Guardando..." : "Guardar Horario Semanal"}
               </Button>
             </DialogFooter>
           </TabsContent>

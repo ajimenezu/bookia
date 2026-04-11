@@ -8,14 +8,15 @@ export async function getAppointmentsData(shopId: string) {
   const startOfDayCR = new Date(crNow.getFullYear(), crNow.getMonth(), crNow.getDate());
   const endOfDayCR = new Date(crNow.getFullYear(), crNow.getMonth(), crNow.getDate(), 23, 59, 59, 999);
 
-  return getAppointmentsInRange(fromCRDate(startOfDayCR), fromCRDate(endOfDayCR), shopId);
+  return getAppointmentsInRange(fromCRDate(startOfDayCR), fromCRDate(endOfDayCR), shopId, undefined, "CANCELLED" as AppointmentStatus);
 }
 
 export async function getAppointmentsInRange(
   startDate: Date, 
   endDate: Date, 
   shopId: string,
-  status?: AppointmentStatus
+  status?: AppointmentStatus,
+  excludeStatus?: AppointmentStatus
 ) {
   // SECURITY: Mandatory shopId filtering
   if (!shopId) {
@@ -31,6 +32,7 @@ export async function getAppointmentsInRange(
       // If shopId is "ALL", don't filter (ONLY for internal/super-admin use)
       ...(shopId !== "ALL" ? { shopId } : {}),
       ...(status ? { status } : {}),
+      ...(excludeStatus ? { status: { not: excludeStatus } } : {}),
     },
     orderBy: {
       startTime: "asc",

@@ -115,6 +115,15 @@ export function formatDate(date: Date | string) {
  * and forces it to be interpreted in the America/Costa_Rica timezone.
  */
 export function combineDateAndTime(dateStr: string, timeStr: string) {
+  if (!timeStr) return new Date(`${dateStr}T00:00:00Z`);
+  
+  // Ensure HH:mm:ss format
+  const parts = timeStr.split(':');
+  while (parts.length < 3) {
+    parts.push('00');
+  }
+  const normalizedTime = parts.join(':');
+  
   // In Naive Wall Time, we save as UTC to match the intended local time
-  return new Date(`${dateStr}T${timeStr}:00Z`);
+  return new Date(`${dateStr}T${normalizedTime}Z`);
 }

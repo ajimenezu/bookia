@@ -2,12 +2,14 @@
 
 import prisma from "@/lib/prisma"
 import { z } from "zod"
+import { combineDateAndTime, toCRDate } from "@/lib/date-utils"
 
 export async function checkStaffConflict(
   shopId: string,
   staffId: string,
   startTime: Date,
-  endTime: Date
+  endTime: Date,
+  excludeAppointmentId?: string
 ): Promise<boolean> {
   const validated = z.object({
     shopId: z.string().min(1),
@@ -22,7 +24,8 @@ export async function checkStaffConflict(
       staffId,
       status: { not: "CANCELLED" },
       startTime: { lt: endTime },
-      endTime: { gt: startTime }
+      endTime: { gt: startTime },
+      ...(excludeAppointmentId ? { id: { not: excludeAppointmentId } } : {})
     }
   })
   return !!conflict;
@@ -57,7 +60,8 @@ function generateSlots(openTime: string, closeTime: string, slotDuration: number
 export async function getAvailableSlots(
   shopId: string,
   staffId: string,
-  dateStr: string
+  dateStr: string,
+  excludeAppointmentId?: string
 ): Promise<string[]> {
   const [year, month, day] = dateStr.split("-").map(Number)
   const date = new Date(year, month - 1, day)
@@ -79,17 +83,15 @@ export async function getAvailableSlots(
 
   // Ensure we do not consider past times for today
   // We use America/Costa_Rica as the system time zone reference
-  const now = new Date()
-  const crNowStr = now.toLocaleString("en-US", { timeZone: "America/Costa_Rica" })
-  const crNow = new Date(crNowStr)
+  const crNow = toCRDate(new Date())
   const isToday = 
     crNow.getFullYear() === date.getFullYear() &&
     crNow.getMonth() === date.getMonth() &&
     crNow.getDate() === date.getDate()
 
   const allSlots = generateSlots(effectiveSchedule.openTime, effectiveSchedule.closeTime, effectiveSchedule.slotDuration)
-  const dayStart = new Date(dateStr + "T00:00:00")
-  const dayEnd = new Date(dateStr + "T23:59:59")
+  const dayStart = combineDateAndTime(dateStr, "00:00")
+  const dayEnd = combineDateAndTime(dateStr, "23:59:59")
 
   // Filter out ALL past slots inherently if today
   let validSlots = allSlots
@@ -129,13 +131,14 @@ export async function getAvailableSlots(
         shopId,
         staffId: { in: staffMembers.map(s => s.userId) },
         startTime: { gte: dayStart, lte: dayEnd },
-        status: { not: "CANCELLED" }
+        status: { not: "CANCELLED" },
+        ...(excludeAppointmentId ? { id: { not: excludeAppointmentId } } : {})
       },
       select: { staffId: true, startTime: true, endTime: true }
     })
 
     return validSlots.filter((slot: string) => {
-      const slotStart = new Date(dateStr + `T${slot}:00`)
+      const slotStart = combineDateAndTime(dateStr, slot)
       const slotEnd = new Date(slotStart.getTime() + effectiveSchedule.slotDuration * 60000)
 
       return staffMembers.some((member: any) => {
@@ -144,8 +147,8 @@ export async function getAvailableSlots(
 
         // 1. Check Vacation/Time Off
         const hasTimeOff = timeOff.some((to: any) => {
-          const toStart = to.startTime ? new Date(dateStr + `T${to.startTime}:00`) : dayStart
-          const toEnd = to.endTime ? new Date(dateStr + `T${to.endTime}:00`) : dayEnd
+          const toStart = to.startTime ? combineDateAndTime(dateStr, to.startTime) : dayStart
+          const toEnd = to.endTime ? combineDateAndTime(dateStr, to.endTime) : dayEnd
           return slotStart < toEnd && slotEnd > toStart
         })
         if (hasTimeOff) return false
@@ -156,16 +159,16 @@ export async function getAvailableSlots(
           
           // Check breaks
           const inBreak = individualSchedule.breaks.some((b: any) => {
-            const bStart = new Date(dateStr + `T${b.startTime}:00`)
-            const bEnd = new Date(dateStr + `T${b.endTime}:00`)
+            const bStart = combineDateAndTime(dateStr, b.startTime)
+            const bEnd = combineDateAndTime(dateStr, b.endTime)
             return slotStart < bEnd && slotEnd > bStart
           })
           if (inBreak) return false
 
           // Check custom open/close
           if (individualSchedule.openTime || individualSchedule.closeTime) {
-            const sOpen = individualSchedule.openTime ? new Date(dateStr + `T${individualSchedule.openTime}:00`) : dayStart
-            const sClose = individualSchedule.closeTime ? new Date(dateStr + `T${individualSchedule.closeTime}:00`) : dayEnd
+            const sOpen = individualSchedule.openTime ? combineDateAndTime(dateStr, individualSchedule.openTime) : dayStart
+            const sClose = individualSchedule.closeTime ? combineDateAndTime(dateStr, individualSchedule.closeTime) : dayEnd
             if (slotStart < sOpen || slotEnd > sClose) return false
           }
         }
@@ -202,19 +205,20 @@ export async function getAvailableSlots(
         shopId,
         staffId,
         startTime: { gte: dayStart, lte: dayEnd },
-        status: { not: "CANCELLED" }
+        status: { not: "CANCELLED" },
+        ...(excludeAppointmentId ? { id: { not: excludeAppointmentId } } : {})
       },
       select: { startTime: true, endTime: true }
     })
 
     return validSlots.filter((slot: string) => {
-      const slotStart = new Date(dateStr + `T${slot}:00`)
+      const slotStart = combineDateAndTime(dateStr, slot)
       const slotEnd = new Date(slotStart.getTime() + effectiveSchedule.slotDuration * 60000)
 
       // 1. Time off check
       const hasTimeOff = staffTimeOff.some((to: any) => {
-        const toStart = to.startTime ? new Date(dateStr + `T${to.startTime}:00`) : dayStart
-        const toEnd = to.endTime ? new Date(dateStr + `T${to.endTime}:00`) : dayEnd
+        const toStart = to.startTime ? combineDateAndTime(dateStr, to.startTime) : dayStart
+        const toEnd = to.endTime ? combineDateAndTime(dateStr, to.endTime) : dayEnd
         return slotStart < toEnd && slotEnd > toStart
       })
       if (hasTimeOff) return false
@@ -223,15 +227,15 @@ export async function getAvailableSlots(
       if (staffSchedule) {
         if (!staffSchedule.isOpen) return false
         const inBreak = staffSchedule.breaks.some((b: any) => {
-          const bStart = new Date(dateStr + `T${b.startTime}:00`)
-          const bEnd = new Date(dateStr + `T${b.endTime}:00`)
+          const bStart = combineDateAndTime(dateStr, b.startTime)
+          const bEnd = combineDateAndTime(dateStr, b.endTime)
           return slotStart < bEnd && slotEnd > bStart
         })
         if (inBreak) return false
 
         if (staffSchedule.openTime || staffSchedule.closeTime) {
-          const sOpen = staffSchedule.openTime ? new Date(dateStr + `T${staffSchedule.openTime}:00`) : dayStart
-          const sClose = staffSchedule.closeTime ? new Date(dateStr + `T${staffSchedule.closeTime}:00`) : dayEnd
+          const sOpen = staffSchedule.openTime ? combineDateAndTime(dateStr, staffSchedule.openTime) : dayStart
+          const sClose = staffSchedule.closeTime ? combineDateAndTime(dateStr, staffSchedule.closeTime) : dayEnd
           if (slotStart < sOpen || slotEnd > sClose) return false
         }
       }

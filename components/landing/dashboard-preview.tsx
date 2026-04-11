@@ -100,7 +100,7 @@ export async function DashboardPreview() {
                       {formatTime(apt.startTime)}
                     </span>
                     <div>
-                      <p className="font-medium text-card-foreground">{apt.customer?.name || "Cliente"}</p>
+                      <p className="font-medium text-card-foreground">{apt.customer?.name || apt.customerName || "Cliente"}</p>
                       <p className="text-sm text-muted-foreground">
                         {apt.service?.name} &middot; {apt.staff?.name || "Staff"}
                       </p>

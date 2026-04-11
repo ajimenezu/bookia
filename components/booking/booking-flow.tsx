@@ -51,12 +51,12 @@ interface BookingFlowProps {
 }
 
 type Step = "service" | "barber" | "date" | "time" | "info"
-export function BookingFlow({ 
-  shopId, 
-  shopName, 
+export function BookingFlow({
+  shopId,
+  shopName,
   shopSlug,
-  whatsappPhone, 
-  services, 
+  whatsappPhone,
+  services,
   staff,
   initialClientName,
   initialClientPhone,
@@ -121,7 +121,7 @@ export function BookingFlow({
     if (saved) {
       try {
         const state = JSON.parse(saved)
-        
+
         // TTL Check: 15 minutes (15 * 60 * 1000 ms)
         const expirationTime = 15 * 60 * 1000
         const isExpired = !state.createdAt || (Date.now() - state.createdAt > expirationTime)
@@ -137,10 +137,10 @@ export function BookingFlow({
         if (state.selectedBarber) setSelectedBarber(state.selectedBarber)
         if (state.selectedDate) setSelectedDate(new Date(state.selectedDate))
         if (state.selectedTime) setSelectedTime(state.selectedTime)
-        
+
         // Final cleanup after state is applied
         setTimeout(() => {
-           setIsRestoringState(false)
+          setIsRestoringState(false)
         }, 100)
       } catch (e) {
         console.error("Failed to restore booking state", e)
@@ -245,21 +245,21 @@ export function BookingFlow({
   return (
     <div className={cn(!hideHeader && "min-h-screen bg-background")}>
       {!hideHeader && (
-        <header className="border-b border-border bg-card">
-          <div className="mx-auto flex h-16 max-w-lg items-center justify-between px-4">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <Scissors className="h-4 w-4" />
+        <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-lg">
+          <div className="mx-auto flex h-16 max-w-lg items-center justify-between px-6">
+            <Link href="/" className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+                <Scissors className="h-4.5 w-4.5" />
               </div>
-              <span className="text-lg font-bold text-foreground">BookIA</span>
+              <span className="text-xl font-black text-foreground tracking-tight">BookIA</span>
             </Link>
 
             {initialClientName && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-muted-foreground hidden sm:inline">
+              <div className="flex items-center gap-2.5 bg-muted/20 px-3 py-1.5 rounded-full border border-border/40">
+                <span className="text-xs font-bold text-muted-foreground hidden sm:inline">
                   {initialClientName.split(' ')[0]}
                 </span>
-                <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
+                <div className="h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-black text-[10px] shadow-sm">
                   {initialClientName.charAt(0)}
                 </div>
               </div>
@@ -268,23 +268,21 @@ export function BookingFlow({
         </header>
       )}
 
-      <main className="mx-auto max-w-lg px-4 py-8">
+      <main className="mx-auto max-w-lg px-6 py-10">
         {/* Shop name */}
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-foreground">{shopName}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Reserva tu cita en segundos</p>
+        <div className="mb-10 text-center space-y-2">
+          <h1 className="text-3xl font-black text-foreground tracking-tight">{shopName}</h1>
+          <p className="text-muted-foreground font-medium text-sm">Reserva tu experiencia en segundos</p>
         </div>
 
         {/* Progress */}
-        <div className="mb-8 flex items-center justify-center gap-2">
+        <div className="mb-12 flex items-center justify-center gap-3">
           {[1, 2, 3, 4, 5].map((step) => (
             <div
               key={step}
               className={cn(
-                "h-1.5 w-10 rounded-full transition-colors",
-                step <= stepNumber[currentStep]
-                  ? "bg-primary"
-                  : "bg-secondary"
+                "h-2 rounded-full transition-all duration-500 shadow-inner",
+                step === stepNumber[currentStep] ? "w-12 bg-primary" : step < stepNumber[currentStep] ? "w-6 bg-primary/40" : "w-6 bg-secondary"
               )}
             />
           ))}
@@ -292,9 +290,9 @@ export function BookingFlow({
 
         {/* Step: Service Selection */}
         {currentStep === "service" && (
-          <section>
-            <h2 className="mb-4 text-lg font-semibold text-foreground">Elige tus servicios</h2>
-            <div className="grid gap-3">
+          <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <h2 className="mb-6 text-xl font-black text-foreground tracking-tight">Selecciona tus servicios</h2>
+            <div className="grid gap-4">
               {services.map((svc) => {
                 const isSelected = selectedServices.includes(svc.id)
                 return (
@@ -306,23 +304,27 @@ export function BookingFlow({
                       )
                     }}
                     className={cn(
-                      "flex items-center gap-4 rounded-xl border p-4 text-left transition-colors cursor-pointer relative",
+                      "flex items-center gap-4 rounded-2xl border p-5 text-left transition-all cursor-pointer relative shadow-sm active:scale-[0.98]",
                       isSelected
-                        ? "border-primary bg-primary/10"
-                        : "border-border bg-card hover:border-primary/40"
+                        ? "border-primary bg-primary/5 shadow-md shadow-primary/5"
+                        : "border-border bg-card hover:border-primary/30"
                     )}
                   >
                     <div className={cn(
-                      "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl",
-                      isSelected ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"
+                      "flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl transition-all duration-300",
+                      isSelected ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-110" : "bg-primary/5 text-primary"
                     )}>
-                      {isSelected ? <CheckCircle2 className="h-6 w-6" /> : <Scissors className="h-5 w-5" />}
+                      {isSelected ? <CheckCircle2 className="h-7 w-7" /> : <Scissors className="h-6 w-6" />}
                     </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-card-foreground">{svc.name}</p>
-                      <p className="text-sm text-muted-foreground">{formatDuration(svc.duration)}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-card-foreground text-lg leading-tight truncate">{svc.name}</p>
+                      <div className="flex items-center gap-1.5 mt-1 text-muted-foreground">
+                        <span className="text-xs font-medium bg-muted px-1.5 py-0.5 rounded-md">{formatDuration(svc.duration)}</span>
+                      </div>
                     </div>
-                    <span className="text-lg font-semibold text-primary">{formatPrice(svc.price)}</span>
+                    <div className="text-right">
+                      <span className="text-xl font-black text-primary tracking-tighter">{formatPrice(svc.price)}</span>
+                    </div>
                   </button>
                 )
               })}
@@ -354,7 +356,7 @@ export function BookingFlow({
               >
                 {isAdmin ? "Continuar" : "Continuar sin cuenta"}
               </Button>
-              
+
               {!initialClientName && !isAdmin && (
                 <div className="mt-4 flex flex-col gap-2">
                   <div className="flex items-center gap-2">
@@ -363,16 +365,16 @@ export function BookingFlow({
                     <span className="h-px flex-1 bg-border" />
                   </div>
                   <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       className="flex-1 h-10 rounded-xl text-xs gap-2"
                       onClick={() => handleAuthRedirect('login')}
                     >
                       <LogIn className="h-3.5 w-3.5" />
                       Iniciar sesión
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       className="flex-1 h-10 rounded-xl text-xs gap-2"
                       onClick={() => handleAuthRedirect('register')}
                     >
@@ -388,33 +390,33 @@ export function BookingFlow({
 
         {/* Step: Staff Selection */}
         {currentStep === "barber" && (
-          <section>
-            <h2 className="mb-4 text-lg font-semibold text-foreground">Elige un profesional</h2>
-            <div className="grid gap-3">
+          <section className="animate-in fade-in slide-in-from-right-4 duration-500">
+            <h2 className="mb-6 text-xl font-black text-foreground tracking-tight">Elige un profesional</h2>
+            <div className="grid gap-4">
               {allStaff.map((b) => (
                 <button
                   key={b.id}
                   onClick={() => setSelectedBarber(b.id)}
                   className={cn(
-                    "flex items-center gap-4 rounded-xl border p-4 text-left transition-colors cursor-pointer",
+                    "flex items-center gap-4 rounded-2xl border p-5 text-left transition-all cursor-pointer shadow-sm active:scale-[0.98]",
                     selectedBarber === b.id
-                      ? "border-primary bg-primary/10"
-                      : "border-border bg-card hover:border-primary/40"
+                      ? "border-primary bg-primary/5 shadow-md shadow-primary/5"
+                      : "border-border bg-card hover:border-primary/30"
                   )}
                 >
                   {b.id === "auto" ? (
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                      <UserCheck className="h-5 w-5" />
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary animate-pulse">
+                      <UserCheck className="h-7 w-7" />
                     </div>
                   ) : (
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-secondary-foreground">
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-secondary text-sm font-black text-secondary-foreground shadow-inner border border-border/40 uppercase">
                       {b.name.split(" ").map((n) => n[0]).filter(Boolean).slice(0, 2).join("")}
                     </div>
                   )}
-                  <div>
-                    <p className="font-medium text-card-foreground">{b.name}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-card-foreground text-lg leading-tight truncate">{b.name}</p>
                     {b.id === "auto" && (
-                      <p className="text-sm text-muted-foreground">Primer profesional disponible</p>
+                      <p className="text-xs font-medium text-muted-foreground mt-1">Primer profesional disponible</p>
                     )}
                   </div>
                 </button>
@@ -422,7 +424,7 @@ export function BookingFlow({
             </div>
             <Button
               variant="outline"
-              className="mt-4 w-full h-12 rounded-xl"
+              className="mt-6 w-full h-12 rounded-2xl font-bold uppercase tracking-widest text-xs border-border/60"
               onClick={() => { setIsServiceStepDone(false); setSelectedBarber(null) }}
             >
               Volver
@@ -432,9 +434,9 @@ export function BookingFlow({
 
         {/* Step: Date Selection */}
         {currentStep === "date" && (
-          <section>
-            <h2 className="mb-4 text-lg font-semibold text-foreground">Elige una fecha</h2>
-            <div className="flex justify-center rounded-xl border border-border bg-card p-2">
+          <section className="animate-in fade-in slide-in-from-right-4 duration-500">
+            <h2 className="mb-6 text-xl font-black text-foreground tracking-tight">¿Cuándo vienes?</h2>
+            <div className="mx-auto w-full max-w-[350px] rounded-3xl border border-border/60 bg-card p-4 shadow-xl shadow-black/5 ring-1 ring-black/5">
               <Calendar
                 mode="single"
                 selected={selectedDate}
@@ -442,11 +444,11 @@ export function BookingFlow({
                 locale={es}
                 disabled={(date) => {
                   const crNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Costa_Rica" }))
-                  const isToday = 
+                  const isToday =
                     crNow.getFullYear() === date.getFullYear() &&
                     crNow.getMonth() === date.getMonth() &&
                     crNow.getDate() === date.getDate()
-                  
+
                   if (date.getDay() === 0) return true
                   if (date < new Date(crNow.setHours(0, 0, 0, 0))) return true
 
@@ -466,7 +468,7 @@ export function BookingFlow({
             </div>
             <Button
               variant="outline"
-              className="mt-4 w-full"
+              className="mt-6 w-full h-12 rounded-2xl font-bold uppercase tracking-widest text-xs border-border/60 shadow-sm"
               onClick={() => { setSelectedBarber(null); setSelectedDate(undefined); setAvailableSlots([]) }}
             >
               Volver
@@ -476,20 +478,22 @@ export function BookingFlow({
 
         {/* Step: Time Selection */}
         {currentStep === "time" && (
-          <section>
-            <h2 className="mb-4 text-lg font-semibold text-foreground">Elige un horario</h2>
-            <div className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
-              <CalendarDays className="h-4 w-4" />
-              <span>{selectedDate?.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })}</span>
+          <section className="animate-in fade-in slide-in-from-right-4 duration-500">
+            <h2 className="mb-2 text-xl font-black text-foreground tracking-tight">Elige el horario</h2>
+            <div className="mb-8 flex items-center gap-2 bg-primary/5 px-4 py-2 rounded-full border border-primary/10 w-fit">
+              <CalendarDays className="h-4 w-4 text-primary" />
+              <span className="text-xs font-black uppercase text-primary tracking-widest">
+                {selectedDate?.toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" })}
+              </span>
             </div>
 
             {loadingSlots ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                <span className="ml-2 text-muted-foreground">Cargando horarios...</span>
+              <div className="flex flex-col items-center justify-center py-20 bg-muted/5 rounded-3xl border border-dashed border-border/80">
+                <Loader2 className="h-10 w-10 animate-spin text-primary opacity-40" />
+                <span className="mt-4 text-sm font-bold text-muted-foreground/60 uppercase tracking-widest">Buscando espacios...</span>
               </div>
             ) : availableSlots.length > 0 ? (
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+              <div className="grid grid-cols-3 gap-3">
                 {availableSlots.map((time) => (
                   <button
                     key={time}
@@ -518,10 +522,10 @@ export function BookingFlow({
                       }
                     }}
                     className={cn(
-                      "rounded-xl border px-3 py-3 text-sm font-medium transition-colors cursor-pointer",
+                      "rounded-2xl border px-4 py-4 text-base font-black transition-all cursor-pointer shadow-sm active:scale-90",
                       selectedTime === time
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-border bg-card text-card-foreground hover:border-primary/40"
+                        ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105 z-10"
+                        : "border-border bg-card text-card-foreground hover:border-primary/40 hover:bg-primary/5"
                     )}
                   >
                     {time}
@@ -529,14 +533,18 @@ export function BookingFlow({
                 ))}
               </div>
             ) : (
-              <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
-                No hay horarios disponibles para esta fecha
+              <div className="rounded-3xl border border-dashed border-border/80 bg-muted/5 p-12 text-center">
+                <div className="mx-auto h-16 w-16 mb-4 rounded-full bg-muted/20 flex items-center justify-center">
+                  <span className="text-2xl">🌙</span>
+                </div>
+                <p className="font-bold text-muted-foreground">No hay espacios disponibles</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">Intenta con otra fecha</p>
               </div>
             )}
 
             <Button
               variant="outline"
-              className="mt-4 w-full"
+              className="mt-8 w-full h-12 rounded-2xl font-bold uppercase tracking-widest text-xs border-border/60 shadow-sm"
               onClick={() => { setSelectedDate(undefined); setSelectedTime(null); setAvailableSlots([]) }}
             >
               Volver
@@ -546,68 +554,75 @@ export function BookingFlow({
 
         {/* Step: Customer Info */}
         {currentStep === "info" && (
-          <section>
-            <h2 className="mb-4 text-lg font-semibold text-foreground">Tus datos</h2>
-            
+          <section className="animate-in fade-in slide-in-from-right-4 duration-500">
+            <h2 className="mb-6 text-xl font-black text-foreground tracking-tight">Tus datos</h2>
+
             {initialClientName && (
-              <div className="mb-4 p-3 rounded-lg bg-primary/5 border border-primary/10 flex items-center gap-3">
-                <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs">
+              <div className="mb-6 p-4 rounded-2xl bg-primary/5 border border-primary/10 flex items-center gap-4">
+                <div className="h-10 w-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-black text-sm shadow-lg shadow-primary/20">
                   {initialClientName.charAt(0)}
                 </div>
                 <div className="text-sm">
-                  <p className="font-medium text-foreground">¡Hola, {initialClientName.split(' ')[0]}!</p>
-                  <p className="text-muted-foreground text-xs">Hemos pre-completado tus datos.</p>
+                  <p className="font-bold text-foreground">¡Hola, {initialClientName.split(' ')[0]}!</p>
+                  <p className="text-muted-foreground font-medium">Hemos pre-completado tus datos.</p>
                 </div>
               </div>
             )}
 
             {loadingStaff ? (
-              <div className="flex flex-col items-center justify-center py-12 rounded-xl border border-border bg-card">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="mt-4 text-sm text-muted-foreground">Asignando un profesional...</span>
+              <div className="flex flex-col items-center justify-center py-20 rounded-3xl border border-dashed border-border/80 bg-muted/5">
+                <Loader2 className="h-10 w-10 animate-spin text-primary opacity-40" />
+                <span className="mt-4 text-sm font-bold text-muted-foreground/60 uppercase tracking-widest text-center">Asignando un profesional...</span>
               </div>
             ) : (
               <>
-                {/* Summary */}
-                <div className="mb-6 rounded-xl border border-border bg-card p-4">
-                  <h3 className="mb-3 text-sm font-medium text-muted-foreground">Resumen de tu cita</h3>
-                  <div className="grid gap-2 text-sm">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-muted-foreground">Servicios</span>
-                      <div className="pl-2 border-l-2 border-primary/20">
+                {/* Summary Card */}
+                <div className="mb-8 rounded-3xl border border-border shadow-2xl shadow-black/5 bg-card overflow-hidden">
+                  <div className="bg-primary/5 px-6 py-4 border-b border-primary/10">
+                    <h3 className="text-[10px] uppercase font-black text-primary tracking-[0.2em]">Resumen de tu cita</h3>
+                  </div>
+                  <div className="p-6 space-y-5">
+                    <div className="space-y-3">
+                      <p className="text-[10px] uppercase font-black text-muted-foreground/50 tracking-widest">Servicios</p>
+                      <div className="space-y-2">
                         {selectedServicesDetails.map(s => (
-                          <div key={s.id} className="flex justify-between font-medium text-card-foreground">
-                            <span>{s.name}</span>
-                            <span>{formatPrice(s.price)}</span>
+                          <div key={s.id} className="flex justify-between items-center group">
+                            <span className="font-bold text-card-foreground">{s.name}</span>
+                            <span className="font-black text-primary">{formatPrice(s.price)}</span>
                           </div>
                         ))}
                       </div>
                     </div>
-                    <div className="flex justify-between mt-2">
-                      <span className="text-muted-foreground">Profesional</span>
-                      <span className="font-medium text-card-foreground">
-                        {selectedBarber === "auto" ? assignedAutoStaff?.name : barber?.name}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Fecha</span>
-                      <span className="font-medium text-card-foreground">
-                        {selectedDate?.toLocaleDateString("es-ES", { day: "numeric", month: "long" })}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Hora</span>
-                      <span className="font-medium text-primary">{selectedTime}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Duración Total</span>
-                      <span className="font-medium text-card-foreground">{formatDuration(totalDuration)}</span>
-                    </div>
-                    <div className="mt-1 border-t border-border pt-2">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Total</span>
-                        <span className="text-lg font-bold text-primary">{formatPrice(totalPrice)}</span>
+
+                    <div className="grid grid-cols-2 gap-6 pt-4 border-t border-border/60">
+                      <div className="space-y-1">
+                        <p className="text-[10px] uppercase font-black text-muted-foreground/50 tracking-widest">Fecha</p>
+                        <p className="font-bold text-card-foreground">
+                          {selectedDate?.toLocaleDateString("es-ES", { day: "numeric", month: "long" })}
+                        </p>
                       </div>
+                      <div className="space-y-1">
+                        <p className="text-[10px] uppercase font-black text-muted-foreground/50 tracking-widest">Hora</p>
+                        <p className="font-black text-primary text-xl tracking-tighter">{selectedTime}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-1">
+                        <p className="text-[10px] uppercase font-black text-muted-foreground/50 tracking-widest">Profesional</p>
+                        <p className="font-bold text-card-foreground">
+                          {selectedBarber === "auto" ? assignedAutoStaff?.name : barber?.name}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[10px] uppercase font-black text-muted-foreground/50 tracking-widest">Duración</p>
+                        <p className="font-bold text-card-foreground">{formatDuration(totalDuration)}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-5 border-t-2 border-dashed border-border/80 flex justify-between items-center">
+                      <span className="font-black text-sm uppercase tracking-[0.1em] text-muted-foreground">Total a pagar</span>
+                      <span className="text-3xl font-black text-primary tracking-tighter">{formatPrice(totalPrice)}</span>
                     </div>
                   </div>
                 </div>
@@ -728,7 +743,7 @@ export function BookingFlow({
                   )}
 
                   <Button
-                    className="mt-2 h-12 w-full rounded-xl text-base font-semibold"
+                    className="mt-4 h-14 w-full rounded-2xl text-base font-black uppercase tracking-widest shadow-lg shadow-primary/20 active:scale-[0.98] transition-all"
                     onClick={() => {
                       setTouched({ name: true, phone: true })
                       handleConfirm()
@@ -737,7 +752,7 @@ export function BookingFlow({
                   >
                     {isPending ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                         Reservando...
                       </>
                     ) : (
@@ -746,7 +761,7 @@ export function BookingFlow({
                   </Button>
                   <Button
                     variant="outline"
-                    className="w-full"
+                    className="w-full h-12 rounded-2xl font-bold uppercase tracking-widest text-xs border-border/60"
                     onClick={() => { setSelectedTime(null) }}
                   >
                     Volver
@@ -759,16 +774,16 @@ export function BookingFlow({
                         <p className="text-xs text-muted-foreground">Accede a tu cuenta para no volver a escribir tus datos.</p>
                       </div>
                       <div className="flex gap-2">
-                        <Button 
-                          variant="secondary" 
+                        <Button
+                          variant="secondary"
                           className="flex-1 h-10 rounded-lg text-xs gap-2 bg-background hover:bg-background/80"
                           onClick={() => handleAuthRedirect('login')}
                         >
                           <LogIn className="h-3.5 w-3.5" />
                           Iniciar sesión
                         </Button>
-                        <Button 
-                          variant="secondary" 
+                        <Button
+                          variant="secondary"
                           className="flex-1 h-10 rounded-lg text-xs gap-2 bg-background hover:bg-background/80"
                           onClick={() => handleAuthRedirect('register')}
                         >
@@ -787,51 +802,39 @@ export function BookingFlow({
 
       {/* Success Dialog */}
       <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
-        <DialogContent className="bg-card text-center">
-          <DialogHeader className="items-center">
-            <div className="mx-auto mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-success/15">
-              <CheckCircle2 className="h-8 w-8 text-success" />
+        <DialogContent className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-md bg-card border-border shadow-2xl rounded-[2.5rem] p-8 sm:p-12 overflow-hidden animate-in zoom-in duration-500">
+          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary/40 via-primary to-primary/40" />
+          <DialogHeader className="items-center space-y-6">
+            <div className="relative">
+              <div className="absolute inset-0 bg-success/20 blur-3xl rounded-full scale-150 animate-pulse" />
+              <div className="relative mx-auto flex h-24 w-24 items-center justify-center rounded-[2rem] bg-success/15 border border-success/20 shadow-inner">
+                <CheckCircle2 className="h-12 w-12 text-success animate-bounce duration-1000" />
+              </div>
             </div>
-            <DialogTitle className="text-xl text-card-foreground">Reserva confirmada</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              Tu cita ha sido agendada exitosamente
-            </DialogDescription>
+            <div className="space-y-2">
+              <DialogTitle className="text-3xl font-black text-card-foreground tracking-tight">¡Todo listo!</DialogTitle>
+              <DialogDescription className="text-muted-foreground font-medium text-lg">
+                Tu cita ha sido agendada con éxito
+              </DialogDescription>
+            </div>
           </DialogHeader>
-          <div className="rounded-xl bg-secondary/50 p-4 text-left text-sm">
-            <div className="grid gap-2">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Cliente</span>
-                <span className="font-medium text-card-foreground">{clientName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Servicios</span>
-                <span className="font-medium text-card-foreground text-right">{selectedServicesDetails.map(s => s.name).join(", ")}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Profesional</span>
-                <span className="font-medium text-card-foreground">
-                  {selectedBarber === "auto" ? assignedAutoStaff?.name : barber?.name}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Fecha</span>
-                <span className="font-medium text-card-foreground">
-                  {selectedDate?.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Hora</span>
-                <span className="font-bold text-primary">{selectedTime}</span>
-              </div>
+          <div className="mt-10 rounded-3xl bg-secondary/30 border border-border/60 p-6 space-y-4 shadow-inner">
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-muted-foreground font-bold uppercase tracking-widest text-[10px]">Servicios</span>
+              <span className="font-black text-foreground">{selectedServicesDetails.map(s => s.name).join(', ')}</span>
+            </div>
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-muted-foreground font-bold uppercase tracking-widest text-[10px]">Fecha y Hora</span>
+              <span className="font-black text-primary text-lg">
+                {selectedDate?.toLocaleDateString("es-ES", { day: "numeric", month: "short" })} @ {selectedTime}
+              </span>
             </div>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Recibirás un recordatorio por WhatsApp al{" "}
-            <span className="font-medium text-card-foreground">{clientPhone}</span>
-          </p>
-          <Button onClick={handleReset} className="mt-2 w-full rounded-xl">
-            Nueva Reserva
-          </Button>
+          <div className="mt-8 flex flex-col gap-3">
+            <Button onClick={handleReset} className="h-14 w-full rounded-2xl text-base font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:-translate-y-1 transition-all">
+              Listo, gracias
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

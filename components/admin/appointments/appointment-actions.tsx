@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Check, Loader2, XCircle, CheckCircle2, ChevronDown } from "lucide-react"
 import { updateAppointmentStatus } from "@/app/schedule/actions"
 import { AppointmentStatus } from "@prisma/client"
@@ -35,6 +36,7 @@ interface AppointmentActionsProps {
 }
 
 export function AppointmentActions({ appointmentId, shopId, currentStatus, startTime, className }: AppointmentActionsProps) {
+  const router = useRouter()
   const [loading, setLoading] = useState<AppointmentStatus | null>(null)
   const [showCancelDialog, setShowCancelDialog] = useState(false)
 
@@ -44,6 +46,7 @@ export function AppointmentActions({ appointmentId, shopId, currentStatus, start
       const result = await updateAppointmentStatus(appointmentId, newStatus, shopId)
       if (result.success) {
         toast.success(`Cita ${newStatus.toLowerCase()} con éxito`)
+        router.refresh()
       } else {
         toast.error(result.error || "Ocurrió un error")
       }
@@ -106,7 +109,7 @@ export function AppointmentActions({ appointmentId, shopId, currentStatus, start
               >
                 <Badge className="w-full flex items-center justify-start gap-2 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20 py-1.5 px-3 transition-colors">
                   <CheckCircle2 className="h-3.5 w-3.5" />
-                  <span className="font-semibold">Confirmar Cita</span>
+                  <span className="font-semibold">Confirmar</span>
                 </Badge>
               </DropdownMenuItem>
             )}
@@ -118,7 +121,7 @@ export function AppointmentActions({ appointmentId, shopId, currentStatus, start
               >
                 <Badge className="w-full flex items-center justify-start gap-2 bg-destructive/10 text-destructive hover:bg-destructive/20 border-destructive/20 py-2 px-3 transition-colors">
                   <XCircle className="h-4 w-4 text-destructive" />
-                  <span className="font-semibold">Cancelar Cita</span>
+                  <span className="font-semibold">Cancelar</span>
                 </Badge>
               </DropdownMenuItem>
             )}

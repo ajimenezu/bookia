@@ -100,26 +100,44 @@ export async function ClientesContent({ shopId, isSuperAdmin, businessType, q }:
         </div>
       </div>
 
-      <div className="grid gap-3 md:hidden">
+      <div className="grid gap-4 md:hidden">
         {clients.map((client: any) => (
-          <div key={client.id} className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-secondary-foreground">
+          <div key={client.id} className="rounded-2xl border border-border bg-card p-5 shadow-sm hover:shadow-md transition-all active:scale-[0.99]">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-secondary text-sm font-bold text-secondary-foreground border border-border animate-in zoom-in duration-300">
                 {client.name.split(" ").map((n: string) => n[0]).filter(Boolean).slice(0, 2).join("")}
               </div>
-              <div className="flex-1">
-                <p className="font-medium text-card-foreground">{client.name}</p>
-                <p className="text-sm text-muted-foreground">{client.phone}</p>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-card-foreground text-lg leading-tight truncate">{client.name}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge variant="outline" className="text-[10px] px-1.5 h-4 font-bold border-primary/20 text-primary uppercase">
+                    {client.visits} Visitas
+                  </Badge>
+                  <p className="text-xs text-muted-foreground truncate">{client.phone}</p>
+                </div>
               </div>
             </div>
-            <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-sm">
-              <span className="text-muted-foreground">{client.visits} visitas</span>
-              <span className="font-medium text-primary">{client.totalSpent}</span>
+            
+            <div className="mt-4 grid grid-cols-2 gap-3 pt-4 border-t border-border/60">
+              <div className="bg-muted/10 p-3 rounded-xl border border-border/40">
+                <p className="text-[10px] uppercase font-black text-muted-foreground mb-1 tracking-wider">Total Invertido</p>
+                <p className="font-black text-primary text-base">{client.totalSpent}</p>
+              </div>
+              <div className="bg-muted/10 p-3 rounded-xl border border-border/40">
+                <p className="text-[10px] uppercase font-black text-muted-foreground mb-1 tracking-wider">Última Visita</p>
+                <p className="font-black text-foreground/80 text-base">{client.lastVisit}</p>
+              </div>
             </div>
           </div>
         ))}
         {clients.length === 0 && (
-          <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">No se encontraron {t.clientPlural.toLowerCase()} registrados.</div>
+          <div className="rounded-2xl border border-border border-dashed bg-muted/5 p-12 text-center">
+            <div className="mx-auto h-16 w-16 mb-4 rounded-full bg-muted/20 flex items-center justify-center">
+              <span className="text-2xl">👤</span>
+            </div>
+            <p className="font-bold text-muted-foreground">No hay {t.clientPlural.toLowerCase()} registrados.</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">Cuando alguien reserve, aparecerá aquí.</p>
+          </div>
         )}
       </div>
     </>

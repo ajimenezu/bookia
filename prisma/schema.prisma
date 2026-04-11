@@ -8,53 +8,26 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-enum Role {
-  SUPER_ADMIN
-  OWNER
-  STAFF
-  CUSTOMER
-}
-
-enum ScheduleStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
-enum BusinessType {
-  BARBERIA
-  SALON_BELLEZA
-  SPA
-  CLINICA
-}
-
-enum AppointmentStatus {
-  PENDING
-  CONFIRMED
-  CANCELLED
-  COMPLETED
-}
-
 model Shop {
-  id              String          @id
-  name            String
-  slug            String
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  businessType    BusinessType    @default(BARBERIA)
-  address         String?
-  description     String?
-  facebookUrl     String?
-  instagramUrl    String?
-  logoUrl         String?
-  tagline         String?
-  whatsappPhone   String?
-  appointments    Appointment[]
-  services        Service[]
-  memberships     ShopMember[]
-  schedules       ShopSchedule[]
-  staffSchedules  StaffSchedule[]
-  staffTimeOff    StaffTimeOff[]
+  id             String          @id
+  name           String
+  slug           String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  businessType   BusinessType    @default(BARBERIA)
+  address        String?
+  description    String?
+  facebookUrl    String?
+  instagramUrl   String?
+  logoUrl        String?
+  tagline        String?
+  whatsappPhone  String?
+  appointments   Appointment[]
+  services       Service[]
+  memberships    ShopMember[]
+  schedules      ShopSchedule[]
+  staffSchedules StaffSchedule[]
+  staffTimeOff   StaffTimeOff[]
 }
 
 model User {
@@ -99,17 +72,17 @@ model ShopSchedule {
 }
 
 model StaffSchedule {
-  id           String         @id @default(cuid())
-  staffId      String         @db.Uuid
-  shopId       String
-  dayOfWeek    Int
-  openTime     String? // If null, use shop open time
-  closeTime    String? // If null, use shop close time
-  isOpen       Boolean        @default(true)
-  status       ScheduleStatus @default(APPROVED)
-  shop         Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  staff        User           @relation("UserSchedules", fields: [staffId], references: [id], onDelete: Cascade)
-  breaks       StaffBreak[]
+  id        String         @id @default(cuid())
+  staffId   String         @db.Uuid
+  shopId    String
+  dayOfWeek Int
+  openTime  String?
+  closeTime String?
+  isOpen    Boolean        @default(true)
+  status    ScheduleStatus @default(APPROVED)
+  breaks    StaffBreak[]
+  shop      Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  staff     User           @relation("UserSchedules", fields: [staffId], references: [id], onDelete: Cascade)
 
   @@unique([staffId, shopId, dayOfWeek])
 }
@@ -128,9 +101,9 @@ model StaffTimeOff {
   shopId    String
   startDate DateTime
   endDate   DateTime
-  startTime String? // For partial days
-  endTime   String? // For partial days
-  type      String // VACATION or PERSONAL
+  startTime String?
+  endTime   String?
+  type      String
   note      String?
   status    ScheduleStatus @default(PENDING)
   createdAt DateTime       @default(now())
@@ -176,4 +149,31 @@ model Appointment {
   services       Service[]         @relation("AppointmentServices")
 
   @@index([staffId, startTime])
+}
+
+enum Role {
+  SUPER_ADMIN
+  OWNER
+  STAFF
+  CUSTOMER
+}
+
+enum ScheduleStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum BusinessType {
+  BARBERIA
+  SALON_BELLEZA
+  SPA
+  CLINICA
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
 }

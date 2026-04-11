@@ -1,6 +1,7 @@
 import { Scissors, Clock, DollarSign, Edit2, Sparkles, Flower2, Stethoscope, Sparkle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { BusinessType } from "@/lib/dictionaries"
+import { Badge } from "@/components/ui/badge"
 
 interface ServiceCardProps {
   name: string
@@ -43,52 +44,51 @@ export function ServiceCard({
     <div
       onClick={!isPreview ? onClick : undefined}
       className={cn(
-        "group relative rounded-xl border border-border bg-card p-5 transition-all text-left",
-        !isPreview && onClick && "cursor-pointer hover:border-primary/50 hover:shadow-md active:scale-[0.98]",
+        "group relative rounded-2xl border border-border bg-card p-6 transition-all text-left shadow-sm",
+        !isPreview && onClick && "cursor-pointer hover:border-primary/50 hover:shadow-xl hover:-translate-y-1 active:scale-[0.98]",
         isPreview && "opacity-80 grayscale-[0.2]",
         className
       )}
     >
       {!isPreview && onClick && (
-        <div className="absolute right-4 top-4 opacity-0 transition-opacity group-hover:opacity-100">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary shadow-sm backdrop-blur-sm">
+        <div className="absolute right-5 top-5 opacity-0 transition-opacity group-hover:opacity-100 flex gap-2">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-sm backdrop-blur-sm border border-primary/10">
             <Edit2 className="h-4 w-4" />
           </div>
         </div>
       )}
 
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
-            <ServiceIcon className="h-5 w-5" />
-          </div>
-          <h3 className="text-lg font-semibold text-card-foreground line-clamp-1 group-hover:text-primary transition-colors">
+      <div className="mb-6 flex items-center gap-4">
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-500 shadow-inner">
+          <ServiceIcon className="h-7 w-7" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-xl font-bold text-card-foreground line-clamp-2 tracking-tight transition-colors group-hover:text-primary">
             {name || "Nombre del Servicio"}
           </h3>
+          <div className="flex items-center gap-1.5 mt-1 text-primary/80">
+            <DollarSign className="h-3.5 w-3.5" />
+            <span className="text-lg font-black tracking-tighter">{formattedPrice}</span>
+          </div>
         </div>
       </div>
 
-      <div className="grid gap-3">
+      <div className="grid gap-3 pt-4 border-t border-border/60">
         <div className="flex items-center justify-between text-sm">
-          <span className="flex items-center gap-2 text-muted-foreground">
-            <DollarSign className="h-3.5 w-3.5" /> Precio
+          <span className="flex items-center gap-2 text-muted-foreground font-medium">
+            <Clock className="h-4 w-4" /> Duración
           </span>
-          <span className="font-semibold text-primary">
-            {formattedPrice}
-          </span>
-        </div>
-        <div className="flex items-center justify-between text-sm">
-          <span className="flex items-center gap-2 text-muted-foreground">
-            <Clock className="h-3.5 w-3.5" /> Duración
-          </span>
-          <span className="font-medium text-card-foreground">
+          <Badge variant="secondary" className="font-black rounded-lg px-2.5 py-0.5 border border-border/50">
             {duration || "0"} min
-          </span>
+          </Badge>
         </div>
         {description && (
-          <p className="mt-2 text-xs text-muted-foreground line-clamp-2">
-            {description}
-          </p>
+          <div className="mt-2 space-y-1">
+            <p className="text-[10px] uppercase font-black text-muted-foreground/50 tracking-widest">Descripción</p>
+            <p className="text-sm text-muted-foreground/80 line-clamp-2 leading-relaxed">
+              {description}
+            </p>
+          </div>
         )}
       </div>
     </div>

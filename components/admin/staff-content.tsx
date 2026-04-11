@@ -26,7 +26,7 @@ interface StaffStats {
 export async function StaffContent({ shopId, role, isSuperAdmin, businessType }: StaffContentProps) {
 
   let whereClause: any = {
-    role: { in: ["OWNER", "STAFF"] }
+    role: { in: ["OWNER", "STAFF", "SUPER_ADMIN"] }
   }
   
   if (isSuperAdmin && shopId === "ALL") {
@@ -82,7 +82,7 @@ export async function StaffContent({ shopId, role, isSuperAdmin, businessType }:
   const isOwner = role === "OWNER" || isSuperAdmin
 
   return (
-    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
       {rawMembers.map((member) => {
         const user = member.user
         const name = user.name || user.email.split("@")[0]
@@ -157,58 +157,61 @@ function StaffMemberCard({
   stats: StaffStats
 }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-6 shadow-sm hover:shadow-md transition-shadow">
-      <div className="mb-5 flex items-center justify-between">
+    <div className="rounded-2xl border border-border bg-card p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group overflow-hidden">
+      <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/10 text-lg font-bold text-primary border border-primary/20">
-            {stats.initials}
+          <div className="relative">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-xl font-black text-primary border border-primary/20 shadow-inner group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-500">
+              {stats.initials}
+            </div>
+            <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-success border-2 border-card shadow-sm" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-card-foreground">
+            <h3 className="text-xl font-bold text-card-foreground tracking-tight group-hover:text-primary transition-colors">
               {stats.name}
             </h3>
-            <p className="text-sm text-muted-foreground">{stats.specialty}</p>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{stats.specialty}</p>
           </div>
         </div>
-        <Badge className="bg-success/15 text-success border-success/30 h-fit">
+        <Badge className="bg-success/15 text-success border-success/30 hover:bg-success/20 h-fit rounded-lg px-2.5 py-1 font-bold text-[10px] uppercase tracking-wider">
           {stats.status}
         </Badge>
       </div>
 
-      <div className="grid gap-3">
-        <div className="flex items-center justify-between text-sm">
-          <span className="flex items-center gap-2 text-muted-foreground">
-            <Star className="h-3.5 w-3.5 text-primary" /> Calificación
+      <div className="grid gap-4">
+        <div className="flex items-center justify-between text-sm bg-muted/5 p-3 rounded-xl border border-border/40">
+          <span className="flex items-center gap-2.5 text-muted-foreground font-medium">
+            <Star className="h-4 w-4 text-primary fill-primary" /> Calificación
           </span>
-          <span className="font-semibold text-card-foreground">
-            {stats.rating.toFixed(1)}/5.0
+          <span className="font-black text-card-foreground">
+            {stats.rating.toFixed(1)} <span className="text-[10px] text-muted-foreground/60">/ 5.0</span>
           </span>
         </div>
-        <div className="flex items-center justify-between text-sm">
-          <span className="flex items-center gap-2 text-muted-foreground">
-            <Calendar className="h-3.5 w-3.5" /> Citas hoy
-          </span>
-          <Badge variant="secondary">{stats.todayAppointments}</Badge>
+        
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1 text-sm bg-muted/5 p-3 rounded-xl border border-border/40">
+            <span className="text-[10px] uppercase font-black text-muted-foreground/50 tracking-wider">Citas hoy</span>
+            <span className="font-black text-lg text-card-foreground">{stats.todayAppointments}</span>
+          </div>
+          <div className="flex flex-col gap-1 text-sm bg-muted/5 p-3 rounded-xl border border-border/40">
+            <span className="text-[10px] uppercase font-black text-muted-foreground/50 tracking-wider">Semana</span>
+            <span className="font-black text-lg text-card-foreground">{stats.weekAppointments}</span>
+          </div>
         </div>
-        <div className="flex items-center justify-between text-sm">
-          <span className="flex items-center gap-2 text-muted-foreground">
-            <Calendar className="h-3.5 w-3.5" /> Citas esta semana
-          </span>
-          <Badge variant="secondary">{stats.weekAppointments}</Badge>
-        </div>
-        <div className="mt-2 border-t border-border pt-3">
+
+        <div className="mt-1 bg-primary/5 p-4 rounded-xl border border-primary/10 shadow-inner">
           <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center gap-2 text-muted-foreground">
-              <DollarSign className="h-3.5 w-3.5" /> Ingreso del mes
+            <span className="flex items-center gap-2.5 text-primary/80 font-bold uppercase text-[10px] tracking-widest">
+              <DollarSign className="h-4 w-4" /> Ingreso del mes
             </span>
-            <span className="text-lg font-bold text-primary">
+            <span className="text-xl font-black text-primary tracking-tighter">
               {stats.monthRevenue}
             </span>
           </div>
         </div>
       </div>
 
-      <div className="mt-6 pt-4 border-t border-border">
+      <div className="mt-6 pt-5 border-t border-border/60">
         <StaffScheduleDialog
           shopId={shopId}
           staffId={staffId}

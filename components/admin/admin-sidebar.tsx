@@ -11,12 +11,12 @@ import { Terminology } from "@/lib/dictionaries"
 import { getPendingRequests } from "@/app/[slug]/admin/staff/actions"
 import { ApprovalSidePanel } from "./approval-side-panel"
 
-export function AdminSidebar({ 
+export function AdminSidebar({
   children,
   terminology: t,
   shopSlug,
   shopId,
-}: { 
+}: {
   children: React.ReactNode,
   terminology: Terminology,
   shopSlug: string | null,
@@ -48,71 +48,88 @@ export function AdminSidebar({
   return (
     <div className="flex min-h-screen bg-background">
       {/* Mobile header */}
-      <header className="fixed inset-x-0 top-0 z-50 flex h-14 items-center justify-between border-b border-sidebar-border bg-sidebar px-4 lg:hidden">
-        <div className="flex items-center gap-3">
-          <Link href={`/${shopSlug}/admin`} className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Scissors className="h-3.5 w-3.5" />
+      <header className="fixed inset-x-0 top-0 z-50 flex h-16 items-center justify-between border-b border-sidebar-border bg-sidebar/80 backdrop-blur-lg px-4 lg:hidden shadow-sm">
+        <div className="flex items-center gap-4">
+          <Link href={`/${shopSlug}/admin`} className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+              <Scissors className="h-4 w-4" />
             </div>
-            <span className="font-bold text-sidebar-foreground">BookIA</span>
+            <span className="font-bold text-sidebar-foreground tracking-tight">BookIA</span>
           </Link>
-          
+
           {shopId && (
-            <button 
+            <button
               onClick={() => setIsPanelOpen(true)}
-              className="relative p-2 rounded-full hover:bg-muted/10 transition-colors cursor-pointer"
+              className="relative p-2.5 rounded-full hover:bg-muted/10 transition-colors cursor-pointer active:scale-95"
             >
-              <Bell className="h-4.5 w-4.5 text-sidebar-foreground/70 transition-colors" />
+              <Bell className="h-5 w-5 text-sidebar-foreground/70 transition-colors" />
               {pendingCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 h-3 w-3 bg-primary text-[8px] font-bold text-primary-foreground rounded-full flex items-center justify-center border border-sidebar">
+                <span className="absolute top-1.5 right-1.5 h-3.5 w-3.5 bg-primary text-[8px] font-bold text-primary-foreground rounded-full flex items-center justify-center border-2 border-sidebar animate-in zoom-in duration-300">
                   {pendingCount}
                 </span>
               )}
             </button>
           )}
         </div>
-        <Button variant="ghost" size="icon" onClick={() => setMobileOpen(!mobileOpen)} className="text-sidebar-foreground">
-          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setMobileOpen(!mobileOpen)}
+          className="text-sidebar-foreground h-10 w-10 active:scale-95 transition-transform"
+        >
+          {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </Button>
       </header>
 
       {/* Mobile overlay */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-40 bg-foreground/50 backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)} />
+        <div
+          className="fixed inset-0 z-40 bg-foreground/30 backdrop-blur-[2px] transition-all duration-300 lg:hidden animate-in fade-in"
+          onClick={() => setMobileOpen(false)}
+        />
       )}
 
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-sidebar-border bg-sidebar transition-transform lg:translate-x-0",
-          mobileOpen ? "translate-x-0" : "-translate-x-full"
+          "fixed inset-y-0 left-0 z-[60] flex w-72 flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 ease-in-out lg:translate-x-0 lg:w-64",
+          mobileOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
         )}
       >
         <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-6">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Scissors className="h-4 w-4" />
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+              <Scissors className="h-4.5 w-4.5" />
             </div>
-            <span className="text-lg font-bold text-sidebar-foreground">BookIA</span>
+            <span className="text-xl font-bold text-sidebar-foreground tracking-tight">BookIA</span>
+            
+            {shopId && (
+              <button
+                onClick={() => setIsPanelOpen(true)}
+                className="relative ml-2 p-2 rounded-full hover:bg-muted/10 transition-colors cursor-pointer active:scale-95 group"
+              >
+                <Bell className="h-5 w-5 text-sidebar-foreground/70 transition-colors group-hover:text-sidebar-foreground" />
+                {pendingCount > 0 && (
+                  <span className="absolute top-1 right-1 h-3.5 w-3.5 bg-primary text-[8px] font-bold text-primary-foreground rounded-full flex items-center justify-center border-2 border-sidebar animate-in zoom-in duration-300">
+                    {pendingCount}
+                  </span>
+                )}
+              </button>
+            )}
           </div>
 
-          {shopId && (
-            <button 
-              onClick={() => setIsPanelOpen(true)}
-              className="relative p-2 rounded-full hover:bg-sidebar-accent transition-colors cursor-pointer group"
-            >
-              <Bell className="h-5 w-5 text-sidebar-foreground/70 group-hover:text-sidebar-foreground transition-colors" />
-              {pendingCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 h-4 w-4 bg-primary text-[9px] font-bold text-primary-foreground rounded-full flex items-center justify-center border-2 border-sidebar">
-                  {pendingCount}
-                </span>
-              )}
-            </button>
-          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setMobileOpen(false)}
+            className="lg:hidden h-8 w-8 text-sidebar-foreground/50 hover:text-sidebar-foreground"
+          >
+            <X className="h-5 w-5" />
+          </Button>
         </div>
 
-        <nav className="flex-1 px-3 py-4">
-          <ul className="grid gap-1">
+        <nav className="flex-1 px-4 py-6 overflow-y-auto">
+          <ul className="grid gap-1.5">
             {navItems.map((item) => {
               const isActive = pathname === item.href
               return (
@@ -121,13 +138,13 @@ export function AdminSidebar({
                     href={item.href}
                     onClick={() => setMobileOpen(false)}
                     className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                      "flex items-center gap-3.5 rounded-xl px-4 py-3 text-sm font-medium transition-all active:scale-[0.98]",
                       isActive
-                        ? "bg-sidebar-accent text-sidebar-primary"
-                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                        ? "bg-primary text-primary-foreground shadow-md shadow-primary/10"
+                        : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                     )}
                   >
-                    <item.icon className="h-4.5 w-4.5" />
+                    <item.icon className={cn("h-5 w-5", isActive ? "opacity-100" : "opacity-70")} />
                     {item.label}
                   </Link>
                 </li>
@@ -136,11 +153,11 @@ export function AdminSidebar({
           </ul>
         </nav>
 
-        <div className="border-t border-sidebar-border p-4 space-y-2">
+        <div className="mt-auto border-t border-sidebar-border p-5 space-y-3">
           {shopSlug && (
             <Link
               href={`/${shopSlug}`}
-              className="flex items-center justify-center gap-2 rounded-lg bg-sidebar-accent px-3 py-2.5 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent/80 cursor-pointer"
+              className="flex items-center justify-center gap-2 rounded-xl bg-sidebar-accent/50 border border-sidebar-border/50 px-4 py-3 text-sm font-semibold text-sidebar-foreground transition-all hover:bg-sidebar-accent cursor-pointer active:scale-[0.98]"
             >
               Ver página pública
             </Link>
@@ -148,32 +165,33 @@ export function AdminSidebar({
           {shopSlug && (
             <Link
               href={`/${shopSlug}/admin/configuracion`}
-              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors cursor-pointer"
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-3.5 rounded-xl px-4 py-2.5 text-sm font-medium text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-all cursor-pointer"
             >
-              <Settings className="h-4 w-4" />
+              <Settings className="h-5 w-5 opacity-70" />
               Configuración
             </Link>
           )}
           <Button
             variant="ghost"
-            className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:bg-destructive/10 hover:text-destructive cursor-pointer"
+            className="w-full justify-start gap-3.5 rounded-xl px-4 py-2.5 text-sm font-medium text-sidebar-foreground/50 hover:bg-destructive/10 hover:text-destructive cursor-pointer transition-colors"
             onClick={async () => await signOut(shopSlug ? `/${shopSlug}` : "/login")}
           >
-            <LogOut className="h-4.5 w-4.5" />
+            <LogOut className="h-5 w-5 opacity-70" />
             Cerrar sesión
           </Button>
         </div>
       </aside>
 
       {/* Main content */}
-      <div className="flex flex-1 flex-col pt-14 lg:pl-64 lg:pt-0">
-        <main className="flex-1 p-4 md:p-6 lg:p-8">
+      <div className="flex flex-1 flex-col pt-16 lg:pl-64 lg:pt-0">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
           {children}
         </main>
       </div>
 
       {shopId && (
-        <ApprovalSidePanel 
+        <ApprovalSidePanel
           shopId={shopId}
           open={isPanelOpen}
           onOpenChange={setIsPanelOpen}

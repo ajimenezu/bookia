@@ -26,6 +26,7 @@ const querySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   serviceIds: z.array(z.string().min(1)).optional(),
+  excludeAppointmentId: z.string().optional(),
 })
 
 export async function createBooking(rawData: unknown) {
@@ -61,7 +62,7 @@ export async function createBooking(rawData: unknown) {
 
   if (staffId === "auto") {
     const staffMembers = await prisma.shopMember.findMany({
-      where: { shopId, role: { in: ["STAFF", "OWNER"] } },
+      where: { shopId, role: { in: ["STAFF", "OWNER", "SUPER_ADMIN"] } },
       select: { userId: true }
     })
 
@@ -179,12 +180,13 @@ export async function createBooking(rawData: unknown) {
 export async function fetchAvailableSlots(
   shopId: string,
   staffId: string,
-  dateStr: string
+  dateStr: string,
+  excludeAppointmentId?: string
 ): Promise<string[]> {
-  const validated = querySchema.safeParse({ shopId, staffId, date: dateStr })
+  const validated = querySchema.safeParse({ shopId, staffId, date: dateStr, excludeAppointmentId })
   if (!validated.success) return []
 
-  return getAvailableSlots(shopId, staffId, dateStr)
+  return getAvailableSlots(shopId, staffId, dateStr, excludeAppointmentId)
 }
 
 export async function getAvailableStaffForSlot(
@@ -212,7 +214,7 @@ export async function getAvailableStaffForSlot(
   // 2. Fetch all shop members and their schedules in a single query
   const dayOfWeek = startTime.getDay()
   const staffMembers = await prisma.shopMember.findMany({
-    where: { shopId, role: { in: ["STAFF", "OWNER"] } },
+    where: { shopId, role: { in: ["STAFF", "OWNER", "SUPER_ADMIN"] } },
     include: { 
       user: {
         include: {
@@ -277,8 +279,8 @@ export async function updateAppointmentStatus(
     where: { userId_shopId: { userId: authUser.id, shopId } }
   })
 
-  // Also check if they are a Global Super Admin (via metadata)
-  const isSuperAdmin = authUser.app_metadata?.role === "SUPER_ADMIN"
+  // Also check if they are a Global Super Admin (via metadata) or if their shop membership is SUPER_ADMIN
+  const isSuperAdmin = authUser.app_metadata?.role === "SUPER_ADMIN" || membership?.role === "SUPER_ADMIN"
   
   const isAuthorized = isSuperAdmin || (membership && ["OWNER", "STAFF"].includes(membership.role))
 
@@ -297,12 +299,99 @@ export async function updateAppointmentStatus(
     })
 
     // 3. Revalidate relevant paths
-    revalidatePath(`/${shopId}/admin/citas`)
-    revalidatePath(`/${shopId}/admin`)
+    const shop = await prisma.shop.findUnique({ where: { id: shopId }, select: { slug: true } })
+    if (shop) {
+      revalidatePath(`/${shop.slug}/admin/citas`)
+      revalidatePath(`/${shop.slug}/admin`)
+    }
 
     return { success: true }
   } catch (error) {
     console.error("Error updating appointment status:", error)
     return { success: false, error: "Error al actualizar el estado de la cita" }
+  }
+}
+
+export async function updateBooking(rawData: any) {
+  const updateSchema = z.object({
+    appointmentId: z.string().min(1),
+    shopId: z.string().min(1),
+    serviceIds: z.array(z.string().min(1)).min(1),
+    staffId: z.string().min(1),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    time: z.string().regex(/^\d{2}:\d{2}$/),
+    status: z.nativeEnum(AppointmentStatus).optional(),
+    customerName: z.string().optional(),
+    customerPhone: z.string().optional(),
+  })
+
+  const validated = updateSchema.safeParse(rawData)
+  if (!validated.success) {
+    return { success: false, error: "Datos de actualización inválidos" }
+  }
+
+  const { appointmentId, shopId, serviceIds, staffId, date, time, status, customerName, customerPhone } = validated.data
+
+  // 1. SECURITY: Validate admin rights
+  const supabase = await createClient()
+  const { data: { user: authUser } } = await supabase.auth.getUser()
+  if (!authUser) return { success: false, error: "Debes iniciar sesión" }
+
+  const membership = await prisma.shopMember.findUnique({
+    where: { userId_shopId: { userId: authUser.id, shopId } }
+  })
+  const isSuperAdmin = authUser.app_metadata?.role === "SUPER_ADMIN" || membership?.role === "SUPER_ADMIN"
+  const isAuthorized = isSuperAdmin || (membership && ["OWNER", "STAFF"].includes(membership.role))
+
+  if (!isAuthorized) return { success: false, error: "No tienes permisos" }
+
+  // 2. Validate services
+  const services = await prisma.service.findMany({ 
+    where: { id: { in: serviceIds }, shopId } 
+  })
+  if (services.length !== serviceIds.length) {
+    return { success: false, error: "Servicios inválidos" }
+  }
+
+  const totalDuration = services.reduce((acc, s) => acc + s.duration, 0)
+  const totalPrice = services.reduce((acc, s) => acc + s.price, 0)
+  const startTime = combineDateAndTime(date, time)
+  const endTime = new Date(startTime.getTime() + totalDuration * 60 * 1000)
+
+  // 3. Check Conflict
+  const hasConflict = await checkStaffConflict(shopId, staffId, startTime, endTime, appointmentId)
+  if (hasConflict) {
+    return { success: false, error: "Este horario ya está ocupado por otra cita" }
+  }
+
+  // 4. Update
+  try {
+    await prisma.appointment.update({
+      where: { id: appointmentId, shopId },
+      data: {
+        staffId,
+        startTime,
+        endTime,
+        status,
+        priceAtBooking: totalPrice,
+        customerName,
+        customerPhone,
+        serviceId: serviceIds[0], // backward compat
+        services: {
+          set: [], // Clear existing relations
+          connect: serviceIds.map(id => ({ id }))
+        }
+      }
+    })
+
+    const shop = await prisma.shop.findUnique({ where: { id: shopId }, select: { slug: true } })
+    if (shop) {
+      revalidatePath(`/${shop.slug}/admin`)
+      revalidatePath(`/${shop.slug}/admin/citas`)
+    }
+    return { success: true }
+  } catch (error) {
+    console.error(error)
+    return { success: false, error: "Error al actualizar la cita" }
   }
 }

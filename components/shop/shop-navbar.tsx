@@ -35,30 +35,30 @@ interface ShopNavbarProps {
 
 export function ShopNavbar({ shop, user, role, showScheduleButton = true }: ShopNavbarProps) {
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-card/80 backdrop-blur-sm">
-      <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
-        <Link href={`/${shop.slug}`} className="flex items-center gap-3 hover:opacity-90 transition-opacity">
+    <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-lg">
+      <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
+        <Link href={`/${shop.slug}`} className="flex items-center gap-2.5 hover:opacity-90 transition-all active:scale-95">
           {shop.logoUrl ? (
             <Image
               src={shop.logoUrl}
               alt={shop.name}
-              width={36}
-              height={36}
-              className="rounded-lg object-cover"
+              width={38}
+              height={38}
+              className="rounded-xl object-cover shadow-sm bg-muted"
             />
           ) : (
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Scissors className="h-4 w-4" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+              <Scissors className="h-5 w-5" />
             </div>
           )}
-          <span className="text-lg font-bold">{shop.name}</span>
+          <span className="text-xl font-black text-foreground tracking-tight">{shop.name}</span>
         </Link>
-        <div className="flex items-center gap-2 sm:gap-4">
+        <div className="flex items-center gap-3 sm:gap-6">
           {!user && (
             <Link
               href={`/${shop.slug}/login`}
               id="nav-login-btn"
-              className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              className="px-3 py-2 text-sm font-bold text-muted-foreground transition-colors hover:text-primary uppercase tracking-widest text-[10px]"
             >
               Iniciar sesión
             </Link>
@@ -68,44 +68,43 @@ export function ShopNavbar({ shop, user, role, showScheduleButton = true }: Shop
             <Link
               href={`/${shop.slug}/schedule`}
               id="nav-book-btn"
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 flex items-center justify-center"
+              className="rounded-xl bg-primary px-5 py-2.5 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95 flex items-center justify-center"
             >
-              Reservar cita
+              Reservar
             </Link>
           )}
 
           {user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 rounded-full px-2 py-1 transition-all hover:bg-muted/50 outline-hidden group border border-transparent hover:border-border cursor-pointer">
-                  <div className="h-8 w-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-xs font-bold shadow-sm transition-transform group-active:scale-95">
-                    {user.name?.charAt(0) || <User className="h-4 w-4" />}
+                <button className="flex items-center gap-2.5 rounded-full px-1.5 py-1 transition-all hover:bg-muted/50 outline-hidden group border border-transparent hover:border-border cursor-pointer">
+                  <div className="h-9 w-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-black text-xs shadow-lg shadow-primary/20 transition-transform group-active:scale-90">
+                    {user.name?.charAt(0) || <User className="h-5 w-5" />}
                   </div>
-                  <span className="hidden md:block text-sm font-medium text-foreground">{user.name?.split(' ')[0]}</span>
                   <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuLabel className="font-normal">
+              <DropdownMenuContent align="end" className="w-64 p-2 rounded-2xl shadow-2xl">
+                <DropdownMenuLabel className="font-normal px-3 py-3">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user.name}</p>
-                    <p className="text-xs leading-none text-muted-foreground">Mi cuenta</p>
+                    <p className="text-sm font-black text-foreground">{user.name}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Mi cuenta</p>
                   </div>
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="mx-1" />
                 {(role === "SUPER_ADMIN" || role === "OWNER" || role === "STAFF") && (
                   <DropdownMenuItem asChild>
-                    <Link href={`/${shop.slug}/admin`} className="cursor-pointer">
-                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                    <Link href={`/${shop.slug}/admin`} className="cursor-pointer rounded-lg py-2.5 font-bold text-sm">
+                      <LayoutDashboard className="mr-3 h-4 w-4 text-primary" />
                       <span>Panel administrativo</span>
                     </Link>
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem 
-                  className="text-destructive focus:text-destructive cursor-pointer"
+                  className="text-destructive focus:text-destructive cursor-pointer rounded-lg py-2.5 font-bold text-sm"
                   onClick={() => signOut(`/${shop.slug}`)}
                 >
-                  <LogOut className="mr-2 h-4 w-4" />
+                  <LogOut className="mr-3 h-4 w-4" />
                   <span>Salir</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>

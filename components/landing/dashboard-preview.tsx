@@ -2,31 +2,40 @@ import { CalendarDays, BadgeCent, User, CheckCircle2 } from "lucide-react"
 import { StatusBadge } from "@/components/admin/appointments/status-badge"
 import { formatTime } from "@/lib/date-utils"
 
-export async function DashboardPreview() {
-  const appointmentsData: any[] = [
+interface AppointmentPreview {
+  id: string
+  startTime: Date
+  customer: { name: string }
+  service: { name: string; price: number }
+  staff: { name: string }
+  status: "CONFIRMED" | "PENDING" | "COMPLETED"
+}
+
+export function DashboardPreview() {
+  const appointmentsData: AppointmentPreview[] = [
 
     {
       id: "1",
       startTime: new Date(new Date().setHours(9, 0, 0, 0)),
-      customer: { name: "Juan Pérez" },
-      service: { name: "Corte de Cabello", price: 12000 },
-      staff: { name: "Marco" },
+      customer: { name: "Valentina R." },
+      service: { name: "Sesion premium", price: 12000 },
+      staff: { name: "Equipo A" },
       status: "CONFIRMED"
     },
     {
       id: "2",
       startTime: new Date(new Date().setHours(11, 30, 0, 0)),
-      customer: { name: "Andrés M." },
-      service: { name: "Barba & Ritual", price: 8000 },
-      staff: { name: "Elena" },
+      customer: { name: "Andres M." },
+      service: { name: "Tratamiento especializado", price: 8000 },
+      staff: { name: "Equipo B" },
       status: "PENDING"
     },
     {
       id: "3",
       startTime: new Date(new Date().setHours(15, 0, 0, 0)),
       customer: { name: "Roberto R." },
-      service: { name: "Corte Senior", price: 10000 },
-      staff: { name: "Marco" },
+      service: { name: "Consulta express", price: 10000 },
+      staff: { name: "Equipo A" },
       status: "COMPLETED"
     }
   ]
@@ -38,10 +47,10 @@ export async function DashboardPreview() {
       <div className="mx-auto max-w-5xl">
         <div className="mb-12 text-center">
           <h2 className="text-balance text-3xl font-bold tracking-tight text-foreground md:text-4xl">
-            Un panel diseñado para la eficiencia
+            Un panel pensado para decisiones rapidas
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-pretty text-muted-foreground">
-            Visualiza tus citas, ingresos y clientes en un panel intuitivo
+            Visualiza actividad, ingresos y estado de tu agenda en una sola vista.
           </p>
         </div>
 

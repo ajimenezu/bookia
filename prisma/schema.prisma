@@ -151,6 +151,22 @@ model Appointment {
   @@index([staffId, startTime])
 }
 
+model DemoRequest {
+  id            String             @id @default(cuid())
+  companyName    String
+  contactName    String
+  email          String
+  phone          String
+  businessType   String
+  customBusinessType String?
+  teamSize       String
+  scheduledFor   DateTime
+  notes          String?
+  status         DemoRequestStatus  @default(PENDING)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+}
+
 enum Role {
   SUPER_ADMIN
   OWNER
@@ -176,4 +192,10 @@ enum AppointmentStatus {
   CONFIRMED
   CANCELLED
   COMPLETED
+}
+
+enum DemoRequestStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
 }

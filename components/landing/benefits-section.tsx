@@ -1,20 +1,25 @@
+"use client"
+
 import { Calendar, Bell, DollarSign } from "lucide-react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { trackCtaClick } from "@/lib/analytics"
 
 const benefits = [
   {
     icon: Calendar,
     title: "Agenda organizada",
-    description: "Gestiona todas tus citas en un solo lugar. Vista diaria, semanal y mensual con asignación automática de barberos.",
+    description: "Gestiona todas tus citas en un solo lugar con vistas claras para equipos de atencion y operacion.",
   },
   {
     icon: Bell,
     title: "Recordatorios automáticos",
-    description: "Envía recordatorios por WhatsApp a tus clientes automáticamente. Reduce las cancelaciones hasta un 60%.",
+    description: "Reduce ausencias con recordatorios automaticos y mejora la puntualidad de tus clientes.",
   },
   {
     icon: DollarSign,
     title: "Control de ingresos",
-    description: "Monitorea tus ingresos diarios, semanales y mensuales. Reportes detallados por barbero y servicio.",
+    description: "Monitorea ingresos y rendimiento por servicio, profesional o unidad de negocio.",
   },
 ]
 
@@ -24,10 +29,10 @@ export function BenefitsSection() {
       <div className="mx-auto max-w-5xl">
         <div className="mb-16 text-center">
           <h2 className="text-balance text-3xl font-bold tracking-tight text-foreground md:text-4xl">
-            Todo lo que necesitas para gestionar tu barbería
+            Todo lo que necesitas para escalar tu operacion
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-pretty text-muted-foreground">
-            Herramientas diseñadas específicamente para barberías profesionales
+            Diseñado para negocios de servicios que necesitan orden, velocidad y una experiencia premium.
           </p>
         </div>
         <div className="grid gap-6 md:grid-cols-3">
@@ -47,6 +52,16 @@ export function BenefitsSection() {
               </p>
             </div>
           ))}
+        </div>
+        <div className="mt-10 flex justify-center">
+          <Button asChild variant="secondary" size="lg" className="rounded-full px-8">
+            <Link
+              href="#planes"
+              onClick={() => trackCtaClick("open-plans", "benefits")}
+            >
+              Ver planes
+            </Link>
+          </Button>
         </div>
       </div>
     </section>

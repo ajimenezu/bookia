@@ -17,13 +17,13 @@ interface Plan {
 const plans: Plan[] = [
   {
     name: "Starter",
-    subtitle: "Para equipos que inician su digitalizacion",
+    subtitle: "Para equipos que inician su digitalización",
     monthlyPrice: 29,
     features: [
       "Hasta 3 miembros del equipo",
-      "Agenda y reservas en linea",
-      "Recordatorios automatizados",
+      "Agenda y reservas en línea",
       "Panel administrativo esencial",
+      "Recordatorios automáticos (Solo Email)",
     ],
   },
   {
@@ -32,10 +32,10 @@ const plans: Plan[] = [
     monthlyPrice: 59,
     highlight: true,
     features: [
-      "Hasta 12 miembros del equipo",
+      "Hasta 8 miembros del equipo",
       "Reportes de rendimiento e ingresos",
-      "Automatizaciones avanzadas",
-      "Soporte prioritario",
+      "Gestión de descansos y ausencias",
+      "Recordatorios por WhatsApp incluidos",
     ],
   },
   {
@@ -44,9 +44,9 @@ const plans: Plan[] = [
     monthlyPrice: 99,
     features: [
       "Miembros del equipo ilimitados",
-      "Multi-sucursal (mock)",
-      "Integraciones empresariales (mock)",
-      "Acompanamiento de onboarding",
+      "Multi-sucursal y roles avanzados",
+      "Conecta tu propio número de WhatsApp",
+      "Acompañamiento de onboarding VIP",
     ],
   },
 ]
@@ -57,7 +57,7 @@ export function PlansSection() {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("yearly")
 
   const pricingLabel = useMemo(
-    () => (billingCycle === "yearly" ? "/ano" : "/mes"),
+    () => (billingCycle === "yearly" ? "/año" : "/mes"),
     [billingCycle],
   )
 
@@ -108,8 +108,13 @@ export function PlansSection() {
             </button>
           </div>
           {billingCycle === "yearly" ? (
-            <p className="mt-3 text-xs font-medium text-primary">Ahorra 2 meses con facturacion anual (mock)</p>
-          ) : null}
+            <p className="mt-3 text-xs font-medium text-primary">Ahorras 2 meses con facturación anual</p>
+          ) : (
+            <p className="mt-3 text-xs font-medium text-muted-foreground/0">&nbsp;</p>
+          )}
+          <p className="mt-2 text-[10px] font-medium text-muted-foreground uppercase tracking-widest opacity-60">
+            Los precios están expresados en USD
+          </p>
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">
@@ -135,6 +140,7 @@ export function PlansSection() {
                 <span className="text-4xl font-bold tracking-tight text-foreground">{getDisplayedPrice(plan.monthlyPrice)}</span>
                 <span className="mb-1 text-sm text-muted-foreground">{pricingLabel}</span>
               </div>
+              <p className="mt-1 text-[10px] text-muted-foreground/60">Precios no incluyen IVA</p>
 
               <ul className="mt-6 space-y-3">
                 {plan.features.map((feature) => (

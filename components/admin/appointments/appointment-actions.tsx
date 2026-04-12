@@ -82,7 +82,7 @@ export function AppointmentActions({ appointmentId, shopId, currentStatus, start
                 )}
               </StatusBadge>
               {loading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/10 rounded-full">
+                <div className="absolute inset-0 flex items-center justify-center bg-background/70 rounded-full">
                   <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
                 </div>
               )}
@@ -96,8 +96,8 @@ export function AppointmentActions({ appointmentId, shopId, currentStatus, start
               onClick={() => handleStatusUpdate("COMPLETED")}
               className="cursor-pointer focus:bg-transparent p-1"
             >
-              <Badge className="w-full flex items-center justify-start gap-2 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20 py-2 px-3 transition-colors">
-                <Check className="h-4 w-4 text-emerald-600" />
+              <Badge className="w-full flex items-center justify-start gap-2 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20 py-2 px-3 transition-colors">
+                <Check className="h-4 w-4 text-primary" />
                 <span className="font-semibold">Completar</span>
               </Badge>
             </DropdownMenuItem>

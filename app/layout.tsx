@@ -4,25 +4,15 @@ import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'BookIA - Sistema de Reservas Inteligente',
-  description: 'Organiza tu agenda, reduce cancelaciones y automatiza recordatorios por WhatsApp. El sistema profesional de reservas para barberías.',
-  generator: 'v0.app',
+  title: {
+    default: 'BookIA | Plataforma de reservas para negocios de servicios',
+    template: '%s | BookIA',
+  },
+  description:
+    'BookIA ayuda a gestionar reservas, clientes y recordatorios automáticos para barberías, salones, spa y clínicas.',
   icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
+    icon: '/icon.svg',
+    apple: '/icon.svg',
   },
 }
 

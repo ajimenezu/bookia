@@ -14,6 +14,13 @@ export interface Terminology {
   newService: string
   newAppointment: string
   dashboardDesc: string
+  businessName: string
+  serviceGender: "m" | "f"
+  staffGender: "m" | "f"
+  clientGender: "m" | "f"
+  appointmentGender: "m" | "f"
+  bookVerb: string
+  bookingVerb: string
 }
 
 export const DICTIONARIES: Record<BusinessType, Terminology> = {
@@ -30,7 +37,14 @@ export const DICTIONARIES: Record<BusinessType, Terminology> = {
     newClient: "Nuevo Cliente",
     newService: "Nuevo Servicio",
     newAppointment: "Nueva Cita",
-    dashboardDesc: "Resumen de tu barbería hoy"
+    dashboardDesc: "Resumen de tu barbería hoy",
+    businessName: "Barbería",
+    serviceGender: "m",
+    staffGender: "m",
+    clientGender: "m",
+    appointmentGender: "f",
+    bookVerb: "Agendar",
+    bookingVerb: "Agendando"
   },
   SALON_BELLEZA: {
     staff: "Estilista",
@@ -45,7 +59,14 @@ export const DICTIONARIES: Record<BusinessType, Terminology> = {
     newClient: "Nuevo Cliente",
     newService: "Nuevo Tratamiento",
     newAppointment: "Nueva Reserva",
-    dashboardDesc: "Resumen de tu salón hoy"
+    dashboardDesc: "Resumen de tu salón hoy",
+    businessName: "Salón de Belleza",
+    serviceGender: "m",
+    staffGender: "m",
+    clientGender: "m",
+    appointmentGender: "f",
+    bookVerb: "Reservar",
+    bookingVerb: "Reservando"
   },
   SPA: {
     staff: "Terapeuta",
@@ -60,7 +81,14 @@ export const DICTIONARIES: Record<BusinessType, Terminology> = {
     newClient: "Nuevo Huésped",
     newService: "Nueva Sesión",
     newAppointment: "Nueva Cita",
-    dashboardDesc: "Resumen de tu SPA hoy"
+    dashboardDesc: "Resumen de tu SPA hoy",
+    businessName: "SPA",
+    serviceGender: "f",
+    staffGender: "m",
+    clientGender: "m",
+    appointmentGender: "f",
+    bookVerb: "Agendar",
+    bookingVerb: "Agendando"
   },
   CLINICA: {
     staff: "Especialista",
@@ -75,7 +103,14 @@ export const DICTIONARIES: Record<BusinessType, Terminology> = {
     newClient: "Nuevo Paciente",
     newService: "Nueva Consulta",
     newAppointment: "Nuevo Turno",
-    dashboardDesc: "Resumen de tu clínica hoy"
+    dashboardDesc: "Resumen de tu clínica hoy",
+    businessName: "Clínica",
+    serviceGender: "f",
+    staffGender: "m",
+    clientGender: "m",
+    appointmentGender: "m",
+    bookVerb: "Pedir",
+    bookingVerb: "Agendando"
   }
 }
 

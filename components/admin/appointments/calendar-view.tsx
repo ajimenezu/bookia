@@ -8,16 +8,19 @@ import { StatusBadge } from "./status-badge"
 import { formatTime } from "@/lib/date-utils"
 import { AppointmentActions } from "./appointment-actions"
 import { AppointmentDetailSheet } from "./appointment-detail-sheet"
+import { BusinessType, getTerminology } from "@/lib/dictionaries"
 
 interface CalendarViewProps {
   dates: any[]
   appointments: any[]
   shopId: string
+  businessType: BusinessType
   services: { id: string; name: string; price: number; duration: number }[]
   staff: { id: string; name: string }[]
 }
 
-export function CalendarView({ dates, appointments, shopId, services, staff }: CalendarViewProps) {
+export function CalendarView({ dates, appointments, shopId, businessType, services, staff }: CalendarViewProps) {
+  const t = getTerminology(businessType)
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null)
   const [isSheetOpen, setIsSheetOpen] = useState(false)
 
@@ -68,6 +71,7 @@ export function CalendarView({ dates, appointments, shopId, services, staff }: C
         isOpen={isSheetOpen}
         onOpenChange={setIsSheetOpen}
         shopId={shopId}
+        businessType={businessType}
         services={services}
         staff={staff}
       />
@@ -110,7 +114,7 @@ export function CalendarView({ dates, appointments, shopId, services, staff }: C
                 )}
               >
                 {dayAppts.length === 0 ? (
-                  <p className="py-4 text-center text-xs text-muted-foreground text-pretty">Sin citas</p>
+                  <p className="py-4 text-center text-xs text-muted-foreground text-pretty">Sin {t.appointmentPlural.toLowerCase()}</p>
                 ) : (
                   <div className="grid gap-2">
                     {dayAppts.map((apt) => (
@@ -122,7 +126,7 @@ export function CalendarView({ dates, appointments, shopId, services, staff }: C
                         <p className="font-mono text-[10px] font-bold text-primary">
                           {formatTime(apt.startTime)}
                         </p>
-                        <p className="mt-1 text-xs font-semibold text-card-foreground line-clamp-1">{apt.customer?.name || apt.customerName || "Cliente"}</p>
+                        <p className="mt-1 text-xs font-semibold text-card-foreground line-clamp-1">{apt.customer?.name || apt.customerName || t.client}</p>
                         <p className="text-[10px] text-muted-foreground line-clamp-1">{apt.services?.length > 0 ? apt.services.map((s: any) => s.name).join(', ') : apt.service?.name}</p>
                         <div className="mt-2 block w-full" onClick={(e) => e.stopPropagation()}>
                           <AppointmentActions 
@@ -215,8 +219,8 @@ export function CalendarView({ dates, appointments, shopId, services, staff }: C
                 </p>
                 <p className="text-xs font-medium text-muted-foreground">
                   {dayAppts.length === 0
-                    ? "Sin citas para hoy"
-                    : `${dayAppts.length} cita${dayAppts.length > 1 ? "s" : ""} programada${dayAppts.length > 1 ? "s" : ""}`}
+                    ? `Sin ${t.appointmentPlural.toLowerCase()} para hoy`
+                    : `${dayAppts.length} ${dayAppts.length > 1 ? t.appointmentPlural.toLowerCase() : t.appointment.toLowerCase()} programada${dayAppts.length > 1 ? "s" : ""}`}
                 </p>
               </div>
             </div>
@@ -228,7 +232,7 @@ export function CalendarView({ dates, appointments, shopId, services, staff }: C
               <div className="mx-auto h-16 w-16 mb-4 rounded-full bg-muted/20 flex items-center justify-center">
                 <ChevronRight className="h-8 w-8 opacity-20 rotate-90" />
               </div>
-              <p className="text-muted-foreground font-medium">No hay citas para este día</p>
+              <p className="text-muted-foreground font-medium">No hay {t.appointmentPlural.toLowerCase()} para este día</p>
               <p className="text-xs text-muted-foreground/60 mt-1">¡Un día tranquilo siempre es bueno!</p>
             </div>
           ) : (
@@ -249,7 +253,7 @@ export function CalendarView({ dates, appointments, shopId, services, staff }: C
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-bold text-card-foreground truncate leading-tight">
-                      {apt.customer?.name || apt.customerName || "Cliente"}
+                      {apt.customer?.name || apt.customerName || t.client}
                     </p>
                     <p className="text-xs text-muted-foreground truncate mt-1">{apt.services?.length > 0 ? apt.services.map((s: any) => s.name).join(', ') : apt.service?.name}</p>
                   </div>

@@ -60,7 +60,7 @@ export async function ClientesContent({ shopId, isSuperAdmin, businessType, q }:
   return (
     <>
       <div className="mb-4">
-        <p className="text-muted-foreground">{q ? `${clients.length} resultados encontrados` : `${clients.length} clientes registrados`}</p>
+        <p className="text-muted-foreground">{q ? `${clients.length} resultados encontrados` : `${clients.length} ${t.clientPlural.toLowerCase()} registrados`}</p>
       </div>
 
       <div className="hidden rounded-xl border border-border bg-card md:block">
@@ -136,7 +136,7 @@ export async function ClientesContent({ shopId, isSuperAdmin, businessType, q }:
               <span className="text-2xl">👤</span>
             </div>
             <p className="font-bold text-muted-foreground">No hay {t.clientPlural.toLowerCase()} registrados.</p>
-            <p className="text-xs text-muted-foreground/60 mt-1">Cuando alguien reserve, aparecerá aquí.</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">Cuando un {t.client.toLowerCase()} reserve, aparecerá aquí.</p>
           </div>
         )}
       </div>

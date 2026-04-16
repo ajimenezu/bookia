@@ -62,7 +62,7 @@ export default async function CitasPage({ params, searchParams }: PageProps) {
 
   return (
     <div>
-      <AdminStatsContainer shopId={shopId} />
+      <AdminStatsContainer shopId={shopId} businessType={businessType as any} />
 
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -77,6 +77,7 @@ export default async function CitasPage({ params, searchParams }: PageProps) {
             shopId={shopId}
             shopName={shop.name}
             shopSlug={slug}
+            businessType={businessType}
             whatsappPhone={shop.whatsappPhone}
             services={mappedServices}
             staff={mappedStaff}
@@ -87,7 +88,7 @@ export default async function CitasPage({ params, searchParams }: PageProps) {
       </div>
       <WeekNavigation weekOffset={weekOffset} view={view} rangeLabel={rangeLabel} />
       <Suspense key={`${weekOffset}-${view}`} fallback={<AppointmentsSkeleton view={view} />}>
-        <AppointmentsContent shopId={shopId} weekOffset={weekOffset} view={view} />
+        <AppointmentsContent shopId={shopId} businessType={businessType as any} weekOffset={weekOffset} view={view} />
       </Suspense>
     </div>
   )

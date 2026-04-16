@@ -2,12 +2,16 @@
 
 import { DollarSign, TrendingUp } from "lucide-react"
 
+import { BusinessType, getTerminology } from "@/lib/dictionaries"
+
 interface AdminStatsProps {
   totalRevenue: string | number
   totalBookings: number
+  businessType: BusinessType
 }
 
-export function AdminStats({ totalRevenue, totalBookings }: AdminStatsProps) {
+export function AdminStats({ totalRevenue, totalBookings, businessType }: AdminStatsProps) {
+  const t = getTerminology(businessType)
   // Ensure we have a string representation for revenue
   const formattedRevenue = typeof totalRevenue === "number"
     ? new Intl.NumberFormat("es-CR", { style: "currency", currency: "CRC" }).format(totalRevenue).replace("CRC", "₡")
@@ -30,7 +34,7 @@ export function AdminStats({ totalRevenue, totalBookings }: AdminStatsProps) {
           <TrendingUp className="h-6 w-6" />
         </div>
         <div>
-          <p className="text-sm font-medium text-muted-foreground">Reservas totales (este mes)</p>
+          <p className="text-sm font-medium text-muted-foreground">{t.appointmentPlural} totales (este mes)</p>
           <p className="text-2xl font-bold text-card-foreground tracking-tight">{totalBookings}</p>
         </div>
       </div>

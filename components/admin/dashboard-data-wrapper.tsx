@@ -17,7 +17,7 @@ export async function DashboardDataWrapper({
   shopName, 
   whatsappPhone 
 }: DashboardDataWrapperProps) {
-  const appointments = await getAppointmentsData(shopId)
+  const { todayAppointments, monthCount } = await getAppointmentsData(shopId)
   
   const [services, staffData, clientsData] = await Promise.all([
     prisma.service.findMany({ where: { shopId }, orderBy: { price: "asc" } }),
@@ -56,7 +56,8 @@ export async function DashboardDataWrapper({
       slug={slug}
       shopName={shopName}
       whatsappPhone={whatsappPhone}
-      appointments={appointments}
+      appointments={todayAppointments}
+      monthCount={monthCount}
       mappedServices={mappedServices}
       mappedStaff={mappedStaff}
       mappedClients={mappedClients}

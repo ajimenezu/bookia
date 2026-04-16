@@ -62,7 +62,7 @@ export async function createBooking(rawData: unknown) {
 
   if (staffId === "auto") {
     const staffMembers = await prisma.shopMember.findMany({
-      where: { shopId, role: { in: ["STAFF", "OWNER", "SUPER_ADMIN"] } },
+      where: { shopId, role: { in: ["STAFF", "OWNER"] } },
       select: { userId: true }
     })
 
@@ -214,7 +214,7 @@ export async function getAvailableStaffForSlot(
   // 2. Fetch all shop members and their schedules in a single query
   const dayOfWeek = startTime.getDay()
   const staffMembers = await prisma.shopMember.findMany({
-    where: { shopId, role: { in: ["STAFF", "OWNER", "SUPER_ADMIN"] } },
+    where: { shopId, role: { in: ["STAFF", "OWNER"] } },
     include: { 
       user: {
         include: {

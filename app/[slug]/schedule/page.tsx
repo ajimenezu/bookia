@@ -10,6 +10,7 @@ import { ChevronLeft } from "lucide-react"
 
 interface PageProps {
   params: Promise<{ slug: string }>
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -19,8 +20,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return { title: `Reservar cita — ${shop.name}` }
 }
 
-export default async function ShopSchedulePage({ params }: PageProps) {
+export default async function ShopSchedulePage({ params, searchParams }: PageProps) {
   const { slug } = await params
+  const { service } = await searchParams
+  const initialServiceId = typeof service === 'string' ? service : undefined
   const account = await getAdminUser()
   
   const user = account?.user ? {
@@ -89,6 +92,7 @@ export default async function ShopSchedulePage({ params }: PageProps) {
                 shopId={shop.id}
                 shopName={shop.name}
                 shopSlug={shop.slug}
+                businessType={shop.businessType}
                 whatsappPhone={shop.whatsappPhone}
                 services={services}
                 staff={staff}
@@ -96,6 +100,7 @@ export default async function ShopSchedulePage({ params }: PageProps) {
                 initialClientPhone={user?.phone ?? undefined}
                 hideHeader={true}
                 shopSchedules={mappedSchedules}
+                initialServiceId={initialServiceId}
               />
             </div>
           </div>

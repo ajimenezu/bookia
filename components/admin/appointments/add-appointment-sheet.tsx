@@ -5,6 +5,7 @@ import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { BookingFlow } from "@/components/booking/booking-flow"
+import { BusinessType } from "@/lib/dictionaries"
 
 interface ServiceData {
   id: string
@@ -28,6 +29,7 @@ interface AddAppointmentSheetProps {
   shopId: string
   shopName: string
   shopSlug: string
+  businessType?: BusinessType
   whatsappPhone: string | null
   services: ServiceData[]
   staff: StaffData[]
@@ -43,6 +45,7 @@ export function AddAppointmentSheet({
   shopId,
   shopName,
   shopSlug,
+  businessType,
   whatsappPhone,
   services,
   staff,
@@ -50,9 +53,6 @@ export function AddAppointmentSheet({
   shopSchedules = []
 }: AddAppointmentSheetProps) {
   const [isOpen, setIsOpen] = useState(false)
-
-  // Listen to custom successful booking event if we want to auto-close, 
-  // or just let user close the sheet themselves. BookingFlow shows a Success Dialog anyway.
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -77,6 +77,7 @@ export function AddAppointmentSheet({
               shopId={shopId}
               shopName={shopName}
               shopSlug={shopSlug}
+              businessType={businessType}
               whatsappPhone={whatsappPhone}
               services={services}
               staff={staff}

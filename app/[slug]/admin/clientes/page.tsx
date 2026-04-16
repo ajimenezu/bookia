@@ -6,6 +6,7 @@ import { Suspense } from "react"
 import { ClientesContent } from "@/components/admin/clientes-content"
 import { ClientesSkeleton } from "@/components/admin/clientes-skeleton"
 import { getShopBySlug } from "@/lib/shop"
+import { getTerminology } from "@/lib/dictionaries"
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -20,13 +21,14 @@ export default async function ClientesPage({ params, searchParams }: PageProps) 
 
   const { shopId, isSuperAdmin, role, businessType } = await requireAdmin(shop.id)
   const { q } = await searchParams
+  const t = getTerminology(businessType as any)
 
   return (
     <div className="animate-in fade-in duration-500">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground md:text-3xl">Clientes</h1>
-          <p className="mt-1 text-muted-foreground italic text-sm">Gestiona la base de datos de tus clientes</p>
+          <h1 className="text-2xl font-bold text-foreground md:text-3xl">{t.clientPlural}</h1>
+          <p className="mt-1 text-muted-foreground italic text-sm">Gestiona la base de datos de tus {t.clientPlural.toLowerCase()}</p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <ClientSearch placeholder="Buscar por nombre, email o teléfono..." />

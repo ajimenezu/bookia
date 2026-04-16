@@ -3,7 +3,6 @@
 import Link from "next/link"
 import Image from "next/image"
 import {
-  Scissors,
   ChevronDown,
   LogOut,
   User,
@@ -18,12 +17,15 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu"
 import { signOut } from "@/app/auth/actions"
+import { BusinessType, getTerminology } from "@/lib/dictionaries"
+import { getBusinessIcon } from "@/lib/business-icons"
 
 interface ShopNavbarProps {
   shop: {
     id: string
     name: string
     slug: string
+    businessType: BusinessType
     logoUrl?: string | null
   }
   user?: {
@@ -34,6 +36,8 @@ interface ShopNavbarProps {
 }
 
 export function ShopNavbar({ shop, user, role, showScheduleButton = true }: ShopNavbarProps) {
+  const t = getTerminology(shop.businessType)
+  const BusinessIcon = getBusinessIcon(shop.businessType)
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-lg">
       <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
@@ -48,7 +52,7 @@ export function ShopNavbar({ shop, user, role, showScheduleButton = true }: Shop
             />
           ) : (
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
-              <Scissors className="h-5 w-5" />
+              <BusinessIcon className="h-5 w-5" />
             </div>
           )}
           <span className="text-xl font-black text-foreground tracking-tight">{shop.name}</span>
@@ -70,7 +74,7 @@ export function ShopNavbar({ shop, user, role, showScheduleButton = true }: Shop
               id="nav-book-btn"
               className="rounded-xl bg-primary px-5 py-2.5 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95 flex items-center justify-center"
             >
-              Reservar
+              {t.bookVerb}
             </Link>
           )}
 

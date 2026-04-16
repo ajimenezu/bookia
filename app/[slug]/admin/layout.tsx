@@ -23,7 +23,7 @@ export default async function AdminLayout({ children, params }: LayoutProps) {
 
   return (
     <BusinessThemeProvider businessType={businessType} businessSlug={slug}>
-      <AdminSidebar terminology={t} shopSlug={slug} shopId={shop.id}>{children}</AdminSidebar>
+      <AdminSidebar terminology={t} shopSlug={slug} shopId={shop.id} businessType={businessType}>{children}</AdminSidebar>
     </BusinessThemeProvider>
   )
 }

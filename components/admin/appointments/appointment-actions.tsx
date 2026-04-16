@@ -44,8 +44,14 @@ export function AppointmentActions({ appointmentId, shopId, currentStatus, start
     setLoading(newStatus)
     try {
       const result = await updateAppointmentStatus(appointmentId, newStatus, shopId)
+      const statusLabels: Record<string, string> = {
+        COMPLETED: "completada",
+        CONFIRMED: "confirmada",
+        CANCELLED: "cancelada",
+        NO_SHOW: "marcada como no asistió"
+      }
       if (result.success) {
-        toast.success(`Cita ${newStatus.toLowerCase()} con éxito`)
+        toast.success(`Cita ${statusLabels[newStatus] || newStatus.toLowerCase()} con éxito`)
         router.refresh()
       } else {
         toast.error(result.error || "Ocurrió un error")
@@ -113,6 +119,16 @@ export function AppointmentActions({ appointmentId, shopId, currentStatus, start
                 </Badge>
               </DropdownMenuItem>
             )}
+
+            <DropdownMenuItem
+              onClick={() => handleStatusUpdate("NO_SHOW")}
+              className="cursor-pointer focus:bg-transparent p-1"
+            >
+              <Badge className="w-full flex items-center justify-start gap-2 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/20 py-2 px-3 transition-colors">
+                <XCircle className="h-4 w-4 text-amber-600" />
+                <span className="font-semibold">No asistió</span>
+              </Badge>
+            </DropdownMenuItem>
 
             {!isPast && (
               <DropdownMenuItem

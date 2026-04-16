@@ -1,7 +1,8 @@
-import { Scissors, Clock, DollarSign, Edit2, Sparkles, Flower2, Stethoscope, Sparkle } from "lucide-react"
+import { Edit2, Clock, DollarSign } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { BusinessType } from "@/lib/dictionaries"
 import { Badge } from "@/components/ui/badge"
+import { getBusinessIcon } from "@/lib/business-icons"
 
 interface ServiceCardProps {
   name: string
@@ -30,21 +31,13 @@ export function ServiceCard({
     : price || "₡0"
 
   // Select icon based on business type
-  const ServiceIcon = (() => {
-    switch (businessType) {
-      case "BARBERIA": return Scissors
-      case "SALON_BELLEZA": return Sparkles
-      case "SPA": return Flower2
-      case "CLINICA": return Stethoscope
-      default: return Sparkle
-    }
-  })()
+  const ServiceIcon = getBusinessIcon(businessType)
 
   return (
     <div
       onClick={!isPreview ? onClick : undefined}
       className={cn(
-        "group relative rounded-2xl border border-border bg-card p-6 transition-all text-left shadow-sm",
+        "group relative rounded-2xl border border-border bg-card p-6 transition-all text-left shadow-sm h-full flex flex-col",
         !isPreview && onClick && "cursor-pointer hover:border-primary/50 hover:shadow-xl hover:-translate-y-1 active:scale-[0.98]",
         isPreview && "opacity-80 grayscale-[0.2]",
         className
@@ -73,7 +66,7 @@ export function ServiceCard({
         </div>
       </div>
 
-      <div className="grid gap-3 pt-4 border-t border-border/60">
+      <div className="flex-1 grid gap-3 pt-4 border-t border-border/60 content-start">
         <div className="flex items-center justify-between text-sm">
           <span className="flex items-center gap-2 text-muted-foreground font-medium">
             <Clock className="h-4 w-4" /> Duración
@@ -85,7 +78,7 @@ export function ServiceCard({
         {description && (
           <div className="mt-2 space-y-1">
             <p className="text-[10px] uppercase font-black text-muted-foreground/50 tracking-widest">Descripción</p>
-            <p className="text-sm text-muted-foreground/80 line-clamp-2 leading-relaxed">
+            <p className="text-sm text-muted-foreground/80 leading-relaxed whitespace-pre-wrap">
               {description}
             </p>
           </div>

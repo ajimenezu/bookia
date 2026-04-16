@@ -30,7 +30,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { StatusBadge } from "./status-badge"
-import { formatTime } from "@/lib/date-utils"
+import { formatTime, toCRDate } from "@/lib/date-utils"
 import { updateAppointmentStatus, updateBooking, fetchAvailableSlots } from "@/app/schedule/actions"
 import { AppointmentStatus } from "@prisma/client"
 import { toast } from "sonner"
@@ -43,12 +43,14 @@ import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
+import { BusinessType, getTerminology } from "@/lib/dictionaries"
 
 interface AppointmentDetailSheetProps {
   appointment: any
   isOpen: boolean
   onOpenChange: (open: boolean) => void
   shopId: string
+  businessType: BusinessType
   services: { id: string; name: string; price: number; duration: number }[]
   staff: { id: string; name: string }[]
 }
@@ -60,12 +62,14 @@ export function AppointmentDetailSheet({
   isOpen, 
   onOpenChange, 
   shopId,
+  businessType,
   services,
   staff
 }: AppointmentDetailSheetProps) {
   const router = useRouter()
   const [mode, setMode] = useState<Mode>("preview")
   const [isUpdating, setIsUpdating] = useState(false)
+  const t = getTerminology(businessType)
   
   // Edit Form State
   const [selectedServices, setSelectedServices] = useState<string[]>([])
@@ -116,8 +120,14 @@ export function AppointmentDetailSheet({
     setIsUpdating(true)
     try {
       const result = await updateAppointmentStatus(appointment.id, newStatus, shopId)
+      const statusLabels: Record<string, string> = {
+        COMPLETED: "completada",
+        CONFIRMED: "confirmada",
+        CANCELLED: "cancelada",
+        NO_SHOW: "marcada como no asistió"
+      }
       if (result.success) {
-        toast.success(`Cita ${newStatus.toLowerCase()} con éxito`)
+        toast.success(`${t.appointment} ${statusLabels[newStatus] || newStatus.toLowerCase()} con éxito`)
         router.refresh()
         onOpenChange(false)
       } else {
@@ -152,7 +162,7 @@ export function AppointmentDetailSheet({
       })
 
       if (result.success) {
-        toast.success("Cita actualizada correctamente")
+        toast.success(`${t.appointment} actualizada correctamente`)
         router.refresh()
         setMode("preview")
         onOpenChange(false)
@@ -189,12 +199,12 @@ export function AppointmentDetailSheet({
           <div className="flex items-center justify-between gap-4">
             <div>
               <SheetTitle className="text-2xl font-bold tracking-tight text-foreground">
-                {mode === "preview" ? "Detalles de la Cita" : "Editar Cita"}
+                {mode === "preview" ? `Detalles de la ${t.appointment}` : `Editar ${t.appointment}`}
               </SheetTitle>
               <SheetDescription className="text-muted-foreground mt-1">
                 {mode === "preview" 
-                  ? "Revisa la información y gestiona el estado." 
-                  : "Modifica los servicios, fecha o personal."}
+                   ? "Revisa la información y gestiona el estado." 
+                   : `Modifica los ${t.servicePlural.toLowerCase()}, fecha o ${t.staff.toLowerCase()}.`}
               </SheetDescription>
             </div>
             <StatusBadge status={appointment.status} className="px-3 py-1 text-xs" />
@@ -210,13 +220,13 @@ export function AppointmentDetailSheet({
                 <section className="space-y-4">
                   <div className="flex items-center gap-2 text-primary">
                     <User className="h-5 w-5" />
-                    <h3 className="font-bold text-lg">Información del Cliente</h3>
+                    <h3 className="font-bold text-lg">Información del {t.client}</h3>
                   </div>
                   <div className="grid gap-4 rounded-2xl border border-border bg-card/30 p-5 shadow-sm">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground opacity-70">Nombre</p>
                       <p className="text-lg font-black text-card-foreground mt-0.5">
-                        {appointment.customer?.name || appointment.customerName || "Cliente"}
+                        {appointment.customer?.name || appointment.customerName || t.client}
                       </p>
                     </div>
                     {appointment.customerPhone && (
@@ -238,7 +248,7 @@ export function AppointmentDetailSheet({
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-primary">
                       <Tag className="h-4 w-4" />
-                      <h3 className="font-bold">Servicios</h3>
+                      <h3 className="font-bold">{t.servicePlural}</h3>
                     </div>
                     <div className="space-y-2">
                       {appointment.services?.length > 0 ? (
@@ -257,7 +267,7 @@ export function AppointmentDetailSheet({
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-primary">
                       <User className="h-4 w-4" />
-                      <h3 className="font-bold">Personal</h3>
+                      <h3 className="font-bold">{t.staff}</h3>
                     </div>
                     <div className="rounded-lg bg-secondary/30 px-3 py-2 border border-border/50">
                       <p className="text-sm font-medium">{appointment.staff?.name || "No asignado"}</p>
@@ -314,9 +324,9 @@ export function AppointmentDetailSheet({
                 <div className="flex justify-center pt-2">
                   <Button 
                     variant="outline" 
-                    className="h-12 px-8 rounded-xl font-bold border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all shadow-sm"
+                    size="sm" 
+                    className="rounded-xl font-bold border-primary/20 text-primary hover:bg-primary/5 shadow-sm"
                     onClick={() => setMode("edit")}
-                    disabled={isUpdating || appointment.status === "COMPLETED" || appointment.status === "CANCELLED"}
                   >
                     <Edit3 className="mr-2 h-4 w-4" /> Editar Información
                   </Button>
@@ -340,7 +350,7 @@ export function AppointmentDetailSheet({
                           value={customerName} 
                           onChange={(e) => setCustomerName(e.target.value)} 
                           className="h-11 rounded-xl bg-background border-border"
-                          placeholder="Nombre del cliente"
+                          placeholder={`Nombre del ${t.client.toLowerCase()}`}
                         />
                       </div>
                       <div className="space-y-2">
@@ -360,7 +370,7 @@ export function AppointmentDetailSheet({
                 {/* Services Selection */}
                 <section className="space-y-4">
                   <Label className="text-base font-bold flex items-center gap-2">
-                    <Tag className="h-4 w-4 text-primary" /> Servicios Seleccionados
+                    <Tag className="h-4 w-4 text-primary" /> {t.servicePlural} Seleccionados
                   </Label>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {services.map((s) => (
@@ -399,11 +409,11 @@ export function AppointmentDetailSheet({
                 {/* Staff Selection */}
                 <section className="space-y-4">
                   <Label className="text-base font-bold flex items-center gap-2">
-                    <User className="h-4 w-4 text-primary" /> Especialista
+                    <User className="h-4 w-4 text-primary" /> {t.staff}
                   </Label>
                   <Select value={selectedStaff} onValueChange={setSelectedStaff}>
                     <SelectTrigger className="h-12 rounded-xl bg-card border-border shadow-sm">
-                      <SelectValue placeholder="Selecciona especialista" />
+                      <SelectValue placeholder={`Selecciona ${t.staff.toLowerCase()}`} />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border-border bg-card/95 backdrop-blur-md">
                       {staff.map((m) => (
@@ -483,25 +493,41 @@ export function AppointmentDetailSheet({
           {mode === "preview" ? (
             <>
               {/* Status Management */}
-              <div className="grid grid-cols-2 gap-3 w-full sm:w-auto flex-1">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 w-full flex-1">
                 {(appointment.status === "PENDING" || appointment.status === "CONFIRMED") && (
                   <Button 
-                    className="h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 font-bold transition-all shadow-lg shadow-emerald-600/20"
+                    variant="outline"
+                    className="h-10 rounded-xl bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300 font-bold transition-all shadow-sm text-xs px-4 w-full sm:w-auto"
                     onClick={() => handleStatusUpdate("COMPLETED")}
                     disabled={isUpdating}
                   >
-                    {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-5 w-5" />}
+                    {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-1.5 h-4 w-4" />}
                     Completar
                   </Button>
                 )}
-                {(appointment.status !== "CANCELLED") && (
+                {(appointment.status === "PENDING" || appointment.status === "CONFIRMED") && (
                   <Button 
-                    variant="destructive"
-                    className="h-12 rounded-xl font-bold transition-all shadow-lg shadow-destructive/20"
+                    variant="outline"
+                    className="h-10 rounded-xl bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 hover:border-amber-300 font-bold transition-all shadow-sm text-xs px-4 w-full sm:w-auto"
+                    onClick={() => handleStatusUpdate("NO_SHOW")}
+                    disabled={isUpdating}
+                  >
+                    {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="mr-1.5 h-4 w-4" />}
+                    No asistió
+                  </Button>
+                )}
+                {(appointment.status !== "CANCELLED" && appointment.status !== "COMPLETED" && appointment.status !== "NO_SHOW") && (
+                  <Button 
+                    variant="outline"
+                    className={cn(
+                      "h-10 rounded-xl bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 hover:border-rose-300 font-bold transition-all shadow-sm text-xs px-4 w-full sm:w-auto",
+                      // Hide Cancel for past appointments as requested
+                      new Date(appointment.startTime) < toCRDate(new Date()) && "hidden"
+                    )}
                     onClick={() => handleStatusUpdate("CANCELLED")}
                     disabled={isUpdating}
                   >
-                    {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <XCircle className="mr-2 h-5 w-5" />}
+                    {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="mr-1.5 h-4 w-4" />}
                     Cancelar
                   </Button>
                 )}

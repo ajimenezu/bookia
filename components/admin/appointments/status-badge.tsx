@@ -7,6 +7,7 @@ export function StatusBadge({ status, children, className }: { status: string; c
     CONFIRMED: { label: "Confirmada", className: "bg-primary/15 text-primary border-primary/30" },
     PENDING: { label: "Pendiente", className: "bg-secondary/15 text-secondary border-secondary/30" },
     CANCELLED: { label: "Cancelada", className: "bg-destructive/15 text-destructive border-destructive/30" },
+    NO_SHOW: { label: "No asistió", className: "bg-amber-500/15 text-amber-600 border-amber-500/30" },
   }
 
   const config = statusMap[status] || { label: status, className: "" }

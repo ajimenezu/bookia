@@ -1,8 +1,9 @@
 import { AdminStats } from "./admin-stats"
 import { getAppointmentsInRange } from "@/lib/appointments"
 import { toCRDate } from "@/lib/date-utils"
+import { BusinessType } from "@/lib/dictionaries"
 
-export async function AdminStatsContainer({ shopId }: { shopId: string }) {
+export async function AdminStatsContainer({ shopId, businessType }: { shopId: string, businessType: BusinessType }) {
   const now = new Date()
   const crNow = toCRDate(now)
   const startOfMonthCR = new Date(crNow.getFullYear(), crNow.getMonth(), 1)
@@ -27,5 +28,5 @@ export async function AdminStatsContainer({ shopId }: { shopId: string }) {
     return sum + appPrice
   }, 0)
 
-  return <AdminStats totalRevenue={totalRevenue} totalBookings={totalBookings} />
+  return <AdminStats totalRevenue={totalRevenue} totalBookings={totalBookings} businessType={businessType} />
 }

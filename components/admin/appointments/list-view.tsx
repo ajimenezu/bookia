@@ -6,15 +6,18 @@ import { StatusBadge } from "./status-badge"
 import { formatTime, formatDate } from "@/lib/date-utils"
 import { AppointmentActions } from "./appointment-actions"
 import { AppointmentDetailSheet } from "./appointment-detail-sheet"
+import { BusinessType, getTerminology } from "@/lib/dictionaries"
 
 interface ListViewProps {
   appointments: any[]
   shopId: string
+  businessType: BusinessType
   services: { id: string; name: string; price: number; duration: number }[]
   staff: { id: string; name: string }[]
 }
 
-export function ListView({ appointments, shopId, services, staff }: ListViewProps) {
+export function ListView({ appointments, shopId, businessType, services, staff }: ListViewProps) {
+  const t = getTerminology(businessType)
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null)
   const [isSheetOpen, setIsSheetOpen] = useState(false)
 
@@ -34,12 +37,13 @@ export function ListView({ appointments, shopId, services, staff }: ListViewProp
         isOpen={isSheetOpen}
         onOpenChange={setIsSheetOpen}
         shopId={shopId}
+        businessType={businessType}
         services={services}
         staff={staff}
       />
       {appointments.length === 0 ? (
         <div className="py-12 text-center text-muted-foreground">
-          No hay citas registradas para esta semana.
+          No hay {t.appointmentPlural.toLowerCase()} registradas para esta semana.
         </div>
       ) : (
         <div className="divide-y divide-border">
@@ -63,7 +67,7 @@ export function ListView({ appointments, shopId, services, staff }: ListViewProp
                     {formatTime(apt.startTime)}
                   </span>
                   <div>
-                    <p className="font-semibold text-card-foreground">{apt.customer?.name || apt.customerName || "Cliente"}</p>
+                    <p className="font-semibold text-card-foreground">{apt.customer?.name || apt.customerName || t.client}</p>
                     <p className="text-sm text-muted-foreground">
                       <span className="font-medium text-foreground/70">{apt.services?.length > 0 ? apt.services.map((s: any) => s.name).join(', ') : apt.service?.name}</span> &middot; <User className="mb-0.5 inline h-3 w-3" /> {apt.staff?.name || "Staff"}
                     </p>

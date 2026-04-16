@@ -39,7 +39,10 @@
 - **Gold Standard (Admin)**: Referencia `app/[slug]/admin/servicios/actions.ts`.
 - **Gold Standard (Data Fetching)**: `app/[slug]/admin/layout.tsx` (Uso de `getShopBySlug`).
 
+## 5. Navegación Narrativa y Deep Links
+- **Pre-selección de Contexto**: Al navegar entre la Landing y el flujo de reserva, se deben usar parámetros de búsqueda (`?service=X`, `?staff=Y`) para mejorar la UX. 
+- **Implementación**: El componente `BookingFlow` debe leer estos parámetros en su inicialización para pre-poblar el estado del formulario.
 
----
-> [!WARNING]
-> Cualquier código que use `text-white` o `bg-black` directamente en vez de los tokens de color será rechazado en la revisión de arquitectura.
+## 6. Filtrado de Métricas de Negocio
+- **Ingresos Reales**: Cualquier cálculo de "Ingresos" o "Finance" debe excluir explícitamente los estados `CANCELLED` y `NO_SHOW`.
+- **Conteo de Citas**: Al mostrar "Citas totales", se debe discriminar entre citas agendadas y citas que efectivamente generaron valor (excluyendo cancelaciones).

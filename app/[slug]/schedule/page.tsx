@@ -10,6 +10,7 @@ import { ChevronLeft } from "lucide-react"
 
 interface PageProps {
   params: Promise<{ slug: string }>
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -19,10 +20,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return { title: `Reservar cita — ${shop.name}` }
 }
 
-export default async function ShopSchedulePage({ params }: PageProps) {
+export default async function ShopSchedulePage({ params, searchParams }: PageProps) {
   const { slug } = await params
+  const { service } = await searchParams
+  const initialServiceId = typeof service === 'string' ? service : undefined
   const account = await getAdminUser()
-  
+
   const user = account?.user ? {
     name: account.user.user_metadata?.full_name || account.user.email,
     phone: account.user.user_metadata?.phone || null
@@ -62,7 +65,7 @@ export default async function ShopSchedulePage({ params }: PageProps) {
   const shopSchedules = await prisma.shopSchedule.findMany({
     where: { shopId: shop.id }
   })
-  
+
   const mappedSchedules = shopSchedules.map(s => ({
     dayOfWeek: s.dayOfWeek,
     closeTime: s.closeTime,
@@ -73,10 +76,10 @@ export default async function ShopSchedulePage({ params }: PageProps) {
     <BusinessThemeProvider businessType={shop.businessType} businessSlug={shop.slug}>
       <div className="min-h-screen bg-background flex flex-col">
         <ShopNavbar shop={shop} user={user} showScheduleButton={false} />
-        
+
         <main className="flex-1 pb-20">
           <div className="mx-auto max-w-5xl px-4 pt-6">
-            <Link 
+            <Link
               href={`/${shop.slug}`}
               className="group inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors mb-6"
             >
@@ -89,6 +92,7 @@ export default async function ShopSchedulePage({ params }: PageProps) {
                 shopId={shop.id}
                 shopName={shop.name}
                 shopSlug={shop.slug}
+                businessType={shop.businessType}
                 whatsappPhone={shop.whatsappPhone}
                 services={services}
                 staff={staff}
@@ -96,6 +100,7 @@ export default async function ShopSchedulePage({ params }: PageProps) {
                 initialClientPhone={user?.phone ?? undefined}
                 hideHeader={true}
                 shopSchedules={mappedSchedules}
+                initialServiceId={initialServiceId}
               />
             </div>
           </div>

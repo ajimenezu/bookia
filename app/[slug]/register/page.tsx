@@ -26,6 +26,7 @@ export default async function ShopRegisterPage({ params }: PageProps) {
       <ShopSignUpForm
         slug={slug}
         shopName={shop.name}
+        businessType={shop.businessType}
         logoUrl={(shop as any).logoUrl ?? null}
       />
     </BusinessThemeProvider>

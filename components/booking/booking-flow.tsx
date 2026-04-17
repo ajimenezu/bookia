@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useTransition, useEffect, useCallback } from "react"
-import { Scissors, UserCheck, CalendarDays, CheckCircle2, Loader2, LogIn, UserPlus, Search } from "lucide-react"
+import { UserCheck, CalendarDays, CheckCircle2, Loader2, LogIn, UserPlus, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,12 +12,15 @@ import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { es } from "date-fns/locale"
 import { fetchAvailableSlots, createBooking, getAvailableStaffForSlot } from "@/app/schedule/actions"
+import { BusinessType, getTerminology } from "@/lib/dictionaries"
+import { getBusinessIcon } from "@/lib/business-icons"
 
 interface ServiceData {
   id: string
   name: string
   price: number
   duration: number
+  description: string | null
 }
 
 interface StaffData {
@@ -35,6 +38,7 @@ interface BookingFlowProps {
   shopId: string
   shopName: string
   shopSlug: string
+  businessType?: BusinessType
   whatsappPhone: string | null
   services: ServiceData[]
   staff: StaffData[]
@@ -48,6 +52,7 @@ interface BookingFlowProps {
     closeTime: string
     isOpen: boolean
   }[]
+  initialServiceId?: string
 }
 
 type Step = "service" | "barber" | "date" | "time" | "info"
@@ -55,6 +60,7 @@ export function BookingFlow({
   shopId,
   shopName,
   shopSlug,
+  businessType,
   whatsappPhone,
   services,
   staff,
@@ -63,11 +69,18 @@ export function BookingFlow({
   hideHeader = false,
   isAdmin = false,
   clients = [],
-  shopSchedules = []
+  shopSchedules = [],
+  initialServiceId
 }: BookingFlowProps) {
-  const [selectedServices, setSelectedServices] = useState<string[]>([])
+  const t = getTerminology(businessType)
+  const BusinessIcon = getBusinessIcon(businessType)
+  const [selectedServices, setSelectedServices] = useState<string[]>(
+    initialServiceId ? [initialServiceId] : []
+  )
   const [isServiceStepDone, setIsServiceStepDone] = useState(false)
-  const [selectedBarber, setSelectedBarber] = useState<string | null>(null)
+  const [selectedBarber, setSelectedBarber] = useState<string | null>(
+    staff.length === 1 ? staff[0].id : null
+  )
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
   const [clientName, setClientName] = useState(initialClientName || "")
@@ -132,8 +145,23 @@ export function BookingFlow({
         }
 
         setIsRestoringState(true)
-        if (state.selectedServices) setSelectedServices(state.selectedServices)
-        if (state.isServiceStepDone) setIsServiceStepDone(true)
+        if (state.selectedServices) {
+          const restored = state.selectedServices as string[]
+          if (initialServiceId && !restored.includes(initialServiceId)) {
+            setSelectedServices([...restored, initialServiceId])
+          } else {
+            setSelectedServices(restored)
+          }
+        }
+
+        // If we have a new initialServiceId, we should stay on the service step 
+        // to show the user what's selected even if they were further in a previous session
+        if (initialServiceId) {
+          setIsServiceStepDone(false)
+        } else if (state.isServiceStepDone) {
+          setIsServiceStepDone(true)
+        }
+
         if (state.selectedBarber) setSelectedBarber(state.selectedBarber)
         if (state.selectedDate) setSelectedDate(new Date(state.selectedDate))
         if (state.selectedTime) setSelectedTime(state.selectedTime)
@@ -218,7 +246,7 @@ export function BookingFlow({
   const handleReset = () => {
     setSelectedServices([])
     setIsServiceStepDone(false)
-    setSelectedBarber(null)
+    setSelectedBarber(staff.length === 1 ? staff[0].id : null)
     setSelectedDate(undefined)
     setSelectedTime(null)
     setClientName(initialClientName || "")
@@ -231,11 +259,10 @@ export function BookingFlow({
     clearBookingState()
   }
 
-  // Add "auto" option to staff list
-  const allStaff = [
-    { id: "auto", name: "Asignación automática" },
-    ...staff,
-  ]
+  // Add "auto" option to staff list only if there are multiple staff members
+  const allStaff = staff.length > 1
+    ? [{ id: "auto", name: "Asignación automática" }, ...staff]
+    : staff
 
   const selectedServicesDetails = services.filter((s) => selectedServices.includes(s.id))
   const totalPrice = selectedServicesDetails.reduce((sum, s) => sum + s.price, 0)
@@ -249,7 +276,7 @@ export function BookingFlow({
           <div className="mx-auto flex h-16 max-w-lg items-center justify-between px-6">
             <Link href="/" className="flex items-center gap-2.5">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
-                <Scissors className="h-4.5 w-4.5" />
+                <BusinessIcon className="h-4.5 w-4.5" />
               </div>
               <span className="text-xl font-black text-foreground tracking-tight">BookIA</span>
             </Link>
@@ -272,7 +299,7 @@ export function BookingFlow({
         {/* Shop name */}
         <div className="mb-10 text-center space-y-2">
           <h1 className="text-3xl font-black text-foreground tracking-tight">{shopName}</h1>
-          <p className="text-muted-foreground font-medium text-sm">Reserva tu experiencia en segundos</p>
+          <p className="text-muted-foreground font-medium text-sm">Agenda tu {t.appointment.toLowerCase()} en segundos</p>
         </div>
 
         {/* Progress */}
@@ -291,7 +318,7 @@ export function BookingFlow({
         {/* Step: Service Selection */}
         {currentStep === "service" && (
           <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <h2 className="mb-6 text-xl font-black text-foreground tracking-tight">Selecciona tus servicios</h2>
+            <h2 className="mb-6 text-xl font-black text-foreground tracking-tight">Selecciona tus {t.servicePlural.toLowerCase()}</h2>
             <div className="grid gap-4">
               {services.map((svc) => {
                 const isSelected = selectedServices.includes(svc.id)
@@ -314,13 +341,27 @@ export function BookingFlow({
                       "flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl transition-all duration-300",
                       isSelected ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-110" : "bg-primary/5 text-primary"
                     )}>
-                      {isSelected ? <CheckCircle2 className="h-7 w-7" /> : <Scissors className="h-6 w-6" />}
+                      {isSelected ? <CheckCircle2 className="h-7 w-7" /> : <BusinessIcon className="h-6 w-6" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-card-foreground text-lg leading-tight truncate">{svc.name}</p>
                       <div className="flex items-center gap-1.5 mt-1 text-muted-foreground">
                         <span className="text-xs font-medium bg-muted px-1.5 py-0.5 rounded-md">{formatDuration(svc.duration)}</span>
                       </div>
+
+                      {/* Animated Description Expansion */}
+                      {svc.description && (
+                        <div className={cn(
+                          "grid transition-all duration-500 ease-in-out",
+                          isSelected ? "grid-rows-[1fr] opacity-100 mt-3" : "grid-rows-[0fr] opacity-0 mt-0"
+                        )}>
+                          <div className="overflow-hidden">
+                            <p className="text-sm font-medium text-muted-foreground/80 leading-relaxed border-t border-primary/10 pt-3">
+                              {svc.description}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className="text-right">
                       <span className="text-xl font-black text-primary tracking-tighter">{formatPrice(svc.price)}</span>
@@ -329,7 +370,7 @@ export function BookingFlow({
                 )
               })}
               {services.length === 0 && (
-                <p className="py-8 text-center text-muted-foreground">No hay servicios disponibles</p>
+                <p className="py-8 text-center text-muted-foreground">No hay {t.servicePlural.toLowerCase()} disponibles</p>
               )}
             </div>
             {whatsappPhone && (
@@ -344,46 +385,62 @@ export function BookingFlow({
               </a>
             )}
 
-            <div className="mt-6 border-t border-border pt-4 sticky bottom-0 bg-background/95 backdrop-blur z-10 pb-4">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-sm text-muted-foreground">{selectedServices.length} {selectedServices.length === 1 ? 'servicio' : 'servicios'}</span>
-                <span className="font-bold text-lg text-primary">{totalPrice > 0 ? formatPrice(totalPrice) : ''}</span>
-              </div>
-              <Button
-                className="w-full h-12 rounded-xl text-base font-semibold"
-                onClick={() => setIsServiceStepDone(true)}
-                disabled={selectedServices.length === 0}
-              >
-                {isAdmin ? "Continuar" : "Continuar sin cuenta"}
-              </Button>
+            <div className="sticky bottom-0 z-20 -mx-6 mt-auto">
+              {/* Gradient overlay to blend services as they scroll under the footer */}
+              <div className="h-10 bg-gradient-to-t from-background to-transparent pointer-events-none" />
 
-              {!initialClientName && !isAdmin && (
-                <div className="mt-4 flex flex-col gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="h-px flex-1 bg-border" />
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">o para guardar tus citas</span>
-                    <span className="h-px flex-1 bg-border" />
+              <div className="bg-background border-t border-border/40 px-6 pb-12 pt-2 shadow-[0_-20px_40px_-15px_rgba(0,0,0,0.1)]">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] uppercase font-black text-muted-foreground/60 tracking-[0.15em]">Seleccionados</span>
+                    <span className="text-sm font-bold text-foreground">
+                      {selectedServices.length} {selectedServices.length === 1 ? t.service.toLowerCase() : t.servicePlural.toLowerCase()}
+                    </span>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1 h-10 rounded-xl text-xs gap-2"
-                      onClick={() => handleAuthRedirect('login')}
-                    >
-                      <LogIn className="h-3.5 w-3.5" />
-                      Iniciar sesión
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="flex-1 h-10 rounded-xl text-xs gap-2"
-                      onClick={() => handleAuthRedirect('register')}
-                    >
-                      <UserPlus className="h-3.5 w-3.5" />
-                      Registrarse
-                    </Button>
+                  <div className="flex flex-col items-end">
+                    <span className="text-[10px] uppercase font-black text-muted-foreground/60 tracking-[0.15em]">Total</span>
+                    <span className="text-xl font-black text-primary tracking-tighter">
+                      {totalPrice > 0 ? formatPrice(totalPrice) : '—'}
+                    </span>
                   </div>
                 </div>
-              )}
+
+                <Button
+                  className="w-full h-14 rounded-2xl text-base font-black uppercase tracking-widest shadow-lg shadow-primary/25 active:scale-[0.98] transition-all bg-primary hover:bg-primary/95"
+                  onClick={() => setIsServiceStepDone(true)}
+                  disabled={selectedServices.length === 0}
+                >
+                  {isAdmin ? "Continuar" : "Continuar sin cuenta"}
+                </Button>
+
+                {!initialClientName && !isAdmin && (
+                  <div className="mt-6 flex flex-col gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className="h-px flex-1 bg-border/40" />
+                      <span className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground/60 font-black">o guarda tu sesión</span>
+                      <span className="h-px flex-1 bg-border/40" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button
+                        variant="outline"
+                        className="h-11 rounded-xl text-xs font-bold gap-2 border-border/60 hover:bg-primary/5 hover:border-primary/20 transition-colors"
+                        onClick={() => handleAuthRedirect('login')}
+                      >
+                        <LogIn className="h-3.5 w-3.5" />
+                        Acceder
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="h-11 rounded-xl text-xs font-bold gap-2 border-border/60 hover:bg-primary/5 hover:border-primary/20 transition-colors"
+                        onClick={() => handleAuthRedirect('register')}
+                      >
+                        <UserPlus className="h-3.5 w-3.5" />
+                        Crear cuenta
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </section>
         )}
@@ -391,7 +448,7 @@ export function BookingFlow({
         {/* Step: Staff Selection */}
         {currentStep === "barber" && (
           <section className="animate-in fade-in slide-in-from-right-4 duration-500">
-            <h2 className="mb-6 text-xl font-black text-foreground tracking-tight">Elige un profesional</h2>
+            <h2 className="mb-6 text-xl font-black text-foreground tracking-tight">Elige {t.staffGender === "f" ? "una" : "un"} {t.staff}</h2>
             <div className="grid gap-4">
               {allStaff.map((b) => (
                 <button
@@ -416,7 +473,7 @@ export function BookingFlow({
                   <div className="min-w-0 flex-1">
                     <p className="font-bold text-card-foreground text-lg leading-tight truncate">{b.name}</p>
                     {b.id === "auto" && (
-                      <p className="text-xs font-medium text-muted-foreground mt-1">Primer profesional disponible</p>
+                      <p className="text-xs font-medium text-muted-foreground mt-1">{t.staffGender === "f" ? "Primera" : "Primer"} {t.staff} disponible</p>
                     )}
                   </div>
                 </button>
@@ -449,16 +506,20 @@ export function BookingFlow({
                     crNow.getMonth() === date.getMonth() &&
                     crNow.getDate() === date.getDate()
 
-                  if (date.getDay() === 0) return true
+                  // 1. Past dates are always disabled
                   if (date < new Date(crNow.setHours(0, 0, 0, 0))) return true
 
-                  if (isToday && shopSchedules.length > 0) {
-                    const todaySchedule = shopSchedules.find(s => s.dayOfWeek === crNow.getDay())
+                  // 2. Dynamic availability check based on shop schedules
+                  const daySchedule = shopSchedules.find(s => s.dayOfWeek === date.getDay())
+
+                  // If day is explicitly marked as closed, disable it
+                  if (daySchedule && !daySchedule.isOpen) return true
+
+                  // 3. For today, check if business is already closed
+                  if (isToday) {
                     const currentTime = `${new Date().toLocaleString("es-CR", { timeZone: "America/Costa_Rica", hour: '2-digit', minute: '2-digit', hour12: false })}`
-                    const closingTime = todaySchedule?.closeTime || "20:00"
-                    if (!todaySchedule?.isOpen || currentTime >= closingTime) {
-                      return true
-                    }
+                    const closingTime = daySchedule?.closeTime || "20:00"
+                    if (currentTime >= closingTime) return true
                   }
 
                   return false
@@ -469,7 +530,15 @@ export function BookingFlow({
             <Button
               variant="outline"
               className="mt-6 w-full h-12 rounded-2xl font-bold uppercase tracking-widest text-xs border-border/60 shadow-sm"
-              onClick={() => { setSelectedBarber(null); setSelectedDate(undefined); setAvailableSlots([]) }}
+              onClick={() => { 
+                if (staff.length === 1) {
+                  setIsServiceStepDone(false)
+                } else {
+                  setSelectedBarber(null)
+                }
+                setSelectedDate(undefined)
+                setAvailableSlots([]) 
+              }}
             >
               Volver
             </Button>
@@ -538,7 +607,7 @@ export function BookingFlow({
                   <span className="text-2xl">🌙</span>
                 </div>
                 <p className="font-bold text-muted-foreground">No hay espacios disponibles</p>
-                <p className="text-xs text-muted-foreground/60 mt-1">Intenta con otra fecha</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">Intenta con otra {t.appointment.toLowerCase() === 'turno' ? 'fecha' : 'fecha'}</p>
               </div>
             )}
 
@@ -572,18 +641,18 @@ export function BookingFlow({
             {loadingStaff ? (
               <div className="flex flex-col items-center justify-center py-20 rounded-3xl border border-dashed border-border/80 bg-muted/5">
                 <Loader2 className="h-10 w-10 animate-spin text-primary opacity-40" />
-                <span className="mt-4 text-sm font-bold text-muted-foreground/60 uppercase tracking-widest text-center">Asignando un profesional...</span>
+                <span className="mt-4 text-sm font-bold text-muted-foreground/60 uppercase tracking-widest text-center">Asignando {t.staffGender === "f" ? "una" : "un"} {t.staff.toLowerCase()}...</span>
               </div>
             ) : (
               <>
                 {/* Summary Card */}
                 <div className="mb-8 rounded-3xl border border-border shadow-2xl shadow-black/5 bg-card overflow-hidden">
                   <div className="bg-primary/5 px-6 py-4 border-b border-primary/10">
-                    <h3 className="text-[10px] uppercase font-black text-primary tracking-[0.2em]">Resumen de tu cita</h3>
+                    <h3 className="text-[10px] uppercase font-black text-primary tracking-[0.2em]">Resumen de tu {t.appointment.toLowerCase()}</h3>
                   </div>
                   <div className="p-6 space-y-5">
                     <div className="space-y-3">
-                      <p className="text-[10px] uppercase font-black text-muted-foreground/50 tracking-widest">Servicios</p>
+                      <p className="text-[10px] uppercase font-black text-muted-foreground/50 tracking-widest">{t.servicePlural}</p>
                       <div className="space-y-2">
                         {selectedServicesDetails.map(s => (
                           <div key={s.id} className="flex justify-between items-center group">
@@ -609,7 +678,7 @@ export function BookingFlow({
 
                     <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-1">
-                        <p className="text-[10px] uppercase font-black text-muted-foreground/50 tracking-widest">Profesional</p>
+                        <p className="text-[10px] uppercase font-black text-muted-foreground/50 tracking-widest">{t.staff}</p>
                         <p className="font-bold text-card-foreground">
                           {selectedBarber === "auto" ? assignedAutoStaff?.name : barber?.name}
                         </p>
@@ -638,14 +707,14 @@ export function BookingFlow({
                       }
                     }}>
                       <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="registered">Cliente Registrado</TabsTrigger>
-                        <TabsTrigger value="unregistered">Cliente Nuevo</TabsTrigger>
+                        <TabsTrigger value="registered">{t.client} {t.clientGender === "f" ? "Registrada" : "Registrado"}</TabsTrigger>
+                        <TabsTrigger value="unregistered">{t.client} {t.clientGender === "f" ? "Nueva" : "Nuevo"}</TabsTrigger>
                       </TabsList>
                       <TabsContent value="registered" className="mt-4 space-y-4">
                         <div className="relative">
                           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                           <Input
-                            placeholder="Buscar cliente por nombre o teléfono..."
+                            placeholder={`Buscar ${t.client.toLowerCase()} por nombre o teléfono...`}
                             value={clientSearch}
                             onChange={(e) => setClientSearch(e.target.value)}
                             className="pl-9 bg-card"
@@ -670,7 +739,7 @@ export function BookingFlow({
                             </button>
                           ))}
                           {clients.length === 0 && (
-                            <div className="p-4 text-center text-sm text-muted-foreground">No hay clientes</div>
+                            <div className="p-4 text-center text-sm text-muted-foreground">No hay {t.clientPlural.toLowerCase()}</div>
                           )}
                         </div>
                       </TabsContent>
@@ -753,10 +822,10 @@ export function BookingFlow({
                     {isPending ? (
                       <>
                         <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        Reservando...
+                        {t.bookingVerb}...
                       </>
                     ) : (
-                      "Confirmar Reserva"
+                      `Confirmar ${t.appointment}`
                     )}
                   </Button>
                   <Button
@@ -770,7 +839,7 @@ export function BookingFlow({
                   {!initialClientName && !isAdmin && (
                     <div className="mt-6 p-4 rounded-xl border border-primary/20 bg-primary/5 space-y-4">
                       <div className="text-center space-y-1">
-                        <p className="text-sm font-bold text-foreground">¿Quieres guardar esta cita?</p>
+                        <p className="text-sm font-bold text-foreground">¿Quieres guardar {t.appointmentGender === "f" ? "esta" : "este"} {t.appointment.toLowerCase()}?</p>
                         <p className="text-xs text-muted-foreground">Accede a tu cuenta para no volver a escribir tus datos.</p>
                       </div>
                       <div className="flex gap-2">

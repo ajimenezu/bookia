@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Scissors, Mail, Lock, AlertCircle, ArrowRight } from "lucide-react"
+import { CalendarDays, Mail, Lock, AlertCircle, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -38,13 +38,13 @@ export default function LoginPage() {
       <div className="w-full max-w-md space-y-8">
         <div className="flex flex-col items-center text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
-            <Scissors className="h-8 w-8" />
+            <CalendarDays className="h-8 w-8" />
           </div>
           <h2 className="mt-6 text-3xl font-extrabold tracking-tight text-foreground">
             Bienvenido a BookIA
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Ingresa a tu cuenta para gestionar tu barbería
+            Ingresa a tu cuenta para gestionar tu negocio
           </p>
         </div>
 

@@ -43,6 +43,14 @@ El campo `BusinessType` en el modelo `Shop` define el comportamiento y estilo:
 - `SPA`
 - `CLINICA`
 
----
-> [!NOTE]
-> Este documento sirve como guía para agentes y desarrolladores para mantener la consistencia del multi-tenancy.
+## 5. Capa de Abstracción de Terminología
+Para soportar la diversidad de industrias sin duplicar código, Bookia utiliza un sistema de diccionarios dinámicos (`lib/dictionaries.ts`):
+- **Diccionario Centralizado**: Los términos como "Cita", "Barbero", "Servicio" se extraen mediante `getTerminology(businessType)`.
+- **Inyección en UI**: Ni el Frontend ni el Admin deben hardcodear etiquetas. Siempre se debe usar el retorno del diccionario para mantener la coherencia narrativa del negocio.
+- **Género Gramatical**: El diccionario incluye flags de género (ej. `staffGender: "m" | "f"`) para asegurar que artículos y adjetivos concuerden (ej. "Nuestros especialistas" vs "Nuestras especialistas").
+
+## 6. Gestión de Estados de Cita
+El sistema de citas (`AppointmentStatus`) incluye lógica de negocio específica por estado:
+- **`NO_SHOW`**: Nuevo estado para registrar inasistencias. Estas citas se consideran "finalizadas" pero no deben sumar en los cálculos de ingresos reales.
+- **Regla de Cancelación**: Las citas pasadas (`startTime < now`) deben deshabilitar la opción de cancelación para proteger la integridad histórica de los datos.
+- **Cálculo de Ingresos**: Las métricas de dashboard solo deben sumar ingresos de citas que NO estén en estado `CANCELLED` o `NO_SHOW`.

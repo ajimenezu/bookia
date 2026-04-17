@@ -5,10 +5,31 @@ import { toCRDate, fromCRDate } from "@/lib/date-utils"
 export async function getAppointmentsData(shopId: string) {
   const now = new Date();
   const crNow = toCRDate(now);
+  
+  // Today's range
   const startOfDayCR = new Date(crNow.getFullYear(), crNow.getMonth(), crNow.getDate());
   const endOfDayCR = new Date(crNow.getFullYear(), crNow.getMonth(), crNow.getDate(), 23, 59, 59, 999);
 
-  return getAppointmentsInRange(fromCRDate(startOfDayCR), fromCRDate(endOfDayCR), shopId, undefined, "CANCELLED" as AppointmentStatus);
+  // Month's range
+  const startOfMonthCR = new Date(crNow.getFullYear(), crNow.getMonth(), 1);
+  const nextMonth = crNow.getMonth() + 1;
+  const endOfMonthCR = new Date(crNow.getFullYear(), nextMonth, 0, 23, 59, 59, 999);
+
+  const [todayAppointments, monthCount] = await Promise.all([
+    getAppointmentsInRange(fromCRDate(startOfDayCR), fromCRDate(endOfDayCR), shopId, undefined, "CANCELLED" as AppointmentStatus),
+    prisma.appointment.count({
+      where: {
+        startTime: {
+          gte: fromCRDate(startOfMonthCR),
+          lte: fromCRDate(endOfMonthCR),
+        },
+        ...(shopId !== "ALL" ? { shopId } : {}),
+        status: { not: "CANCELLED" }
+      }
+    })
+  ]);
+
+  return { todayAppointments, monthCount };
 }
 
 export async function getAppointmentsInRange(

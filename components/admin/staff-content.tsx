@@ -26,7 +26,7 @@ interface StaffStats {
 export async function StaffContent({ shopId, role, isSuperAdmin, businessType }: StaffContentProps) {
 
   let whereClause: any = {
-    role: { in: ["OWNER", "STAFF", "SUPER_ADMIN"] }
+    role: { in: ["OWNER", "STAFF"] }
   }
   
   if (isSuperAdmin && shopId === "ALL") {
@@ -80,6 +80,7 @@ export async function StaffContent({ shopId, role, isSuperAdmin, businessType }:
   })
 
   const isOwner = role === "OWNER" || isSuperAdmin
+  const t = getTerminology(businessType as any)
 
   return (
     <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -119,6 +120,7 @@ export async function StaffContent({ shopId, role, isSuperAdmin, businessType }:
             isOwner={isOwner}
             schedules={user.staffSchedules}
             timeOff={user.staffTimeOff}
+            terminology={t}
             stats={{
               name,
               initials,
@@ -134,7 +136,7 @@ export async function StaffContent({ shopId, role, isSuperAdmin, businessType }:
       })}
       {rawMembers.length === 0 && (
         <div className="col-span-full py-12 text-center text-muted-foreground bg-muted/20 rounded-xl border border-dashed border-border">
-          No se encontraron miembros del equipo.
+          No se encontraron {t.staffPlural.toLowerCase()}.
         </div>
       )}
     </div>
@@ -148,6 +150,7 @@ function StaffMemberCard({
   schedules,
   timeOff,
   stats,
+  terminology: t,
 }: {
   shopId: string
   staffId: string
@@ -155,6 +158,7 @@ function StaffMemberCard({
   schedules: any[]
   timeOff: any[]
   stats: StaffStats
+  terminology: any
 }) {
   return (
     <div className="rounded-2xl border border-border bg-card p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group overflow-hidden">
@@ -188,11 +192,11 @@ function StaffMemberCard({
           </span>
         </div>
         
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col gap-1 text-sm bg-muted/5 p-3 rounded-xl border border-border/40">
-            <span className="text-[10px] uppercase font-black text-muted-foreground/50 tracking-wider">Citas hoy</span>
-            <span className="font-black text-lg text-card-foreground">{stats.todayAppointments}</span>
-          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1 text-sm bg-muted/5 p-3 rounded-xl border border-border/40">
+              <span className="text-[10px] uppercase font-black text-muted-foreground/50 tracking-wider">{t.appointmentPlural} hoy</span>
+              <span className="font-black text-lg text-card-foreground">{stats.todayAppointments}</span>
+            </div>
           <div className="flex flex-col gap-1 text-sm bg-muted/5 p-3 rounded-xl border border-border/40">
             <span className="text-[10px] uppercase font-black text-muted-foreground/50 tracking-wider">Semana</span>
             <span className="font-black text-lg text-card-foreground">{stats.weekAppointments}</span>

@@ -2,21 +2,26 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Mail, Lock, AlertCircle, ArrowRight, Scissors, Eye, EyeOff } from "lucide-react"
+import { Mail, Lock, AlertCircle, ArrowRight, Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { signInToShop } from "@/app/auth/actions"
 import Link from "next/link"
+import { BusinessType, getTerminology } from "@/lib/dictionaries"
+import { getBusinessIcon } from "@/lib/business-icons"
 
 interface ShopLoginFormProps {
   slug: string
   shopName: string
+  businessType: BusinessType
   logoUrl?: string | null
 }
 
-export function ShopLoginForm({ slug, shopName, logoUrl }: ShopLoginFormProps) {
+export function ShopLoginForm({ slug, shopName, businessType, logoUrl }: ShopLoginFormProps) {
+  const t = getTerminology(businessType)
+  const BusinessIcon = getBusinessIcon(businessType)
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -57,14 +62,14 @@ export function ShopLoginForm({ slug, shopName, logoUrl }: ShopLoginFormProps) {
               // eslint-disable-next-line @next/next/no-img-element
               <img src={logoUrl} alt={shopName} className="h-full w-full rounded-2xl object-cover" />
             ) : (
-              <Scissors className="h-8 w-8" />
+              <BusinessIcon className="h-8 w-8" />
             )}
           </div>
           <h1 className="mt-6 text-3xl font-extrabold tracking-tight text-foreground">
             {shopName}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Ingresa a tu cuenta para gestionar tus citas
+            Ingresa a tu cuenta para gestionar tus {t.appointmentPlural.toLowerCase()}
           </p>
         </div>
 

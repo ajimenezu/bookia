@@ -4,13 +4,16 @@ import { CalendarView } from "./calendar-view"
 import { ListView } from "./list-view"
 import prisma from "@/lib/prisma"
 
+import { BusinessType } from "@/lib/dictionaries"
+
 interface AppointmentsContentProps {
   shopId: string
+  businessType: BusinessType
   weekOffset: number
   view: "calendar" | "list"
 }
 
-export async function AppointmentsContent({ shopId, weekOffset, view }: AppointmentsContentProps) {
+export async function AppointmentsContent({ shopId, businessType, weekOffset, view }: AppointmentsContentProps) {
   const { sunday, monday, dates } = getWeekRange(weekOffset)
   
   // Parallel fetch for better performance
@@ -18,7 +21,7 @@ export async function AppointmentsContent({ shopId, weekOffset, view }: Appointm
     getAppointmentsInRange(monday, sunday, shopId, undefined, "CANCELLED"),
     prisma.service.findMany({ where: { shopId }, orderBy: { price: "asc" } }),
     prisma.shopMember.findMany({
-      where: { shopId, role: { in: ["STAFF", "OWNER", "SUPER_ADMIN"] } },
+      where: { shopId, role: { in: ["STAFF", "OWNER"] } },
       include: { user: { select: { id: true, name: true } } }
     })
   ])
@@ -39,6 +42,7 @@ export async function AppointmentsContent({ shopId, weekOffset, view }: Appointm
     dates,
     appointments,
     shopId,
+    businessType,
     services: mappedServices,
     staff: mappedStaff
   }

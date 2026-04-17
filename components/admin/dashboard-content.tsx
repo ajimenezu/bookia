@@ -16,6 +16,7 @@ interface DashboardContentProps {
   shopName: string
   whatsappPhone: string | null
   appointments: any[]
+  monthCount: number
   mappedServices: any[]
   mappedStaff: any[]
   mappedClients: any[]
@@ -28,6 +29,7 @@ export function DashboardContent({
   shopName, 
   whatsappPhone,
   appointments,
+  monthCount,
   mappedServices,
   mappedStaff,
   mappedClients
@@ -47,7 +49,7 @@ export function DashboardContent({
     setIsSheetOpen(true)
   }
 
-  const activeAppointments = appointments.filter(a => a.status !== "CANCELLED")
+  const activeAppointments = appointments.filter(a => a.status !== "CANCELLED" && a.status !== "NO_SHOW")
   const todayIncome = activeAppointments.reduce((acc, curr) => {
     if (curr.services && curr.services.length > 0) {
       return acc + curr.services.reduce((sAcc: number, s: any) => sAcc + (s.price || 0), 0)
@@ -57,8 +59,8 @@ export function DashboardContent({
 
   const stats = [
     { label: `${t.appointmentPlural} hoy`, value: appointments.length.toString(), icon: CalendarDays, change: "Actualizado" },
-    { label: "Ingreso estimado hoy", value: `₡${todayIncome.toLocaleString()}`, icon: BadgeCent, change: "Basado en citas" },
-    { label: `${t.appointmentPlural} totales`, value: appointments.length.toString(), icon: TrendingUp, change: "Hoy" },
+    { label: "Ingreso estimado hoy", value: `₡${todayIncome.toLocaleString()}`, icon: BadgeCent, change: `Basado en ${t.appointmentPlural.toLowerCase()}` },
+    { label: `${t.appointmentPlural} del mes`, value: monthCount.toString(), icon: TrendingUp, change: "Este mes" },
   ]
 
   return (
@@ -68,6 +70,7 @@ export function DashboardContent({
         isOpen={isSheetOpen}
         onOpenChange={setIsSheetOpen}
         shopId={shopId}
+        businessType={businessType as any}
         services={mappedServices}
         staff={mappedStaff}
       />
@@ -75,7 +78,7 @@ export function DashboardContent({
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground md:text-3xl tracking-tight">Dashboard</h1>
-          <p className="mt-1 text-muted-foreground italic text-sm">Resumen de tu negocio hoy</p>
+          <p className="mt-1 text-muted-foreground italic text-sm">{t.dashboardDesc}</p>
         </div>
         <AddAppointmentSheet 
           shopId={shopId}
@@ -118,7 +121,7 @@ export function DashboardContent({
                 <CalendarDays className="h-8 w-8 opacity-40" />
               </div>
               <p className="font-medium">No hay {t.appointmentPlural.toLowerCase()} para hoy.</p>
-              <p className="text-xs mt-1">¡Aprovecha para organizar tu local!</p>
+              <p className="text-xs mt-1">¡Aprovecha para organizar este día!</p>
             </div>
           ) : (
             appointments.map((apt) => (

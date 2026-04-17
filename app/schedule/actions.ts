@@ -39,13 +39,13 @@ export async function createBooking(rawData: unknown) {
 
   // 1. Get services to calculate end time and capture total price
   // SECURITY FIX: Mandatory shopId filter to prevent cross-tenant service selection
-  const services = await prisma.service.findMany({ 
-    where: { 
+  const services = await prisma.service.findMany({
+    where: {
       id: { in: serviceIds },
       shopId: shopId
-    } 
+    }
   })
-  
+
   if (services.length !== serviceIds.length) {
     return { success: false, error: "Uno o más servicios no son válidos para esta tienda" }
   }
@@ -62,7 +62,7 @@ export async function createBooking(rawData: unknown) {
 
   if (staffId === "auto") {
     const staffMembers = await prisma.shopMember.findMany({
-      where: { shopId, role: { in: ["STAFF", "OWNER", "SUPER_ADMIN"] } },
+      where: { shopId, role: { in: ["STAFF", "OWNER"] } },
       select: { userId: true }
     })
 
@@ -129,9 +129,9 @@ export async function createBooking(rawData: unknown) {
   } else {
     // SECURITY: If authenticated, must have verified email
     if (authUser && !authUser.email_confirmed_at) {
-      return { 
-        success: false, 
-        error: "Por favor, confirma tu correo electrónico antes de realizar una reserva." 
+      return {
+        success: false,
+        error: "Por favor, confirma tu correo electrónico antes de realizar una reserva."
       }
     }
 
@@ -199,11 +199,11 @@ export async function getAvailableStaffForSlot(
   if (!validated.success) return []
 
   // 1. Get services to calculate total duration
-  const services = await prisma.service.findMany({ 
-    where: { 
+  const services = await prisma.service.findMany({
+    where: {
       id: { in: serviceIds },
       shopId: shopId
-    } 
+    }
   })
   if (services.length === 0) return []
 
@@ -214,8 +214,8 @@ export async function getAvailableStaffForSlot(
   // 2. Fetch all shop members and their schedules in a single query
   const dayOfWeek = startTime.getDay()
   const staffMembers = await prisma.shopMember.findMany({
-    where: { shopId, role: { in: ["STAFF", "OWNER", "SUPER_ADMIN"] } },
-    include: { 
+    where: { shopId, role: { in: ["STAFF", "OWNER"] } },
+    include: {
       user: {
         include: {
           staffSchedules: {
@@ -247,7 +247,7 @@ export async function getAvailableStaffForSlot(
     if (staffSchedule && !staffSchedule.isOpen) continue
 
     // Check if appointment overlaps with any of this staff's existing appointments
-    const hasConflict = allAppointments.some(app => 
+    const hasConflict = allAppointments.some(app =>
       app.staffId === staffId &&
       startTime < app.endTime &&
       endTime > app.startTime
@@ -281,7 +281,7 @@ export async function updateAppointmentStatus(
 
   // Also check if they are a Global Super Admin (via metadata) or if their shop membership is SUPER_ADMIN
   const isSuperAdmin = authUser.app_metadata?.role === "SUPER_ADMIN" || membership?.role === "SUPER_ADMIN"
-  
+
   const isAuthorized = isSuperAdmin || (membership && ["OWNER", "STAFF"].includes(membership.role))
 
   if (!isAuthorized) {
@@ -291,7 +291,7 @@ export async function updateAppointmentStatus(
   // 2. Perform the update
   try {
     await prisma.appointment.update({
-      where: { 
+      where: {
         id: appointmentId,
         shopId // Extra security: ensure the appointment belongs to the reported shop
       },
@@ -346,8 +346,8 @@ export async function updateBooking(rawData: any) {
   if (!isAuthorized) return { success: false, error: "No tienes permisos" }
 
   // 2. Validate services
-  const services = await prisma.service.findMany({ 
-    where: { id: { in: serviceIds }, shopId } 
+  const services = await prisma.service.findMany({
+    where: { id: { in: serviceIds }, shopId }
   })
   if (services.length !== serviceIds.length) {
     return { success: false, error: "Servicios inválidos" }

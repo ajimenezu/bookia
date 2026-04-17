@@ -3,25 +3,29 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Scissors, LayoutDashboard, CalendarDays, Users, Wrench, UserRound, Menu, X, LogOut, Bell, Settings } from "lucide-react"
+import { LayoutDashboard, CalendarDays, Users, Wrench, UserRound, Menu, X, LogOut, Bell, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { signOut } from "@/app/auth/actions"
-import { Terminology } from "@/lib/dictionaries"
+import { Terminology, BusinessType } from "@/lib/dictionaries"
 import { getPendingRequests } from "@/app/[slug]/admin/staff/actions"
 import { ApprovalSidePanel } from "./approval-side-panel"
+import { getBusinessIcon } from "@/lib/business-icons"
 
 export function AdminSidebar({
   children,
   terminology: t,
   shopSlug,
   shopId,
+  businessType,
 }: {
   children: React.ReactNode,
   terminology: Terminology,
   shopSlug: string | null,
   shopId?: string,
+  businessType?: BusinessType,
 }) {
+  const BusinessIcon = getBusinessIcon(businessType)
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [pendingRequests, setPendingRequests] = useState<{ schedules: any[], timeOff: any[] }>({ schedules: [], timeOff: [] })
@@ -48,11 +52,11 @@ export function AdminSidebar({
   return (
     <div className="flex min-h-screen bg-background">
       {/* Mobile header */}
-      <header className="fixed inset-x-0 top-0 z-50 flex h-16 items-center justify-between border-b border-sidebar-border bg-sidebar/80 backdrop-blur-lg px-4 lg:hidden shadow-sm">
+      <header className="fixed inset-x-0 top-0 z-30 flex h-16 items-center justify-between border-b border-sidebar-border bg-sidebar/80 backdrop-blur-lg px-4 lg:hidden shadow-sm">
         <div className="flex items-center gap-4">
           <Link href={`/${shopSlug}/admin`} className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-              <Scissors className="h-4 w-4" />
+              <BusinessIcon className="h-4 w-4" />
             </div>
             <span className="font-bold text-sidebar-foreground tracking-tight">BookIA</span>
           </Link>
@@ -84,7 +88,7 @@ export function AdminSidebar({
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-foreground/30 backdrop-blur-[2px] transition-all duration-300 lg:hidden animate-in fade-in"
+          className="fixed inset-0 z-20 bg-foreground/30 backdrop-blur-[2px] transition-all duration-300 lg:hidden animate-in fade-in"
           onClick={() => setMobileOpen(false)}
         />
       )}
@@ -92,14 +96,14 @@ export function AdminSidebar({
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-[60] flex w-72 flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 ease-in-out lg:translate-x-0 lg:w-64",
+          "fixed inset-y-0 left-0 z-30 flex w-72 flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 ease-in-out lg:translate-x-0 lg:w-64",
           mobileOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
         )}
       >
         <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-6">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
-              <Scissors className="h-4.5 w-4.5" />
+              <BusinessIcon className="h-4.5 w-4.5" />
             </div>
             <span className="text-xl font-bold text-sidebar-foreground tracking-tight">BookIA</span>
             

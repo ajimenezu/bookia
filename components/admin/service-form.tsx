@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Scissors, Clock, DollarSign, Type, AlignLeft, Trash2, Loader2, Sparkles, Flower2, Stethoscope, Sparkle } from "lucide-react"
+import { Clock, DollarSign, Type, AlignLeft, Trash2, Loader2, Scissors } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,6 +10,7 @@ import { ServiceCard } from "@/components/admin/service-card"
 import { createService, updateService, deleteService } from "@/app/[slug]/admin/servicios/actions"
 import { toast } from "sonner"
 import { BusinessType } from "@/lib/dictionaries"
+import { getBusinessIcon } from "@/lib/business-icons"
 
 interface ServiceFormProps {
   slug: string
@@ -43,15 +44,7 @@ export function ServiceForm({ slug, shopId, businessType = "BARBERIA", initialDa
   const isEditing = !!initialData
 
   // Selection of icon based on business type for the preview header
-  const ServiceIcon = (() => {
-    switch (businessType) {
-      case "BARBERIA": return Scissors
-      case "SALON_BELLEZA": return Sparkles
-      case "SPA": return Flower2
-      case "CLINICA": return Stethoscope
-      default: return Sparkle
-    }
-  })()
+  const ServiceIcon = getBusinessIcon(businessType)
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()

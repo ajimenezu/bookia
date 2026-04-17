@@ -15,6 +15,7 @@ import {
 import { getTerminology } from "@/lib/dictionaries"
 import type { BusinessType } from "@/lib/dictionaries"
 import { ShopNavbar } from "./shop-navbar"
+import { getBusinessIcon } from "@/lib/business-icons"
 
 interface ServiceData {
   id: string
@@ -69,6 +70,7 @@ function formatDuration(minutes: number) {
 
 export function ShopLanding({ shop, services, staff, user, role }: ShopLandingProps) {
   const t = getTerminology(shop.businessType)
+  const BusinessIcon = getBusinessIcon(shop.businessType)
 
   const whatsappHref = shop.whatsappPhone
     ? `https://wa.me/${shop.whatsappPhone.replace(/\D/g, "")}`
@@ -91,12 +93,12 @@ export function ShopLanding({ shop, services, staff, user, role }: ShopLandingPr
             {/* Premium Badge */}
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-5 py-2 text-xs font-black uppercase tracking-[0.2em] text-primary animate-in fade-in slide-in-from-top-4 duration-700">
               <Sparkles className="h-3.5 w-3.5" />
-              {shop.businessType.replace('_', ' ')} de Excelencia
+              {t.businessName} de Excelencia
             </div>
 
             {/* Name & Tagline */}
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-6 duration-1000">
-              <h1 className="text-5xl font-black tracking-tighter md:text-8xl bg-gradient-to-b from-foreground to-foreground/70 bg-clip-text text-transparent">
+              <h1 className="text-5xl font-black tracking-tighter md:text-8xl bg-gradient-to-b from-foreground to-foreground/70 bg-clip-text text-transparent leading-tight pb-2">
                 {shop.name}
               </h1>
               {shop.tagline && (
@@ -120,7 +122,7 @@ export function ShopLanding({ shop, services, staff, user, role }: ShopLandingPr
                 id="hero-book-btn"
                 className="h-16 rounded-[2rem] bg-primary px-10 text-lg font-black uppercase tracking-widest text-primary-foreground shadow-2xl shadow-primary/30 transition-all hover:scale-105 hover:shadow-primary/40 active:scale-95 flex items-center justify-center"
               >
-                Reservar Ahora
+                {t.bookVerb} Ahora
               </Link>
               {whatsappHref && (
                 <a
@@ -182,10 +184,10 @@ export function ShopLanding({ shop, services, staff, user, role }: ShopLandingPr
       <section id="services-section" className="mx-auto max-w-5xl px-6 py-20">
         <div className="mb-12 text-center space-y-3">
           <h2 className="text-3xl font-black md:text-5xl tracking-tight">
-            Nuestros {t.servicePlural}
+            {t.serviceGender === "f" ? "Nuestras" : "Nuestros"} {t.servicePlural}
           </h2>
           <p className="mx-auto max-w-lg text-lg font-medium text-muted-foreground/60 leading-relaxed">
-            Personaliza tu experiencia eligiendo entre nuestros servicios exclusivos.
+            Personaliza tu experiencia eligiendo entre {t.serviceGender === "f" ? "nuestras" : "nuestros"} {t.servicePlural.toLowerCase()} {t.serviceGender === "f" ? "exclusivas" : "exclusivos"}.
           </p>
         </div>
 
@@ -193,15 +195,15 @@ export function ShopLanding({ shop, services, staff, user, role }: ShopLandingPr
           {services.map((svc) => (
             <Link
               key={svc.id}
-              href={`/${shop.slug}/schedule`}
+              href={`/${shop.slug}/schedule?service=${svc.id}`}
               id={`service-${svc.id}`}
-              className="group flex flex-col gap-5 rounded-3xl border border-border bg-card p-6 text-left transition-all hover:border-primary/40 hover:shadow-2xl hover:-translate-y-2 cursor-pointer relative overflow-hidden active:scale-95"
+              className="group flex flex-col gap-5 rounded-3xl border border-border bg-card p-6 text-left transition-all hover:border-primary/40 hover:shadow-2xl hover:-translate-y-2 cursor-pointer relative overflow-hidden active:scale-95 h-full"
             >
               <div className="absolute top-0 right-0 h-24 w-24 bg-primary/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2" />
               
               <div className="flex items-start justify-between">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-all duration-500 group-hover:bg-primary group-hover:text-primary-foreground group-hover:rotate-12 group-hover:scale-110 shadow-inner">
-                  <Scissors className="h-6 w-6" />
+                  <BusinessIcon className="h-6 w-6" />
                 </div>
                 <div className="text-right">
                   <p className="text-xs font-black uppercase tracking-widest text-muted-foreground/50 mb-1">Precio</p>
@@ -211,10 +213,10 @@ export function ShopLanding({ shop, services, staff, user, role }: ShopLandingPr
                 </div>
               </div>
               
-              <div className="space-y-2">
+              <div className="space-y-2 flex-1">
                 <p className="text-xl font-black text-card-foreground leading-tight">{svc.name}</p>
                 {svc.description && (
-                  <p className="text-sm font-medium text-muted-foreground/70 line-clamp-2 leading-relaxed">
+                  <p className="text-sm font-medium text-muted-foreground/70 leading-relaxed whitespace-pre-wrap">
                     {svc.description}
                   </p>
                 )}
@@ -240,7 +242,7 @@ export function ShopLanding({ shop, services, staff, user, role }: ShopLandingPr
           <div className="mx-auto max-w-5xl px-6">
             <div className="mb-12 text-center space-y-3">
               <h2 className="text-3xl font-black md:text-5xl tracking-tight">
-                Nuestro equipo
+                {t.staffGender === "f" ? "Nuestra" : "Nuestro"} {t.staff.toLowerCase()}
               </h2>
               <p className="mx-auto max-w-lg text-lg font-medium text-muted-foreground/60 leading-relaxed">
                 Expertos dedicados a brindarte el mejor servicio.
@@ -291,12 +293,12 @@ export function ShopLanding({ shop, services, staff, user, role }: ShopLandingPr
             <div className="flex flex-col items-center md:items-start gap-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
-                  <Scissors className="h-5 w-5" />
+                  <BusinessIcon className="h-5 w-5" />
                 </div>
                 <span className="text-2xl font-black text-card-foreground tracking-tighter">{shop.name}</span>
               </div>
               <p className="text-sm font-medium text-muted-foreground max-w-xs text-center md:text-left">
-                Tu plataforma de confianza para agendar citas de forma rápida y sencilla.
+                Tu plataforma de confianza para agendar {t.appointmentPlural.toLowerCase()} de forma rápida y sencilla.
               </p>
             </div>
 

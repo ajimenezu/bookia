@@ -22,7 +22,7 @@ export async function DashboardDataWrapper({
   const [services, staffData, clientsData] = await Promise.all([
     prisma.service.findMany({ where: { shopId }, orderBy: { price: "asc" } }),
     prisma.shopMember.findMany({
-      where: { shopId, role: { in: ["STAFF", "OWNER", "SUPER_ADMIN"] } },
+      where: { shopId, role: { in: ["STAFF", "OWNER"] } },
       include: { user: { select: { id: true, name: true } } }
     }),
     prisma.shopMember.findMany({

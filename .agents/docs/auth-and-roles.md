@@ -17,6 +17,14 @@ Se definen en el enum `Role` de Prisma y se reflejan en Supabase Auth:
 - **STAFF**: Empleado. Acceso operativo limitado a su `shopId`.
 - **CUSTOMER**: Cliente con membresía en la tienda.
 
+### Resumen de Privilegios
+| Nivel | Rol | Alcance | Permisos Clave |
+| :--- | :--- | :--- | :--- |
+| 1 | `SUPER_ADMIN` | Global | Configuración de sistema, bypass multitenant. |
+| 2 | `OWNER` | Shop | Gestión de staff, servicios y finanzas de tienda. |
+| 3 | `STAFF` | Shop | Gestión de agenda propia y citas asignadas. |
+| 4 | `CUSTOMER` | Shop | Reservas y perfil personal. |
+
 ## 3. Validación de Acceso en Server Components
 La función `requireAdmin(targetShopId)` es la guardiana de las rutas administrativas:
 1.  **Verificación Global**: Si el usuario es Super Admin, tiene acceso total.

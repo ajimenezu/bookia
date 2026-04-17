@@ -153,7 +153,7 @@ export function BookingFlow({
             setSelectedServices(restored)
           }
         }
-        
+
         // If we have a new initialServiceId, we should stay on the service step 
         // to show the user what's selected even if they were further in a previous session
         if (initialServiceId) {
@@ -246,7 +246,7 @@ export function BookingFlow({
   const handleReset = () => {
     setSelectedServices([])
     setIsServiceStepDone(false)
-    setSelectedBarber(null)
+    setSelectedBarber(staff.length === 1 ? staff[0].id : null)
     setSelectedDate(undefined)
     setSelectedTime(null)
     setClientName(initialClientName || "")
@@ -348,7 +348,7 @@ export function BookingFlow({
                       <div className="flex items-center gap-1.5 mt-1 text-muted-foreground">
                         <span className="text-xs font-medium bg-muted px-1.5 py-0.5 rounded-md">{formatDuration(svc.duration)}</span>
                       </div>
-                      
+
                       {/* Animated Description Expansion */}
                       {svc.description && (
                         <div className={cn(
@@ -388,7 +388,7 @@ export function BookingFlow({
             <div className="sticky bottom-0 z-20 -mx-6 mt-auto">
               {/* Gradient overlay to blend services as they scroll under the footer */}
               <div className="h-10 bg-gradient-to-t from-background to-transparent pointer-events-none" />
-              
+
               <div className="bg-background border-t border-border/40 px-6 pb-12 pt-2 shadow-[0_-20px_40px_-15px_rgba(0,0,0,0.1)]">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex flex-col">
@@ -448,7 +448,7 @@ export function BookingFlow({
         {/* Step: Staff Selection */}
         {currentStep === "barber" && (
           <section className="animate-in fade-in slide-in-from-right-4 duration-500">
-            <h2 className="mb-6 text-xl font-black text-foreground tracking-tight">Elige {t.staffGender === "f" ? "una" : "un"} {t.staff.toLowerCase()}</h2>
+            <h2 className="mb-6 text-xl font-black text-foreground tracking-tight">Elige {t.staffGender === "f" ? "una" : "un"} {t.staff}</h2>
             <div className="grid gap-4">
               {allStaff.map((b) => (
                 <button
@@ -473,7 +473,7 @@ export function BookingFlow({
                   <div className="min-w-0 flex-1">
                     <p className="font-bold text-card-foreground text-lg leading-tight truncate">{b.name}</p>
                     {b.id === "auto" && (
-                      <p className="text-xs font-medium text-muted-foreground mt-1">{t.staffGender === "f" ? "Primera" : "Primer"} {t.staff.toLowerCase()} disponible</p>
+                      <p className="text-xs font-medium text-muted-foreground mt-1">{t.staffGender === "f" ? "Primera" : "Primer"} {t.staff} disponible</p>
                     )}
                   </div>
                 </button>
@@ -506,16 +506,20 @@ export function BookingFlow({
                     crNow.getMonth() === date.getMonth() &&
                     crNow.getDate() === date.getDate()
 
-                  if (date.getDay() === 0) return true
+                  // 1. Past dates are always disabled
                   if (date < new Date(crNow.setHours(0, 0, 0, 0))) return true
 
-                  if (isToday && shopSchedules.length > 0) {
-                    const todaySchedule = shopSchedules.find(s => s.dayOfWeek === crNow.getDay())
+                  // 2. Dynamic availability check based on shop schedules
+                  const daySchedule = shopSchedules.find(s => s.dayOfWeek === date.getDay())
+
+                  // If day is explicitly marked as closed, disable it
+                  if (daySchedule && !daySchedule.isOpen) return true
+
+                  // 3. For today, check if business is already closed
+                  if (isToday) {
                     const currentTime = `${new Date().toLocaleString("es-CR", { timeZone: "America/Costa_Rica", hour: '2-digit', minute: '2-digit', hour12: false })}`
-                    const closingTime = todaySchedule?.closeTime || "20:00"
-                    if (!todaySchedule?.isOpen || currentTime >= closingTime) {
-                      return true
-                    }
+                    const closingTime = daySchedule?.closeTime || "20:00"
+                    if (currentTime >= closingTime) return true
                   }
 
                   return false
@@ -526,7 +530,15 @@ export function BookingFlow({
             <Button
               variant="outline"
               className="mt-6 w-full h-12 rounded-2xl font-bold uppercase tracking-widest text-xs border-border/60 shadow-sm"
-              onClick={() => { setSelectedBarber(null); setSelectedDate(undefined); setAvailableSlots([]) }}
+              onClick={() => { 
+                if (staff.length === 1) {
+                  setIsServiceStepDone(false)
+                } else {
+                  setSelectedBarber(null)
+                }
+                setSelectedDate(undefined)
+                setAvailableSlots([]) 
+              }}
             >
               Volver
             </Button>

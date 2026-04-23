@@ -22,13 +22,21 @@ export default function Loading() {
           <div className="mx-auto max-w-lg">
             {/* BookingFlow Skeleton */}
             <div className="space-y-6">
+              {/* Shop name skeleton */}
+              <div className="text-center space-y-3 mb-10">
+                <div className="h-10 w-3/4 mx-auto animate-pulse rounded-lg bg-secondary/60"></div>
+                <div className="h-4 w-1/2 mx-auto animate-pulse rounded bg-secondary/40"></div>
+              </div>
+
               {/* Stepper skeleton */}
-              <div className="flex items-center justify-between px-2 mb-8">
-                <div className="h-8 w-8 animate-pulse flex-shrink-0 rounded-full bg-primary/20"></div>
-                <div className="flex-1 border-t-2 border-border/50 mx-2"></div>
-                <div className="h-8 w-8 animate-pulse flex-shrink-0 rounded-full bg-secondary/50"></div>
-                <div className="flex-1 border-t-2 border-border/50 mx-2"></div>
-                <div className="h-8 w-8 animate-pulse flex-shrink-0 rounded-full bg-secondary/50"></div>
+
+              <div className="flex items-center justify-center gap-3 px-4 mb-12">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div
+                    key={i}
+                    className={`h-2 rounded-full bg-secondary/50 animate-pulse ${i === 1 ? 'w-12 bg-primary/30' : 'w-6'}`}
+                  ></div>
+                ))}
               </div>
 
               {/* Card skeleton */}

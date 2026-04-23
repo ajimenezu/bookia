@@ -132,4 +132,12 @@
   .glass-input {
     @apply bg-background/40 backdrop-blur-sm border-border shadow-sm;
   }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
 }

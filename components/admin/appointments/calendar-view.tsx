@@ -108,7 +108,7 @@ export function CalendarView({ dates, appointments, shopId, businessType, servic
               <div
                 key={d.label + "-col"}
                 className={cn(
-                  "min-h-[400px] p-2",
+                  "h-[650px] overflow-y-auto p-2 scrollbar-hide hover:scrollbar-default transition-all",
                   dayIndex < 6 && "border-r border-border",
                   d.isToday && "bg-primary/5"
                 )}
@@ -151,7 +151,7 @@ export function CalendarView({ dates, appointments, shopId, businessType, servic
       <div className="md:hidden">
         {/* Day selector */}
         <div className="mb-6 flex flex-col gap-4">
-          <div className="flex items-center justify-between rounded-2xl border border-border bg-card p-1.5 shadow-sm">
+          <div className="flex items-center justify-between rounded-2xl border border-border bg-card p-2 shadow-sm">
             <Button
               variant="ghost"
               size="icon"
@@ -162,7 +162,7 @@ export function CalendarView({ dates, appointments, shopId, businessType, servic
               <ChevronLeft className="h-5 w-5" />
             </Button>
 
-            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-1">
+            <div className="flex-1 min-w-0 flex items-center gap-1 overflow-x-auto no-scrollbar py-1 px-1">
               {dates.map((day, i) => (
                 <button
                   key={day.label}
@@ -236,28 +236,28 @@ export function CalendarView({ dates, appointments, shopId, businessType, servic
               <p className="text-xs text-muted-foreground/60 mt-1">¡Un día tranquilo siempre es bueno!</p>
             </div>
           ) : (
-            <div className="divide-y divide-border">
+            <div className="divide-y divide-border max-h-[600px] overflow-y-auto scrollbar-hide hover:scrollbar-default transition-all">
               {dayAppts.map((apt) => (
                 <div 
                   key={apt.id} 
                   onClick={() => handleCardClick(apt)}
-                  className="flex items-center gap-4 px-5 py-5 group transition-colors hover:bg-muted/5 cursor-pointer active:bg-muted/10"
+                  className="flex items-center gap-2.5 px-3 py-5 group transition-colors hover:bg-muted/5 cursor-pointer active:bg-muted/10"
                 >
-                  <div className="flex flex-col items-center justify-center min-w-14 h-12 rounded-xl bg-primary/5 border border-primary/10 transition-colors group-hover:bg-primary/10">
-                    <span className="font-mono text-xs font-bold leading-none text-primary">
+                  <div className="flex flex-col items-center justify-center min-w-12 h-12 rounded-xl bg-primary/5 border border-primary/10 transition-colors group-hover:bg-primary/10">
+                    <span className="font-mono text-[10px] font-bold leading-none text-primary">
                       {formatTime(apt.startTime).split(' ')[0]}
                     </span>
-                    <span className="text-[9px] uppercase font-black mt-1 text-primary opacity-70">
+                    <span className="text-[8px] uppercase font-black mt-1 text-primary opacity-70">
                       {formatTime(apt.startTime).split(' ')[1]}
                     </span>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-bold text-card-foreground truncate leading-tight">
+                    <p className="font-bold text-sm text-card-foreground truncate leading-tight">
                       {apt.customer?.name || apt.customerName || t.client}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate mt-1">{apt.services?.length > 0 ? apt.services.map((s: any) => s.name).join(', ') : apt.service?.name}</p>
+                    <p className="text-[11px] text-muted-foreground truncate mt-1">{apt.services?.length > 0 ? apt.services.map((s: any) => s.name).join(', ') : apt.service?.name}</p>
                   </div>
-                  <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-end shrink-0" onClick={(e) => e.stopPropagation()}>
                     <AppointmentActions 
                       appointmentId={apt.id} 
                       shopId={shopId} 

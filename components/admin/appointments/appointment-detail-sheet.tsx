@@ -2,26 +2,27 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { 
-  Calendar, 
-  Clock, 
-  User, 
-  Tag, 
-  Phone, 
-  CreditCard, 
-  Edit3, 
-  CheckCircle2, 
-  XCircle, 
+import {
+  Calendar,
+  Clock,
+  User,
+  Tag,
+  Phone,
+  CreditCard,
+  Edit3,
+  CheckCircle2,
+  XCircle,
   AlertCircle,
   Loader2,
   Save,
-  Undo2
+  Undo2,
+  X
 } from "lucide-react"
-import { 
-  Sheet, 
-  SheetContent, 
-  SheetHeader, 
-  SheetTitle, 
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
   SheetDescription,
   SheetFooter
 } from "@/components/ui/sheet"
@@ -31,7 +32,7 @@ import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { StatusBadge } from "./status-badge"
 import { formatTime, toCRDate } from "@/lib/date-utils"
-import { updateAppointmentStatus, updateBooking, fetchAvailableSlots } from "@/app/schedule/actions"
+import { updateAppointmentStatus, updateBooking, fetchAvailableSlots, updateAppointmentNotes } from "@/app/schedule/actions"
 import { AppointmentStatus } from "@prisma/client"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -57,10 +58,10 @@ interface AppointmentDetailSheetProps {
 
 type Mode = "preview" | "edit"
 
-export function AppointmentDetailSheet({ 
-  appointment, 
-  isOpen, 
-  onOpenChange, 
+export function AppointmentDetailSheet({
+  appointment,
+  isOpen,
+  onOpenChange,
   shopId,
   businessType,
   services,
@@ -70,7 +71,7 @@ export function AppointmentDetailSheet({
   const [mode, setMode] = useState<Mode>("preview")
   const [isUpdating, setIsUpdating] = useState(false)
   const t = getTerminology(businessType)
-  
+
   // Edit Form State
   const [selectedServices, setSelectedServices] = useState<string[]>([])
   const [selectedStaff, setSelectedStaff] = useState<string>("")
@@ -80,6 +81,8 @@ export function AppointmentDetailSheet({
   const [isLoadingSlots, setIsLoadingSlots] = useState(false)
   const [customerName, setCustomerName] = useState("")
   const [customerPhone, setCustomerPhone] = useState("")
+  const [notes, setNotes] = useState("")
+  const [isSavingNotes, setIsSavingNotes] = useState(false)
 
   // Initialize form state when entering edit mode or when appointment changes
   useEffect(() => {
@@ -91,6 +94,7 @@ export function AppointmentDetailSheet({
       setSelectedTime(formatTime(appointment.startTime).split(' ')[0]) // Get HH:MM
       setCustomerName(appointment.customerName || "")
       setCustomerPhone(appointment.customerPhone || "")
+      setNotes(appointment.notes || "")
     }
     if (!isOpen) {
       setMode("preview") // Reset mode when closing
@@ -137,6 +141,23 @@ export function AppointmentDetailSheet({
       toast.error("Error de conexión")
     } finally {
       setIsUpdating(false)
+    }
+  }
+
+  const handleSaveNotes = async () => {
+    setIsSavingNotes(true)
+    try {
+      const result = await updateAppointmentNotes(appointment.id, notes || null, shopId)
+      if (result.success) {
+        toast.success("Notas actualizadas")
+        router.refresh()
+      } else {
+        toast.error(result.error || "Error al guardar notas")
+      }
+    } catch (error) {
+      toast.error("Error de conexión")
+    } finally {
+      setIsSavingNotes(false)
     }
   }
 
@@ -192,6 +213,8 @@ export function AppointmentDetailSheet({
 
   if (!appointment) return null
 
+  const isPastOrPresent = new Date(appointment.startTime) <= toCRDate(new Date())
+
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-xl p-0 flex flex-col h-[100dvh] max-h-[100dvh] border-l border-border bg-background overflow-hidden">
@@ -202,9 +225,9 @@ export function AppointmentDetailSheet({
                 {mode === "preview" ? `Detalles de la ${t.appointment}` : `Editar ${t.appointment}`}
               </SheetTitle>
               <SheetDescription className="text-muted-foreground mt-1">
-                {mode === "preview" 
-                   ? "Revisa la información y gestiona el estado." 
-                   : `Modifica los ${t.servicePlural.toLowerCase()}, fecha o ${t.staff.toLowerCase()}.`}
+                {mode === "preview"
+                  ? "Revisa la información y gestiona el estado."
+                  : `Modifica los ${t.servicePlural.toLowerCase()}, fecha o ${t.staff.toLowerCase()}.`}
               </SheetDescription>
             </div>
             <StatusBadge status={appointment.status} className="px-3 py-1 text-xs" />
@@ -218,9 +241,21 @@ export function AppointmentDetailSheet({
               <>
                 {/* Customer Info Section */}
                 <section className="space-y-4">
-                  <div className="flex items-center gap-2 text-primary">
-                    <User className="h-5 w-5" />
-                    <h3 className="font-bold text-lg">Información del {t.client}</h3>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-primary">
+                      <User className="h-5 w-5" />
+                      <h3 className="font-bold text-lg">Información del {t.client}</h3>
+                    </div>
+                    {!["COMPLETED", "CANCELLED", "NO_SHOW"].includes(appointment.status) && !isPastOrPresent && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 rounded-lg font-bold border-primary/10 text-primary hover:bg-primary/10 transition-colors"
+                        onClick={() => setMode("edit")}
+                      >
+                        <Edit3 className="mr-1.5 h-3.5 w-3.5" /> Editar
+                      </Button>
+                    )}
                   </div>
                   <div className="grid gap-4 rounded-2xl border border-border bg-card/30 p-5 shadow-sm">
                     <div>
@@ -285,10 +320,10 @@ export function AppointmentDetailSheet({
                       <h3 className="font-bold">Fecha</h3>
                     </div>
                     <p className="text-lg font-bold">
-                      {new Date(appointment.startTime).toLocaleDateString('es-ES', { 
-                        weekday: 'long', 
-                        day: 'numeric', 
-                        month: 'long' 
+                      {new Date(appointment.startTime).toLocaleDateString('es-ES', {
+                        weekday: 'long',
+                        day: 'numeric',
+                        month: 'long'
                       })}
                     </p>
                   </div>
@@ -304,33 +339,49 @@ export function AppointmentDetailSheet({
                   </div>
                 </section>
 
-                {/* Financial Summary */}
-                <div className="rounded-2xl bg-primary/5 border border-primary/20 p-6 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                      <CreditCard className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Total a pagar</p>
-                      <p className="text-2xl font-black text-primary">₡{totalPrice.toLocaleString()}</p>
+                {/* Notes Section */}
+                <Separator className="opacity-50" />
+                <section className="space-y-4">
+                  <div className="flex items-center gap-2 text-primary">
+                    <Edit3 className="h-4 w-4" />
+                    <h3 className="font-bold">Notas de la Cita</h3>
+                  </div>
+                  <div className="space-y-3">
+                    <textarea
+                      className="w-full min-h-[100px] rounded-xl border border-border bg-card/30 p-4 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
+                      placeholder="Agrega notas importantes sobre esta cita..."
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                    />
+                    <div className="flex justify-end gap-2">
+                      {appointment.notes && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="rounded-lg h-8 px-3 text-destructive hover:bg-destructive/10 font-bold"
+                          onClick={() => {
+                            setNotes("");
+                            handleSaveNotes();
+                          }}
+                          disabled={isSavingNotes}
+                        >
+                          <X className="h-3 w-3 mr-1.5" />
+                          Borrar
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        className="rounded-lg h-8 px-4 font-bold"
+                        onClick={handleSaveNotes}
+                        disabled={isSavingNotes || (notes === (appointment.notes || ""))}
+                      >
+                        {isSavingNotes ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : <Save className="h-3 w-3 mr-1.5" />}
+                        {appointment.notes ? "Actualizar Notas" : "Guardar Notas"}
+                      </Button>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">IVA INCLUIDO</p>
-                  </div>
-                </div>
+                </section>
 
-                {/* Centered Edit Button */}
-                <div className="flex justify-center pt-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="rounded-xl font-bold border-primary/20 text-primary hover:bg-primary/5 shadow-sm"
-                    onClick={() => setMode("edit")}
-                  >
-                    <Edit3 className="mr-2 h-4 w-4" /> Editar Información
-                  </Button>
-                </div>
               </>
             ) : (
               // EDIT MODE
@@ -345,20 +396,20 @@ export function AppointmentDetailSheet({
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
                         <Label htmlFor="custName" className="text-xs font-bold uppercase tracking-wider opacity-70">Nombre</Label>
-                        <Input 
-                          id="custName" 
-                          value={customerName} 
-                          onChange={(e) => setCustomerName(e.target.value)} 
+                        <Input
+                          id="custName"
+                          value={customerName}
+                          onChange={(e) => setCustomerName(e.target.value)}
                           className="h-11 rounded-xl bg-background border-border"
                           placeholder={`Nombre del ${t.client.toLowerCase()}`}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="custPhone" className="text-xs font-bold uppercase tracking-wider opacity-70">Teléfono</Label>
-                        <Input 
-                          id="custPhone" 
-                          value={customerPhone} 
-                          onChange={(e) => setCustomerPhone(e.target.value)} 
+                        <Input
+                          id="custPhone"
+                          value={customerPhone}
+                          onChange={(e) => setCustomerPhone(e.target.value)}
                           className="h-11 rounded-xl bg-background border-border"
                           placeholder="Teléfono"
                         />
@@ -374,25 +425,25 @@ export function AppointmentDetailSheet({
                   </Label>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {services.map((s) => (
-                      <div 
-                        key={s.id} 
+                      <div
+                        key={s.id}
                         className={cn(
                           "flex items-center space-x-3 rounded-xl border p-3 transition-all cursor-pointer",
-                          selectedServices.includes(s.id) 
-                            ? "bg-primary/10 border-primary ring-1 ring-primary/20" 
+                          selectedServices.includes(s.id)
+                            ? "bg-primary/10 border-primary ring-1 ring-primary/20"
                             : "bg-card border-border hover:bg-muted/50"
                         )}
                         onClick={() => {
-                          setSelectedServices(prev => 
-                            prev.includes(s.id) 
-                              ? prev.filter(id => id !== s.id) 
+                          setSelectedServices(prev =>
+                            prev.includes(s.id)
+                              ? prev.filter(id => id !== s.id)
                               : [...prev, s.id]
                           )
                         }}
                       >
-                        <Checkbox 
+                        <Checkbox
                           checked={selectedServices.includes(s.id)}
-                          onCheckedChange={() => {}} // Handled by div click
+                          onCheckedChange={() => { }} // Handled by div click
                           className="h-5 w-5 rounded-md"
                         />
                         <div className="flex-1 min-w-0">
@@ -451,7 +502,7 @@ export function AppointmentDetailSheet({
                           mode="single"
                           selected={selectedDate}
                           onSelect={setSelectedDate}
-                          disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))}
+                          disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                           initialFocus
                           className="p-3"
                         />
@@ -494,36 +545,34 @@ export function AppointmentDetailSheet({
             <>
               {/* Status Management */}
               <div className="flex flex-col sm:flex-row items-center justify-center gap-2 w-full flex-1">
-                {(appointment.status === "PENDING" || appointment.status === "CONFIRMED") && (
-                  <Button 
+                {(appointment.status === "PENDING" || appointment.status === "CONFIRMED") &&
+                  (new Date(appointment.startTime) <= toCRDate(new Date())) && (
+                    <Button
+                      variant="outline"
+                      className="h-10 rounded-xl bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300 font-bold transition-all shadow-sm text-xs px-4 w-full sm:w-auto"
+                      onClick={() => handleStatusUpdate("COMPLETED")}
+                      disabled={isUpdating}
+                    >
+                      {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-1.5 h-4 w-4" />}
+                      Completar
+                    </Button>
+                  )}
+                {(appointment.status === "PENDING" || appointment.status === "CONFIRMED") &&
+                  (new Date(appointment.startTime) <= toCRDate(new Date())) && (
+                    <Button
+                      variant="outline"
+                      className="h-10 rounded-xl bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 hover:border-amber-300 font-bold transition-all shadow-sm text-xs px-4 w-full sm:w-auto"
+                      onClick={() => handleStatusUpdate("NO_SHOW")}
+                      disabled={isUpdating}
+                    >
+                      {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="mr-1.5 h-4 w-4" />}
+                      No asistió
+                    </Button>
+                  )}
+                {(appointment.status !== "CANCELLED" && appointment.status !== "COMPLETED" && appointment.status !== "NO_SHOW" && !isPastOrPresent) && (
+                  <Button
                     variant="outline"
-                    className="h-10 rounded-xl bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300 font-bold transition-all shadow-sm text-xs px-4 w-full sm:w-auto"
-                    onClick={() => handleStatusUpdate("COMPLETED")}
-                    disabled={isUpdating}
-                  >
-                    {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-1.5 h-4 w-4" />}
-                    Completar
-                  </Button>
-                )}
-                {(appointment.status === "PENDING" || appointment.status === "CONFIRMED") && (
-                  <Button 
-                    variant="outline"
-                    className="h-10 rounded-xl bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 hover:border-amber-300 font-bold transition-all shadow-sm text-xs px-4 w-full sm:w-auto"
-                    onClick={() => handleStatusUpdate("NO_SHOW")}
-                    disabled={isUpdating}
-                  >
-                    {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="mr-1.5 h-4 w-4" />}
-                    No asistió
-                  </Button>
-                )}
-                {(appointment.status !== "CANCELLED" && appointment.status !== "COMPLETED" && appointment.status !== "NO_SHOW") && (
-                  <Button 
-                    variant="outline"
-                    className={cn(
-                      "h-10 rounded-xl bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 hover:border-rose-300 font-bold transition-all shadow-sm text-xs px-4 w-full sm:w-auto",
-                      // Hide Cancel for past appointments as requested
-                      new Date(appointment.startTime) < toCRDate(new Date()) && "hidden"
-                    )}
+                    className="h-10 rounded-xl bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 hover:border-rose-300 font-bold transition-all shadow-sm text-xs px-4 w-full sm:w-auto"
                     onClick={() => handleStatusUpdate("CANCELLED")}
                     disabled={isUpdating}
                   >
@@ -535,15 +584,15 @@ export function AppointmentDetailSheet({
             </>
           ) : (
             <>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 className="h-12 rounded-xl font-bold text-muted-foreground w-full sm:w-auto"
                 onClick={() => setMode("preview")}
                 disabled={isUpdating}
               >
                 <Undo2 className="mr-2 h-4 w-4" /> Descartar
               </Button>
-              <Button 
+              <Button
                 className="h-12 rounded-xl bg-primary hover:primary font-bold shadow-lg shadow-primary/30 w-full sm:flex-1"
                 onClick={handleSaveEdit}
                 disabled={isUpdating}

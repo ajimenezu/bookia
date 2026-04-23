@@ -40,7 +40,7 @@ export function DateSelector() {
         const params = new URLSearchParams(searchParams.toString())
         params.set("week", newOffset.toString())
         params.set("view", view)
-        
+
         router.push(`?${params.toString()}`, { scroll: false })
       })
       setOpen(false)

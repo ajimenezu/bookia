@@ -52,7 +52,7 @@ export function AdminSidebar({
   return (
     <div className="flex min-h-screen bg-background">
       {/* Mobile header */}
-      <header className="fixed inset-x-0 top-0 z-30 flex h-16 items-center justify-between border-b border-sidebar-border bg-sidebar/80 backdrop-blur-lg px-4 lg:hidden shadow-sm">
+      <header className="fixed inset-x-0 top-0 z-30 flex h-16 items-center justify-between border-b border-sidebar-border bg-sidebar/80 backdrop-blur-lg px-6 lg:hidden shadow-sm">
         <div className="flex items-center gap-4">
           <Link href={`/${shopSlug}/admin`} className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
@@ -188,7 +188,7 @@ export function AdminSidebar({
       </aside>
 
       {/* Main content */}
-      <div className="flex flex-1 flex-col pt-16 lg:pl-64 lg:pt-0">
+      <div className="flex flex-1 flex-col pt-16 lg:pl-64 lg:pt-0 overflow-x-hidden">
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
           {children}
         </main>

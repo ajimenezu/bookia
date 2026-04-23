@@ -22,25 +22,28 @@ export function WeekNavigation({ weekOffset, view, rangeLabel }: WeekNavigationP
   }
 
   return (
-    <div className={`mb-6 flex items-center justify-between transition-opacity duration-200 ${isPending ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
+    <div className={`mb-6 flex items-center justify-center gap-8 sm:justify-between transition-opacity duration-200 ${isPending ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
       <Button 
         variant="ghost" 
         size="icon" 
         onClick={() => navigate(weekOffset - 1)}
         disabled={isPending}
-        className="h-9 w-9"
+        className="h-10 w-10 rounded-xl border border-primary/20 bg-primary/5 text-primary hover:bg-primary/20 hover:border-primary/40 shadow-sm transition-all"
       >
         <ChevronLeft className="h-5 w-5" />
       </Button>
-      <h2 className="text-sm font-medium text-muted-foreground select-none">
-        {rangeLabel}
-      </h2>
+      <div className="flex flex-col items-center">
+        <h2 className="text-sm font-bold text-foreground select-none tracking-tight">
+          {rangeLabel}
+        </h2>
+        <div className="h-1 w-8 rounded-full bg-primary/20 mt-1" />
+      </div>
       <Button 
         variant="ghost" 
         size="icon" 
         onClick={() => navigate(weekOffset + 1)}
         disabled={isPending}
-        className="h-9 w-9"
+        className="h-10 w-10 rounded-xl border border-primary/20 bg-primary/5 text-primary hover:bg-primary/20 hover:border-primary/40 shadow-sm transition-all"
       >
         <ChevronRight className="h-5 w-5" />
       </Button>

@@ -64,13 +64,9 @@ export function AppointmentActions({ appointmentId, shopId, currentStatus, start
     }
   }
 
-  // If already completed, don't show actions
-  if (currentStatus === "COMPLETED") {
-    return null
-  }
-
-  const isPast = new Date(startTime) < toCRDate(new Date())
-  const isInteractive = !loading
+  const isPastOrPresent = new Date(startTime) <= toCRDate(new Date())
+  const isFinalStatus = ["COMPLETED", "CANCELLED", "NO_SHOW"].includes(currentStatus)
+  const isInteractive = !loading && !isFinalStatus
 
   return (
     <>
@@ -98,39 +94,43 @@ export function AppointmentActions({ appointmentId, shopId, currentStatus, start
             align="center" 
             className="w-[var(--radix-dropdown-menu-trigger-width)] p-1.5 bg-card/95 backdrop-blur-sm border-border shadow-2xl rounded-xl"
           >
-            <DropdownMenuItem
-              onClick={() => handleStatusUpdate("COMPLETED")}
-              className="cursor-pointer focus:bg-transparent p-1"
-            >
-              <Badge className="w-full flex items-center justify-start gap-2 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20 py-2 px-3 transition-colors">
-                <Check className="h-4 w-4 text-primary" />
-                <span className="font-semibold">Completar</span>
-              </Badge>
-            </DropdownMenuItem>
+            {isPastOrPresent && (
+              <DropdownMenuItem
+                onClick={() => handleStatusUpdate("COMPLETED")}
+                className="cursor-pointer focus:bg-transparent p-1"
+              >
+                <Badge className="w-full flex items-center justify-start gap-2 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20 py-2 px-3 transition-colors">
+                  <Check className="h-4 w-4 text-emerald-600" />
+                  <span className="font-semibold">Completar</span>
+                </Badge>
+              </DropdownMenuItem>
+            )}
 
             {currentStatus === "PENDING" && (
               <DropdownMenuItem
                 onClick={() => handleStatusUpdate("CONFIRMED")}
                 className="cursor-pointer focus:bg-transparent p-1"
               >
-                <Badge className="w-full flex items-center justify-start gap-2 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20 py-1.5 px-3 transition-colors">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
+                <Badge className="w-full flex items-center justify-start gap-2 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20 py-2 px-3 transition-colors">
+                  <CheckCircle2 className="h-4 w-4" />
                   <span className="font-semibold">Confirmar</span>
                 </Badge>
               </DropdownMenuItem>
             )}
 
-            <DropdownMenuItem
-              onClick={() => handleStatusUpdate("NO_SHOW")}
-              className="cursor-pointer focus:bg-transparent p-1"
-            >
-              <Badge className="w-full flex items-center justify-start gap-2 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/20 py-2 px-3 transition-colors">
-                <XCircle className="h-4 w-4 text-amber-600" />
-                <span className="font-semibold">No asistió</span>
-              </Badge>
-            </DropdownMenuItem>
+            {isPastOrPresent && (
+              <DropdownMenuItem
+                onClick={() => handleStatusUpdate("NO_SHOW")}
+                className="cursor-pointer focus:bg-transparent p-1"
+              >
+                <Badge className="w-full flex items-center justify-start gap-2 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/20 py-2 px-3 transition-colors">
+                  <XCircle className="h-4 w-4 text-amber-600" />
+                  <span className="font-semibold">No asistió</span>
+                </Badge>
+              </DropdownMenuItem>
+            )}
 
-            {!isPast && (
+            {!isPastOrPresent && (
               <DropdownMenuItem
                 onSelect={() => setShowCancelDialog(true)}
                 className="cursor-pointer focus:bg-transparent p-1"

@@ -395,3 +395,39 @@ export async function updateBooking(rawData: any) {
     return { success: false, error: "Error al actualizar la cita" }
   }
 }
+
+export async function updateAppointmentNotes(
+  appointmentId: string,
+  notes: string | null,
+  shopId: string
+) {
+  // 1. SECURITY: Validate admin rights
+  const supabase = await createClient()
+  const { data: { user: authUser } } = await supabase.auth.getUser()
+  if (!authUser) return { success: false, error: "Debes iniciar sesión" }
+
+  const membership = await prisma.shopMember.findUnique({
+    where: { userId_shopId: { userId: authUser.id, shopId } }
+  })
+  const isSuperAdmin = authUser.app_metadata?.role === "SUPER_ADMIN" || membership?.role === "SUPER_ADMIN"
+  const isAuthorized = isSuperAdmin || (membership && ["OWNER", "STAFF"].includes(membership.role))
+
+  if (!isAuthorized) return { success: false, error: "No tienes permisos" }
+
+  // 2. Update
+  try {
+    await prisma.appointment.update({
+      where: { id: appointmentId, shopId },
+      data: { notes }
+    })
+
+    const shop = await prisma.shop.findUnique({ where: { id: shopId }, select: { slug: true } })
+    if (shop) {
+      revalidatePath(`/${shop.slug}/admin/citas`)
+    }
+    return { success: true }
+  } catch (error) {
+    console.error(error)
+    return { success: false, error: "Error al actualizar las notas" }
+  }
+}

@@ -57,12 +57,12 @@ export function AddAppointmentSheet({
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
-        <Button size="sm" className="w-full sm:w-auto cursor-pointer shadow-sm">
+        <Button size="sm" className="w-full sm:w-auto cursor-pointer shadow-md rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all font-bold h-9">
           <Plus className="mr-2 h-4 w-4" /> Nueva Cita
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-xl overflow-y-auto p-0 flex flex-col gap-0 border-l border-border bg-background">
-        <SheetHeader className="px-6 py-6 sm:px-10 pb-4 border-b border-border bg-card">
+      <SheetContent className="w-full sm:max-w-xl p-0 flex flex-col gap-0 border-l border-border bg-background h-full overflow-hidden">
+        <SheetHeader className="px-4 py-6 sm:px-6 pb-4 border-b border-border bg-card">
           <SheetTitle className="text-2xl font-bold tracking-tight text-foreground">
             Nueva Cita
           </SheetTitle>
@@ -71,8 +71,8 @@ export function AddAppointmentSheet({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto">
-          <div className="py-2">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide min-w-0 flex flex-col">
+          <div className="py-0 w-full min-w-0 flex flex-col flex-1">
             <BookingFlow
               shopId={shopId}
               shopName={shopName}

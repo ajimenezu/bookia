@@ -69,10 +69,18 @@ export default async function CitasPage({ params, searchParams }: PageProps) {
           <h1 className="text-2xl font-bold text-foreground md:text-3xl">{t.appointmentPlural}</h1>
           <p className="mt-1 text-muted-foreground">Gestiona las {t.appointmentPlural.toLowerCase()} de tu negocio</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <HoyButton />
-          <DateSelector />
-          <ViewSwitcher currentView={view} weekOffset={weekOffset} />
+        <div className="grid grid-cols-1 gap-3 sm:flex sm:items-center sm:gap-2">
+          <div className="flex items-center gap-2">
+            <HoyButton />
+            <DateSelector />
+            <div className="sm:hidden flex-1" /> {/* Spacer on mobile */}
+            <div className="hidden sm:block">
+              <ViewSwitcher currentView={view} weekOffset={weekOffset} />
+            </div>
+          </div>
+          <div className="sm:hidden">
+            <ViewSwitcher currentView={view} weekOffset={weekOffset} />
+          </div>
           <AddAppointmentSheet
             shopId={shopId}
             shopName={shop.name}

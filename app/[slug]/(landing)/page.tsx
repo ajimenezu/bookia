@@ -1,7 +1,6 @@
 import { getShopBySlug } from "@/lib/shop"
 import { getAdminUser } from "@/lib/auth-utils"
 import prisma from "@/lib/prisma"
-import { BusinessThemeProvider } from "@/components/admin/business-theme-provider"
 import { ShopLanding } from "@/components/shop/shop-landing"
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
@@ -70,14 +69,12 @@ export default async function ShopPublicPage({ params }: PageProps) {
   }
 
   return (
-    <BusinessThemeProvider businessType={shop.businessType} businessSlug={shop.slug}>
-      <ShopLanding 
-        shop={shopData} 
-        services={services} 
-        staff={staff} 
-        user={user}
-        role={account?.role}
-      />
-    </BusinessThemeProvider>
+    <ShopLanding 
+      shop={shopData} 
+      services={services} 
+      staff={staff} 
+      user={user}
+      role={account?.role}
+    />
   )
 }

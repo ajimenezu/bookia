@@ -1,6 +1,5 @@
 import prisma from "@/lib/prisma"
 import { BookingFlow } from "@/components/booking/booking-flow"
-import { BusinessThemeProvider } from "@/components/admin/business-theme-provider"
 import { getAdminUser } from "@/lib/auth-utils"
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
@@ -73,39 +72,37 @@ export default async function ShopSchedulePage({ params, searchParams }: PagePro
   }))
 
   return (
-    <BusinessThemeProvider businessType={shop.businessType} businessSlug={shop.slug}>
-      <div className="min-h-screen bg-background flex flex-col">
-        <ShopNavbar shop={shop} user={user} showScheduleButton={false} />
+    <div className="min-h-screen bg-background flex flex-col">
+      <ShopNavbar shop={shop} user={user} showScheduleButton={false} />
 
-        <main className="flex-1 pb-20">
-          <div className="mx-auto max-w-5xl px-4 pt-6">
-            <Link
-              href={`/${shop.slug}`}
-              className="group inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors mb-6"
-            >
-              <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
-              Volver al inicio
-            </Link>
+      <main className="flex-1 pb-20">
+        <div className="mx-auto max-w-5xl px-4 pt-6">
+          <Link
+            href={`/${shop.slug}`}
+            className="group inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors mb-6"
+          >
+            <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
+            Volver al inicio
+          </Link>
 
-            <div className="mx-auto max-w-lg">
-              <BookingFlow
-                shopId={shop.id}
-                shopName={shop.name}
-                shopSlug={shop.slug}
-                businessType={shop.businessType}
-                whatsappPhone={shop.whatsappPhone}
-                services={services}
-                staff={staff}
-                initialClientName={user?.name ?? undefined}
-                initialClientPhone={user?.phone ?? undefined}
-                hideHeader={true}
-                shopSchedules={mappedSchedules}
-                initialServiceId={initialServiceId}
-              />
-            </div>
+          <div className="mx-auto max-w-lg">
+            <BookingFlow
+              shopId={shop.id}
+              shopName={shop.name}
+              shopSlug={shop.slug}
+              businessType={shop.businessType}
+              whatsappPhone={shop.whatsappPhone}
+              services={services}
+              staff={staff}
+              initialClientName={user?.name ?? undefined}
+              initialClientPhone={user?.phone ?? undefined}
+              hideHeader={true}
+              shopSchedules={mappedSchedules}
+              initialServiceId={initialServiceId}
+            />
           </div>
-        </main>
-      </div>
-    </BusinessThemeProvider>
+        </div>
+      </main>
+    </div>
   )
 }

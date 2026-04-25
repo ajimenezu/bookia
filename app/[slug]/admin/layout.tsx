@@ -1,7 +1,6 @@
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { requireAdmin } from "@/lib/auth-utils"
 import { getTerminology } from "@/lib/dictionaries"
-import { BusinessThemeProvider } from "@/components/admin/business-theme-provider"
 import { notFound } from "next/navigation"
 import { getShopBySlug } from "@/lib/shop"
 
@@ -22,8 +21,6 @@ export default async function AdminLayout({ children, params }: LayoutProps) {
   const t = getTerminology(businessType)
 
   return (
-    <BusinessThemeProvider businessType={businessType} businessSlug={slug}>
-      <AdminSidebar terminology={t} shopSlug={slug} shopId={shop.id} businessType={businessType}>{children}</AdminSidebar>
-    </BusinessThemeProvider>
+    <AdminSidebar terminology={t} shopSlug={slug} shopId={shop.id} businessType={businessType}>{children}</AdminSidebar>
   )
 }

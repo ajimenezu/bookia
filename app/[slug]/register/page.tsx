@@ -1,4 +1,3 @@
-import { BusinessThemeProvider } from "@/components/admin/business-theme-provider"
 import { ShopSignUpForm } from "@/components/shop/shop-signup-form"
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
@@ -22,13 +21,11 @@ export default async function ShopRegisterPage({ params }: PageProps) {
   if (!shop) notFound()
 
   return (
-    <BusinessThemeProvider businessType={shop.businessType} businessSlug={slug}>
-      <ShopSignUpForm
-        slug={slug}
-        shopName={shop.name}
-        businessType={shop.businessType}
-        logoUrl={(shop as any).logoUrl ?? null}
-      />
-    </BusinessThemeProvider>
+    <ShopSignUpForm
+      slug={slug}
+      shopName={shop.name}
+      businessType={shop.businessType}
+      logoUrl={(shop as any).logoUrl ?? null}
+    />
   )
 }

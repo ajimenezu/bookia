@@ -1,4 +1,4 @@
-import { Star, Calendar, DollarSign } from "lucide-react"
+import { Star } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { getTerminology } from "@/lib/dictionaries"
 import prisma from "@/lib/prisma"
@@ -20,7 +20,6 @@ interface StaffStats {
   rating: number
   todayAppointments: number
   weekAppointments: number
-  monthRevenue: string
 }
 
 export async function StaffContent({ shopId, role, isSuperAdmin, businessType }: StaffContentProps) {
@@ -42,8 +41,7 @@ export async function StaffContent({ shopId, role, isSuperAdmin, businessType }:
   const weekStart = new Date(now)
   weekStart.setDate(now.getDate() + diffToMonday)
   weekStart.setHours(0, 0, 0, 0)
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-  const earliestDate = new Date(Math.min(weekStart.getTime(), monthStart.getTime()))
+  const earliestDate = weekStart
 
   const rawMembers = await prisma.shopMember.findMany({
     where: whereClause,
@@ -73,11 +71,6 @@ export async function StaffContent({ shopId, role, isSuperAdmin, businessType }:
     }
   })
 
-  const formatter = new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    maximumFractionDigits: 0,
-  })
 
   const isOwner = role === "OWNER" || isSuperAdmin
   const t = getTerminology(businessType as any)
@@ -95,18 +88,14 @@ export async function StaffContent({ shopId, role, isSuperAdmin, businessType }:
           .toUpperCase()
         const appointments = user.appointmentsAsStaff || []
         let todayAppointments = 0,
-          weekAppointments = 0,
-          monthRevenueValue = 0
+          weekAppointments = 0
 
         for (const appt of appointments) {
           const time = appt.startTime.getTime()
           if (time >= todayStart.getTime()) todayAppointments++
           if (time >= weekStart.getTime()) weekAppointments++
-          if (time >= monthStart.getTime())
-            monthRevenueValue += (appt as any).priceAtBooking || 0
         }
 
-        const monthRevenue = formatter.format(monthRevenueValue)
         let specialty = "Cliente"
         if (member.role === "OWNER") specialty = "Propietario / Gerente"
         else if (member.role === "STAFF") specialty = "Personal"
@@ -129,7 +118,6 @@ export async function StaffContent({ shopId, role, isSuperAdmin, businessType }:
               rating: 5.0,
               todayAppointments,
               weekAppointments,
-              monthRevenue,
             }}
           />
         )
@@ -192,27 +180,17 @@ function StaffMemberCard({
           </span>
         </div>
         
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1 text-sm bg-muted/5 p-3 rounded-xl border border-border/40">
-              <span className="text-[10px] uppercase font-black text-muted-foreground/50 tracking-wider">{t.appointmentPlural} hoy</span>
-              <span className="font-black text-lg text-card-foreground">{stats.todayAppointments}</span>
-            </div>
+        <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1 text-sm bg-muted/5 p-3 rounded-xl border border-border/40">
-            <span className="text-[10px] uppercase font-black text-muted-foreground/50 tracking-wider">Semana</span>
+            <span className="text-[10px] uppercase font-black text-muted-foreground/50 tracking-wider">{t.appointmentPlural} hoy</span>
+            <span className="font-black text-lg text-card-foreground">{stats.todayAppointments}</span>
+          </div>
+          <div className="flex flex-col gap-1 text-sm bg-muted/5 p-3 rounded-xl border border-border/40">
+            <span className="text-[10px] uppercase font-black text-muted-foreground/50 tracking-wider">{t.appointmentPlural} semana</span>
             <span className="font-black text-lg text-card-foreground">{stats.weekAppointments}</span>
           </div>
         </div>
 
-        <div className="mt-1 bg-primary/5 p-4 rounded-xl border border-primary/10 shadow-inner">
-          <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center gap-2.5 text-primary/80 font-bold uppercase text-[10px] tracking-widest">
-              <DollarSign className="h-4 w-4" /> Ingreso del mes
-            </span>
-            <span className="text-xl font-black text-primary tracking-tighter">
-              {stats.monthRevenue}
-            </span>
-          </div>
-        </div>
       </div>
 
       <div className="mt-6 pt-5 border-t border-border/60">

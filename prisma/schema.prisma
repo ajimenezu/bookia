@@ -43,6 +43,7 @@ model User {
   memberships            ShopMember[]
   staffSchedules         StaffSchedule[] @relation("UserSchedules")
   staffTimeOff           StaffTimeOff[]  @relation("UserTimeOff")
+  authoredNotes          AppointmentNote[] @relation("NoteAuthor")
 }
 
 model ShopMember {
@@ -147,8 +148,22 @@ model Appointment {
   shop           Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
   staff          User?             @relation("StaffAppointments", fields: [staffId], references: [id])
   services       Service[]         @relation("AppointmentServices")
+  notes          AppointmentNote[]
 
   @@index([staffId, startTime])
+}
+
+model AppointmentNote {
+  id            String      @id @default(cuid())
+  appointmentId String
+  authorId      String      @db.Uuid
+  content       String      @db.Text
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  author        User        @relation("NoteAuthor", fields: [authorId], references: [id])
+
+  @@index([appointmentId])
 }
 
 model DemoRequest {

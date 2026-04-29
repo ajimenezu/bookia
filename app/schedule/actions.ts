@@ -29,6 +29,17 @@ const querySchema = z.object({
   excludeAppointmentId: z.string().optional(),
 })
 
+const addNoteSchema = z.object({
+  appointmentId: z.string().min(1),
+  content: z.string().min(1).max(2000),
+  shopId: z.string().min(1),
+})
+
+const deleteNoteSchema = z.object({
+  noteId: z.string().min(1),
+  shopId: z.string().min(1),
+})
+
 export async function createBooking(rawData: unknown) {
   const validated = bookingSchema.safeParse(rawData)
   if (!validated.success) {
@@ -396,11 +407,16 @@ export async function updateBooking(rawData: any) {
   }
 }
 
-export async function updateAppointmentNotes(
-  appointmentId: string,
-  notes: string | null,
-  shopId: string
+export async function addAppointmentNote(
+  rawData: unknown
 ) {
+  const validated = addNoteSchema.safeParse(rawData)
+  if (!validated.success) {
+    return { success: false, error: "Datos de nota inválidos" }
+  }
+
+  const { appointmentId, content, shopId } = validated.data
+
   // 1. SECURITY: Validate admin rights
   const supabase = await createClient()
   const { data: { user: authUser } } = await supabase.auth.getUser()
@@ -414,11 +430,29 @@ export async function updateAppointmentNotes(
 
   if (!isAuthorized) return { success: false, error: "No tienes permisos" }
 
-  // 2. Update
+  if (!content.trim()) return { success: false, error: "La nota no puede estar vacía" }
+
+  // 1.5 SELF-HEALING: Ensure user has a name in Prisma if available in Supabase metadata
+  const fullName = authUser.user_metadata?.full_name || authUser.user_metadata?.name
+  if (fullName) {
+    try {
+      await prisma.user.updateMany({
+        where: { id: authUser.id, OR: [{ name: null }, { name: "" }] },
+        data: { name: fullName }
+      })
+    } catch (e) {
+      console.error("Failed to self-heal user name:", e)
+    }
+  }
+
+  // 2. Create Note
   try {
-    await prisma.appointment.update({
-      where: { id: appointmentId, shopId },
-      data: { notes }
+    await prisma.appointmentNote.create({
+      data: {
+        appointmentId,
+        authorId: authUser.id,
+        content: content.trim()
+      }
     })
 
     const shop = await prisma.shop.findUnique({ where: { id: shopId }, select: { slug: true } })
@@ -428,6 +462,56 @@ export async function updateAppointmentNotes(
     return { success: true }
   } catch (error) {
     console.error(error)
-    return { success: false, error: "Error al actualizar las notas" }
+    return { success: false, error: "Error al crear la nota" }
+  }
+}
+
+export async function deleteAppointmentNote(
+  rawData: unknown
+) {
+  const validated = deleteNoteSchema.safeParse(rawData)
+  if (!validated.success) {
+    return { success: false, error: "Datos de eliminación inválidos" }
+  }
+
+  const { noteId, shopId } = validated.data
+
+  // 1. SECURITY: Validate admin rights
+  const supabase = await createClient()
+  const { data: { user: authUser } } = await supabase.auth.getUser()
+  if (!authUser) return { success: false, error: "Debes iniciar sesión" }
+
+  const membership = await prisma.shopMember.findUnique({
+    where: { userId_shopId: { userId: authUser.id, shopId } }
+  })
+  const isSuperAdmin = authUser.app_metadata?.role === "SUPER_ADMIN" || membership?.role === "SUPER_ADMIN"
+  const isAuthorized = isSuperAdmin || (membership && ["OWNER", "STAFF"].includes(membership.role))
+
+  if (!isAuthorized) return { success: false, error: "No tienes permisos" }
+
+  // 2. Delete Note
+  try {
+    // Security: ensure the note belongs to an appointment in this shop
+    const note = await prisma.appointmentNote.findUnique({
+      where: { id: noteId },
+      include: { appointment: true }
+    })
+
+    if (!note || note.appointment.shopId !== shopId) {
+      return { success: false, error: "Nota no encontrada o no autorizada" }
+    }
+
+    await prisma.appointmentNote.delete({
+      where: { id: noteId }
+    })
+
+    const shop = await prisma.shop.findUnique({ where: { id: shopId }, select: { slug: true } })
+    if (shop) {
+      revalidatePath(`/${shop.slug}/admin/citas`)
+    }
+    return { success: true }
+  } catch (error) {
+    console.error(error)
+    return { success: false, error: "Error al eliminar la nota" }
   }
 }

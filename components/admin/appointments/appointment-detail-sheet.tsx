@@ -16,7 +16,9 @@ import {
   Loader2,
   Save,
   Undo2,
-  X
+  X,
+  Trash2,
+  MessageSquare
 } from "lucide-react"
 import {
   Sheet,
@@ -32,7 +34,7 @@ import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { StatusBadge } from "./status-badge"
 import { formatTime, toCRDate } from "@/lib/date-utils"
-import { updateAppointmentStatus, updateBooking, fetchAvailableSlots, updateAppointmentNotes } from "@/app/schedule/actions"
+import { updateAppointmentStatus, updateBooking, fetchAvailableSlots, addAppointmentNote, deleteAppointmentNote } from "@/app/schedule/actions"
 import { AppointmentStatus } from "@prisma/client"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -40,11 +42,21 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Calendar as CalendarPicker } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { format } from "date-fns"
+import { format, formatDistanceToNow } from "date-fns"
 import { es } from "date-fns/locale"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { BusinessType, getTerminology } from "@/lib/dictionaries"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface AppointmentDetailSheetProps {
   appointment: any
@@ -83,6 +95,7 @@ export function AppointmentDetailSheet({
   const [customerPhone, setCustomerPhone] = useState("")
   const [notes, setNotes] = useState("")
   const [isSavingNotes, setIsSavingNotes] = useState(false)
+  const [noteToDeleteId, setNoteToDeleteId] = useState<string | null>(null)
 
   // Initialize form state when entering edit mode or when appointment changes
   useEffect(() => {
@@ -94,10 +107,11 @@ export function AppointmentDetailSheet({
       setSelectedTime(formatTime(appointment.startTime).split(' ')[0]) // Get HH:MM
       setCustomerName(appointment.customerName || "")
       setCustomerPhone(appointment.customerPhone || "")
-      setNotes(appointment.notes || "")
+      setNotes("") // Reset input notes
     }
     if (!isOpen) {
       setMode("preview") // Reset mode when closing
+      setNotes("")
     }
   }, [appointment, isOpen])
 
@@ -144,20 +158,43 @@ export function AppointmentDetailSheet({
     }
   }
 
-  const handleSaveNotes = async () => {
+  const handleAddNote = async () => {
+    if (!notes.trim()) return
     setIsSavingNotes(true)
     try {
-      const result = await updateAppointmentNotes(appointment.id, notes || null, shopId)
+      const result = await addAppointmentNote({ 
+        appointmentId: appointment.id, 
+        content: notes, 
+        shopId 
+      })
       if (result.success) {
-        toast.success("Notas actualizadas")
+        toast.success("Nota agregada")
+        setNotes("")
         router.refresh()
       } else {
-        toast.error(result.error || "Error al guardar notas")
+        toast.error(result.error || "Error al agregar nota")
       }
     } catch (error) {
       toast.error("Error de conexión")
     } finally {
       setIsSavingNotes(false)
+    }
+  }
+
+  const handleDeleteNote = async () => {
+    if (!noteToDeleteId) return
+    try {
+      const result = await deleteAppointmentNote({ noteId: noteToDeleteId, shopId })
+      if (result.success) {
+        toast.success("Nota eliminada")
+        router.refresh()
+      } else {
+        toast.error(result.error || "Error al eliminar nota")
+      }
+    } catch (error) {
+      toast.error("Error de conexión")
+    } finally {
+      setNoteToDeleteId(null)
     }
   }
 
@@ -341,44 +378,80 @@ export function AppointmentDetailSheet({
 
                 {/* Notes Section */}
                 <Separator className="opacity-50" />
-                <section className="space-y-4">
+                <section className="space-y-6">
                   <div className="flex items-center gap-2 text-primary">
-                    <Edit3 className="h-4 w-4" />
-                    <h3 className="font-bold">Notas de la Cita</h3>
+                    <MessageSquare className="h-4 w-4" />
+                    <h3 className="font-bold">Historial de Notas</h3>
                   </div>
-                  <div className="space-y-3">
+                  
+                  {/* New Note Form (Top) */}
+                  <div className="space-y-3 bg-primary/5 rounded-2xl p-4 border border-primary/10">
                     <textarea
-                      className="w-full min-h-[100px] rounded-xl border border-border bg-card/30 p-4 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
-                      placeholder="Agrega notas importantes sobre esta cita..."
+                      className="w-full min-h-[80px] rounded-xl border border-border bg-background p-4 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
+                      placeholder="Escribe una nueva nota..."
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
                     />
                     <div className="flex justify-end gap-2">
-                      {appointment.notes && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="rounded-lg h-8 px-3 text-destructive hover:bg-destructive/10 font-bold"
-                          onClick={() => {
-                            setNotes("");
-                            handleSaveNotes();
-                          }}
-                          disabled={isSavingNotes}
-                        >
-                          <X className="h-3 w-3 mr-1.5" />
-                          Borrar
-                        </Button>
-                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="rounded-lg h-8 px-3 text-muted-foreground font-bold"
+                        onClick={() => setNotes("")}
+                        disabled={!notes.trim() || isSavingNotes}
+                      >
+                        Cancelar
+                      </Button>
                       <Button
                         size="sm"
                         className="rounded-lg h-8 px-4 font-bold"
-                        onClick={handleSaveNotes}
-                        disabled={isSavingNotes || (notes === (appointment.notes || ""))}
+                        onClick={handleAddNote}
+                        disabled={!notes.trim() || isSavingNotes}
                       >
                         {isSavingNotes ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : <Save className="h-3 w-3 mr-1.5" />}
-                        {appointment.notes ? "Actualizar Notas" : "Guardar Notas"}
+                        Guardar Nota
                       </Button>
                     </div>
+                  </div>
+
+                  {/* Notes List (Bottom) */}
+                  <div className="space-y-4">
+                    {appointment.notes && appointment.notes.length > 0 ? (
+                      appointment.notes.map((note: { id: string; content: string; createdAt: string; author?: { name: string | null; email: string | null } }) => (
+                        <div key={note.id} className="group relative rounded-2xl border border-border bg-card/30 p-4 shadow-sm hover:border-primary/20 transition-all">
+                          <div className="flex items-start justify-between gap-4 mb-2">
+                            <div className="flex items-center gap-2">
+                              <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-black text-primary">
+                                {note.author?.name?.charAt(0) || "U"}
+                              </div>
+                              <div>
+                                <p className="text-xs font-bold text-foreground">
+                                  {note.author?.name || note.author?.email?.split('@')[0] || "Usuario"}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground">
+                                  {formatDistanceToNow(new Date(note.createdAt), { addSuffix: true, locale: es })}
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 rounded-lg opacity-0 group-hover:opacity-100 text-destructive hover:bg-destructive/10 transition-all"
+                              onClick={() => setNoteToDeleteId(note.id)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                          <p className="text-sm text-card-foreground leading-relaxed whitespace-pre-wrap">
+                            {note.content}
+                          </p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 px-4 rounded-2xl border border-dashed border-border/60">
+                        <p className="text-xs text-muted-foreground italic">No hay notas registradas para esta cita.</p>
+                      </div>
+                    )}
                   </div>
                 </section>
 
@@ -604,6 +677,26 @@ export function AppointmentDetailSheet({
           )}
         </SheetFooter>
       </SheetContent>
+
+      <AlertDialog open={!!noteToDeleteId} onOpenChange={(open) => !open && setNoteToDeleteId(null)}>
+        <AlertDialogContent className="rounded-3xl border-border bg-card/95 backdrop-blur-xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold tracking-tight">¿Eliminar esta nota?</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
+              Esta acción no se puede deshacer. La nota se eliminará permanentemente de los registros de esta cita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel className="rounded-xl border-border font-bold">Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteNote}
+              className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90 font-bold shadow-lg shadow-destructive/20"
+            >
+              Eliminar Nota
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   )
 }

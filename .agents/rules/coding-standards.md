@@ -28,6 +28,7 @@
 - **Loading & Skeleton Pattern**: Cada `page.tsx` **DEBE** tener su correspondiente `loading.tsx`. El layout del loading debe ser un "reflejo oscuro" (Skeleton) del de la página real para evitar saltos de layout (CLS).
 - **Rich Aesthetics**: Los componentes deben ser modernos, con micro-animaciones y layouts dinámicos (Glassmorphism). No se aceptan diseños planos o minimalistas extremos sin textura visual.
 - **Iconografía Coherente**: Asegurar que los iconos hereden o declaren explícitamente el color del token de texto asociado para mantener el balance visual y la cohesión.
+- **Confirmaciones Destructivas**: **PROHIBIDO** el uso de `window.confirm()`. Toda acción destructiva (borrar, cancelar) debe usar el componente `AlertDialog` de Shadcn/UI para mantener la estética premium y la consistencia del proyecto.
 
 ## 4. Estructura de Archivos y Reusabilidad
 - **Patrón DRY (Don't Repeat Yourself)**: Antes de crear un componente, verifica si ya existe uno similar en `components/ui/` o en las carpetas de feature. Extrae lógica común a hooks o utilitarios.
@@ -35,7 +36,8 @@
 - **Components Folder**: Separar componentes por responsabilidad (`admin/`, `booking/`, `shop/`).
 - **Server Actions**: Usar archivos `actions.ts` en cada ruta para las mutaciones, manteniendo las páginas limpias.
     - **CRÍTICO: Validación Zod**: **Toda** Server Action debe validar sus inputs con un esquema de Zod (`safeParse`) antes de cualquier operación.
-    - **Aislamiento Multi-tenant**: Si la acción requiere un `shopId`, este debe ser validado contra la sesión del usuario o inyectado desde una fuente confiable, nunca aceptado ciegamente desde el cliente sin verificación.
+    - **Aislamiento Multi-tenant**: Si la acción requiere un `shopId`, este debe ser validado contra la sesión del usuario. Para recursos hijos (ej. notas de una cita), se debe verificar que el recurso padre pertenezca al `shopId` antes de cualquier mutación.
+    - **Patrón Self-Healing**: En acciones que involucren al usuario autenticado, si el registro en Prisma carece de datos (ej. `name`) pero estos están en los metadatos de Supabase, se debe realizar una actualización automática ("self-healing") para mantener la consistencia de la UI.
 - **Gold Standard (Admin)**: Referencia `app/[slug]/admin/servicios/actions.ts`.
 - **Gold Standard (Data Fetching)**: `app/[slug]/admin/layout.tsx` (Uso de `getShopBySlug`).
 

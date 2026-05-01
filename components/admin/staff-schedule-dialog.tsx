@@ -205,7 +205,10 @@ export function StaffScheduleDialog({
           Configurar Horario
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0 border-border bg-background shadow-2xl [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:border-none [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40 transition-colors">
+      <DialogContent 
+        onInteractOutside={(e) => e.preventDefault()}
+        className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0 border-border bg-background shadow-2xl [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:border-none [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40 transition-colors"
+      >
         <div className="p-6 sm:p-10 pb-0">
           <DialogHeader>
             <DialogTitle>Horario de {staffName}</DialogTitle>
@@ -255,13 +258,11 @@ export function StaffScheduleDialog({
                       <div className="grid grid-cols-2 gap-4">
                         <TimeSelect
                           label="Entrada"
-                          className="bg-background/80"
                           value={day.openTime}
                           onChange={(val) => updateDay(idx, { openTime: val })}
                         />
                         <TimeSelect
                           label="Salida"
-                          className="bg-background/80"
                           value={day.closeTime}
                           onChange={(val) => updateDay(idx, { closeTime: val })}
                         />

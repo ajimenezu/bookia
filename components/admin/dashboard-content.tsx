@@ -51,6 +51,9 @@ export function DashboardContent({
 
   const activeAppointments = appointments.filter(a => a.status !== "CANCELLED" && a.status !== "NO_SHOW")
   const todayIncome = activeAppointments.reduce((acc, curr) => {
+    if (curr.priceAtBooking != null) {
+      return acc + curr.priceAtBooking
+    }
     if (curr.services && curr.services.length > 0) {
       return acc + curr.services.reduce((sAcc: number, s: any) => sAcc + (s.price || 0), 0)
     }
@@ -92,8 +95,8 @@ export function DashboardContent({
       </div>
 
       <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {stats.map((stat) => (
-          <div key={stat.label} className="flex items-center gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:border-primary/20 hover:shadow-md group">
+        {stats.map((stat, index) => (
+          <div key={stat.label} className={`flex items-center gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:border-primary/20 hover:shadow-md group ${index !== 1 ? 'hidden md:flex' : ''}`}>
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
               <stat.icon className="h-6 w-6" />
             </div>

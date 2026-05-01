@@ -1,4 +1,4 @@
-import { Edit2, Clock, DollarSign } from "lucide-react"
+import { Edit2, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { BusinessType } from "@/lib/dictionaries"
 import { Badge } from "@/components/ui/badge"
@@ -60,7 +60,6 @@ export function ServiceCard({
             {name || "Nombre del Servicio"}
           </h3>
           <div className="flex items-center gap-1.5 mt-1 text-primary/80">
-            <DollarSign className="h-3.5 w-3.5" />
             <span className="text-lg font-black tracking-tighter">{formattedPrice}</span>
           </div>
         </div>

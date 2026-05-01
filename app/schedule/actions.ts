@@ -272,32 +272,31 @@ export async function getAvailableStaffForSlot(
   return availableStaff
 }
 
+async function validateAdminSession(shopId: string) {
+  const supabase = await createClient()
+  const { data: { user: authUser } } = await supabase.auth.getUser()
+  if (!authUser) return { success: false as const, error: "Debes iniciar sesión" }
+
+  const membership = await prisma.shopMember.findUnique({
+    where: { userId_shopId: { userId: authUser.id, shopId } }
+  })
+
+  const isSuperAdmin = authUser.app_metadata?.role === "SUPER_ADMIN" || membership?.role === "SUPER_ADMIN"
+  const isAuthorized = isSuperAdmin || (membership && ["OWNER", "STAFF"].includes(membership.role))
+
+  if (!isAuthorized) return { success: false as const, error: "No tienes permisos" }
+
+  return { success: true as const, user: authUser, membership }
+}
+
 export async function updateAppointmentStatus(
   appointmentId: string,
   status: AppointmentStatus,
   shopId: string
 ) {
   // 1. SECURITY: Require admin session for this shop
-  const supabase = await createClient()
-  const { data: { user: authUser } } = await supabase.auth.getUser()
-
-  if (!authUser) {
-    return { success: false, error: "Debes iniciar sesión" }
-  }
-
-  // Check membership and role
-  const membership = await prisma.shopMember.findUnique({
-    where: { userId_shopId: { userId: authUser.id, shopId } }
-  })
-
-  // Also check if they are a Global Super Admin (via metadata) or if their shop membership is SUPER_ADMIN
-  const isSuperAdmin = authUser.app_metadata?.role === "SUPER_ADMIN" || membership?.role === "SUPER_ADMIN"
-
-  const isAuthorized = isSuperAdmin || (membership && ["OWNER", "STAFF"].includes(membership.role))
-
-  if (!isAuthorized) {
-    return { success: false, error: "No tienes permisos de administrador" }
-  }
+  const auth = await validateAdminSession(shopId)
+  if (!auth.success) return { success: false, error: auth.error }
 
   // 2. Perform the update
   try {
@@ -323,7 +322,7 @@ export async function updateAppointmentStatus(
   }
 }
 
-export async function updateBooking(rawData: any) {
+export async function updateBooking(rawData: unknown) {
   const updateSchema = z.object({
     appointmentId: z.string().min(1),
     shopId: z.string().min(1),
@@ -344,17 +343,8 @@ export async function updateBooking(rawData: any) {
   const { appointmentId, shopId, serviceIds, staffId, date, time, status, customerName, customerPhone } = validated.data
 
   // 1. SECURITY: Validate admin rights
-  const supabase = await createClient()
-  const { data: { user: authUser } } = await supabase.auth.getUser()
-  if (!authUser) return { success: false, error: "Debes iniciar sesión" }
-
-  const membership = await prisma.shopMember.findUnique({
-    where: { userId_shopId: { userId: authUser.id, shopId } }
-  })
-  const isSuperAdmin = authUser.app_metadata?.role === "SUPER_ADMIN" || membership?.role === "SUPER_ADMIN"
-  const isAuthorized = isSuperAdmin || (membership && ["OWNER", "STAFF"].includes(membership.role))
-
-  if (!isAuthorized) return { success: false, error: "No tienes permisos" }
+  const auth = await validateAdminSession(shopId)
+  if (!auth.success) return { success: false, error: auth.error }
 
   // 2. Validate services
   const services = await prisma.service.findMany({
@@ -364,8 +354,23 @@ export async function updateBooking(rawData: any) {
     return { success: false, error: "Servicios inválidos" }
   }
 
+  const existingAppointment = await prisma.appointment.findUnique({
+    where: { id: appointmentId, shopId },
+    include: { services: true }
+  })
+  if (!existingAppointment) {
+    return { success: false, error: "Cita no encontrada" }
+  }
+
+  const existingServiceIds = existingAppointment.services.map(s => s.id).sort()
+  const newServiceIds = [...serviceIds].sort()
+  const hasServicesChanged = JSON.stringify(existingServiceIds) !== JSON.stringify(newServiceIds)
+
   const totalDuration = services.reduce((acc, s) => acc + s.duration, 0)
-  const totalPrice = services.reduce((acc, s) => acc + s.price, 0)
+  const finalPriceAtBooking = hasServicesChanged 
+    ? services.reduce((acc, s) => acc + s.price, 0)
+    : existingAppointment.priceAtBooking
+
   const startTime = combineDateAndTime(date, time)
   const endTime = new Date(startTime.getTime() + totalDuration * 60 * 1000)
 
@@ -384,7 +389,7 @@ export async function updateBooking(rawData: any) {
         startTime,
         endTime,
         status,
-        priceAtBooking: totalPrice,
+        priceAtBooking: finalPriceAtBooking,
         customerName,
         customerPhone,
         serviceId: serviceIds[0], // backward compat
@@ -418,17 +423,15 @@ export async function addAppointmentNote(
   const { appointmentId, content, shopId } = validated.data
 
   // 1. SECURITY: Validate admin rights
-  const supabase = await createClient()
-  const { data: { user: authUser } } = await supabase.auth.getUser()
-  if (!authUser) return { success: false, error: "Debes iniciar sesión" }
+  const auth = await validateAdminSession(shopId)
+  if (!auth.success) return { success: false, error: auth.error }
+  const { user: authUser } = auth
 
-  const membership = await prisma.shopMember.findUnique({
-    where: { userId_shopId: { userId: authUser.id, shopId } }
+  // 1.1 SECURITY: Ensure the appointment belongs to this shop
+  const appointment = await prisma.appointment.findUnique({
+    where: { id: appointmentId, shopId }
   })
-  const isSuperAdmin = authUser.app_metadata?.role === "SUPER_ADMIN" || membership?.role === "SUPER_ADMIN"
-  const isAuthorized = isSuperAdmin || (membership && ["OWNER", "STAFF"].includes(membership.role))
-
-  if (!isAuthorized) return { success: false, error: "No tienes permisos" }
+  if (!appointment) return { success: false, error: "Cita no encontrada" }
 
   if (!content.trim()) return { success: false, error: "La nota no puede estar vacía" }
 
@@ -477,17 +480,8 @@ export async function deleteAppointmentNote(
   const { noteId, shopId } = validated.data
 
   // 1. SECURITY: Validate admin rights
-  const supabase = await createClient()
-  const { data: { user: authUser } } = await supabase.auth.getUser()
-  if (!authUser) return { success: false, error: "Debes iniciar sesión" }
-
-  const membership = await prisma.shopMember.findUnique({
-    where: { userId_shopId: { userId: authUser.id, shopId } }
-  })
-  const isSuperAdmin = authUser.app_metadata?.role === "SUPER_ADMIN" || membership?.role === "SUPER_ADMIN"
-  const isAuthorized = isSuperAdmin || (membership && ["OWNER", "STAFF"].includes(membership.role))
-
-  if (!isAuthorized) return { success: false, error: "No tienes permisos" }
+  const auth = await validateAdminSession(shopId)
+  if (!auth.success) return { success: false, error: auth.error }
 
   // 2. Delete Note
   try {

@@ -1,0 +1,658 @@
+diff --git a/.agents/workflows/add-admin-feature.md b/.agents/workflows/add-admin-feature.md
+deleted file mode 100644
+index 8c4fc4a..0000000
+--- a/.agents/workflows/add-admin-feature.md
++++ /dev/null
+@@ -1,39 +0,0 @@
+----
+-description: Guía rápida para añadir una nueva característica administrativa dentro del panel multi-tenant.
+----
+-
+-# Generar Nueva Característica Admin
+-
+-Este workflow ayuda a un desarrollador a crear una vista administrativa en `[slug]/admin/` siguiendo todas las reglas de acceso y diseño.
+-
+-## Paso 1: Crear la Ruta
+-Toda página administrativa nueva debe estar bajo la ruta dinámica `[slug]`.
+-
+-1.  Crear carpeta en `app/[slug]/admin/nombre-feature/`.
+-2.  Crear `page.tsx` con el componente de la página.
+-3.  Cargar parámetros de la página.
+-
+-## Paso 2: Validar Admin
+-Siempre debe requerir una sesión de administración válida.
+-
+-```typescript
+-import { requireAdmin } from "@/lib/auth-utils";
+-
+-export default async function FeaturePage({ params }) {
+-  const { slug } = await params;
+-  const shop = await getShopBySlug(slug);
+-  await requireAdmin(shop.id);
+-  // ... resto de la lógica ...
+-}
+-```
+-
+-## Paso 3: Componentes de UI
+-Usa los componentes premium existentes para mantener la coherencia.
+-
+-- **Sidebar**: Ya está configurada para el panel admin.
+-- **Formularios**: Usa `shadcn/ui` y los estilos de Glassmorphism definidos.
+-- **Skeletons**: No olvides crear un archivo `loading.tsx` para cada ruta nueva.
+-
+----
+-> [!NOTE]
+-> Al terminar, ejecuta `/check-consistency` para asegurar que tu nueva feature cumple con todas las reglas de diseño y seguridad.
+diff --git a/.agents/workflows/auditoria-reservas.md b/.agents/workflows/auditoria-reservas.md
+deleted file mode 100644
+index 852e2da..0000000
+--- a/.agents/workflows/auditoria-reservas.md
++++ /dev/null
+@@ -1,35 +0,0 @@
+----
+-description: Agente para validar la lógica de disponibilidad y reservas en availability.ts.
+----
+-
+-# 📅 Auditoría de Reservas y Disponibilidad
+-
+-Este flujo se enfoca en la lógica de negocio más crítica: asegurar que las citas no se solapen y que se respeten los horarios y descansos.
+-
+-## 1. Reglas de Colisión (checkStaffConflict)
+-Toda nueva reserva debe validar conflictos de tiempo.
+-- [ ] ¿La consulta de conflicto usa `startTime: { lt: endTime }` y `endTime: { gt: startTime }`? (Lógica de intersección).
+-- [ ] ¿Se excluye el ID de la cita actual en caso de edición (`excludeAppointmentId`)?
+-- [ ] ¿Se valida que la cita NO esté en estado `CANCELLED`?
+-
+-## 2. Lógica de `getAvailableSlots`
+-- **Timezone**: El sistema usa `America/Costa_Rica`.
+-  - [ ] ¿Se usa `toCRDate(new Date())` para filtrar slots pasados hoy mismo?
+-- **Prioridad de Horarios**:
+-  1. `StaffTimeOff` (Vacaciones/Permisos - bloqueante).
+-  2. `StaffSchedule` (Horario personal + Breaks).
+-  3. `ShopSchedule` (Fallback si no hay horario personal).
+-
+-## 3. Manejo de "Staff Auto"
+-- [ ] Cuando `staffId === "auto"`, ¿se verifica que AL MENOS UN miembro del staff esté disponible en el slot?
+-- [ ] ¿Se filtran correctamente solo los miembros con roles `STAFF` o `OWNER`?
+-
+-## 4. Instrucciones para Antigravity
+-Al modificar `lib/availability.ts` o `app/schedule/actions.ts`:
+-1. Simula mentalmente un slot (ej: 09:00 - 09:30).
+-2. Verifica si hay un break en ese rango.
+-3. Verifica si hay un `TimeOff` aprobado.
+-4. Asegúrate de que `slotDuration` (usualmente 30m) se use para calcular el `slotEnd`.
+-
+-> [!IMPORTANT]
+-> Nunca modifiques la lógica de fechas sin ejecutar una prueba de "Hoy" (Today) para evitar que se permitan reservas en el pasado.
+diff --git a/.agents/workflows/check-consistency.md b/.agents/workflows/check-consistency.md
+deleted file mode 100644
+index f932272..0000000
+--- a/.agents/workflows/check-consistency.md
++++ /dev/null
+@@ -1,32 +0,0 @@
+----
+-description: Flujo para verificar que los nuevos componentes siguen el diseño y arquitectura multi-tenant.
+----
+-
+-# Verificación de Consistencia (Diseño y Estructura)
+-
+-Este workflow ayuda a revisar el código nuevo para asegurar que cumple con los estándares del proyecto.
+-
+-## 1. Análisis de Componentes UI
+-Revisar el uso de tokens CSS variables y la estética del componente.
+-
+-1.  Identificar archivos nuevos en `components/`.
+-2.  Verificar que no haya colores hardcodeados (no hex, no rbg, no `text-white`).
+-3.  Comprobar el uso de OKLCH.
+-
+-## 2. Validación de Multi-tenancy
+-Asegurar que todas las consultas a la DB están filtradas correctamente.
+-
+-1.  Revisar Server Actions o Pages dinámicas.
+-2.  Confirmar que se use `prisma.shop.findFirst({ where: { slug } })` o similar.
+-3.  Validar que todas las mutaciones tengan `shopId`.
+-
+-## 3. Validación de Skeletons (Loading)
+-Asegurar que la experiencia de carga es fluida.
+-
+-1.  Verificar que exista un `loading.tsx` por cada `page.tsx`.
+-2.  Comprobar que el Layout estructural de `loading.tsx` sea idéntico al de `page.tsx`.
+-3.  Validar que se usen componentes `<Skeleton />` en lugar de spinners o pantallas en blanco.
+-
+----
+-> [!TIP]
+-> Cualquier componente que use un `ID` genérico debe ser reemplazado por un UUID o CUID descriptivo para asegurar que el navegador identifique cada tienda por separado.
+diff --git a/.agents/workflows/code-review.md b/.agents/workflows/code-review.md
+deleted file mode 100644
+index 68c2015..0000000
+--- a/.agents/workflows/code-review.md
++++ /dev/null
+@@ -1,34 +0,0 @@
+----
+-description: Agente de Code Review para asegurar calidad visual, consistencia y seguridad básica (Sanitización).
+----
+-
+-# Agente de Code Review (Auditoría de Calidad)
+-
+-Este workflow analiza el código nuevo para asegurar que cumple con los estándares del proyecto Bookia.
+-
+-## 1. Sanitización de Inputs (CRÍTICO - BLOQUEANTE)
+-El primer paso de cualquier revisión es asegurar que no entren datos "sucios" al sistema.
+-
+-- **Checklist**:
+-  - [ ] ¿Toda Server Action o API usa un esquema de `zod` para validar los `formData` o `json` recibidos?
+-  - [ ] ¿Los tipos de TypeScript coinciden con las validaciones de Zod?
+-  - [ ] ¿Se están escapando caracteres especiales si se imprimen directamente en el HTML?
+-
+-> [!CAUTION]
+-> **Bloqueo Inmediato**: Cualquier PR o código que use `params` o `body` directamente sin validación de esquema debe ser rechazado.
+-
+-## 2. Consistencia UI/UX (Suele ser Sugerencia)
+-Mantener la estética premium y la sincronía de carga.
+-
+-- **Sync Check**: ¿Existe un `loading.tsx` que sea el "Skeleton" exacto de `page.tsx`?
+-- **Mobile First**: ¿El diseño funciona perfectamente en móviles antes de aplicar `md:` o `lg:`?
+-- **Design Tokens**: ¿Se usa OKLCH (`bg-primary`, `text-muted`) en lugar de colores estáticos?
+-
+-## 3. Reusabilidad y DRY
+-- **Checklist**:
+-  - [ ] ¿Se está duplicando lógica que ya existe en `components/admin/` o `ui/`?
+-  - [ ] ¿Se pueden extraer partes del código a componentes más pequeños y reutilizables?
+-
+----
+-> [!TIP]
+-> Al terminar la revisión, proporciona un resumen claro: **PASSED**, **PENDING (Needs Refactoring)** o **FAILED (Security Risk)**.
+diff --git a/.agents/workflows/deploy-migrations.md b/.agents/workflows/deploy-migrations.md
+deleted file mode 100644
+index fc84596..0000000
+--- a/.agents/workflows/deploy-migrations.md
++++ /dev/null
+@@ -1,35 +0,0 @@
+----
+-description: Guía de despliegue y aplicación de migraciones de base de datos con Prisma y Vercel.
+----
+-
+-# Flujo de Despliegue y Migraciones
+-
+-Este workflow automatiza la preparación del entorno de base de datos antes de un despliegue.
+-
+-## 1. Generación del Cliente de Prisma
+-Antes de cualquier despliegue o prueba local, asegúrate de que el cliente esté sincronizado con el esquema actual.
+-
+-// turbo
+-```bash
+-npx prisma generate
+-```
+-
+-## 2. Aplicación de Migraciones (Producción)
+-Para aplicar cambios en la base de datos de Supabase sin perder datos (usando `db push` para prototipado rápido o `migrate deploy` para producción).
+-
+-// turbo
+-```bash
+-npx prisma db push
+-```
+-
+-## 3. Verificación de Despliegue
+-Si el despliegue en Vercel falla por errores de Prisma, este comando forzará la generación del cliente en el entorno de build.
+-
+-// turbo
+-```bash
+-npm run build
+-```
+-
+----
+-> [!CAUTION]
+-> Nunca ejecutes `prisma db push` sin antes revisar el archivo `prisma/schema.prisma` para evitar la pérdida accidental de datos.
+diff --git a/.agents/workflows/generador-ui-premium.md b/.agents/workflows/generador-ui-premium.md
+deleted file mode 100644
+index b39bbd7..0000000
+--- a/.agents/workflows/generador-ui-premium.md
++++ /dev/null
+@@ -1,32 +0,0 @@
+----
+-description: Agente para generar componentes UI premium siguiendo el diseño de Bookia.
+----
+-
+-# ✨ Generador de UI Premium
+-
+-Este flujo asegura que cada nuevo componente visual mantenga la estética "State of the Art" de Bookia, utilizando Tailwind 4, Lucide y Micro-animaciones.
+-
+-## 1. Fundamentos de Diseño (Tokens)
+-- **Colores**: Usa variables `oklch` (ej: `text-foreground`, `bg-primary`).
+-- **Bordes**: Radio estándar de `0.625rem` (`rounded-lg`).
+-- **Efectos**: Prioriza el uso de Glassmorphism para paneles laterales y tarjetas flotantes.
+-  - Clase: `.glass-card` (bg-background/50 + backdrop-blur-md).
+-
+-## 2. Interactividad y Animaciones
+-- **Hover**: Todo elemento interactivo debe tener un estado hover suave (ej: `hover:bg-accent/50 transition-colors`).
+-- **Animate CSS**: Usa `tw-animate-css` para entradas de componentes.
+-  - Ejemplo: `animate-in fade-in zoom-in duration-300`.
+-
+-## 3. Iconografía y Tipografía
+-- **Icons**: Usa `lucide-react`. Grosor recomendado: `strokeWidth={1.5}`.
+-- **Fuentes**: La fuente principal es `Geist`. Usa `font-sans` para legibilidad y `font-mono` para IDs o códigos.
+-
+-## 4. Instrucciones para Antigravity
+-Al crear un archivo en `components/`:
+-1. **Importaciones**: Asegúrate de importar `lucide-react` y los componentes de Radix necesarios.
+-2. **Estructura**: Usa `cn()` para combinar clases de Tailwind dinámicamente.
+-3. **Responsividad**: Diseña primero para móvil (`flex-col`) y escala a desktop (`md:flex-row`).
+-4. **Accesibilidad**: Todo botón debe tener un `aria-label` descriptivo si solo contiene un icono.
+-
+-> [!TIP]
+-> Para modales y diálogos, usa siempre `Vaul` (drawer móvil) o `Radix Dialog` con el fondo `backdrop-blur` configurado en `globals.css`.
+diff --git a/.agents/workflows/guardia-aislamiento.md b/.agents/workflows/guardia-aislamiento.md
+deleted file mode 100644
+index 16edc42..0000000
+--- a/.agents/workflows/guardia-aislamiento.md
++++ /dev/null
+@@ -1,40 +0,0 @@
+----
+-description: Agente para asegurar el aislamiento de datos entre tiendas (ShopId).
+----
+-
+-# 🛡️ Guardia de Aislamiento (Multi-tenant)
+-
+-Este flujo asegura que cada consulta a la base de datos esté correctamente aislada por `shopId`. En un sistema multi-tenant, olvidar este filtro es un fallo crítico de seguridad.
+-
+-## 1. Validación de Consultas Prisma
+-Cada vez que se interactúe con modelos que pertenecen a una tienda, se debe verificar la presencia del filtro.
+-
+-- **Checklist de Modelos Críticos**:
+-  - [ ] `Service`
+-  - [ ] `Appointment`
+-  - [ ] `ShopMember`
+-  - [ ] `StaffSchedule` (y `breaks`)
+-  - [ ] `ShopSchedule`
+-  - [ ] `StaffTimeOff`
+-
+-- **Patrón Seguro**:
+-  ```typescript
+-  prisma.appointment.findMany({
+-    where: { shopId, ... } // shopId DEBE estar presente
+-  })
+-  ```
+-
+-## 2. Origen del `shopId`
+-No basta con filtrar, hay que asegurar que el `shopId` no sea manipulable por el cliente.
+-
+-- [ ] ¿El `shopId` proviene de una sesión validada (`auth()`) o de un `slug` verificado contra la base de datos?
+-- [ ] Si el `shopId` viene de una Server Action, ¿se ha validado que el usuario actual pertenece a esa tienda?
+-
+-## 3. Instrucciones para Antigravity
+-Al ejecutar este flujo:
+-1. Escanea el archivo en busca de llamadas a `prisma.[modelo]`.
+-2. Verifica si el objeto `where` incluye una propiedad `shopId`.
+-3. Si falta, marca el archivo como **RIESGO CRÍTICO** y propón la corrección inmediata.
+-
+-> [!CAUTION]
+-> NUNCA asumas que un objeto de configuración global ya incluye el `shopId`. Siempre debe ser explícito en la consulta.
+diff --git a/.agents/workflows/security-review.md b/.agents/workflows/security-review.md
+deleted file mode 100644
+index 736415a..0000000
+--- a/.agents/workflows/security-review.md
++++ /dev/null
+@@ -1,34 +0,0 @@
+----
+-description: Agente de Seguridad para prevenir vulnerabilidades de datos y acceso.
+----
+-
+-# Agente de Seguridad (Auditoría de Datos)
+-
+-Este flujo de trabajo se enfoca en la **integridad de los datos multi-tenant** y la protección contra ataques de acceso no autorizado.
+-
+-## 1. Aislamiento Multi-tenant (CRÍTICO - BLOQUEANTE)
+-El riesgo más alto es la fuga de datos entre tiendas.
+-
+-- **Checklist**:
+-  - [ ] ¿Toda consulta a `prisma.service`, `prisma.appointment`, `prisma.user` o cualquier recurso tiene un filtro `where: { shopId }`?
+-  - [ ] ¿Se obtiene el `shopId` de una fuente confiable (autenticación o slug validado)?
+-  - [ ] ¿Se previene el acceso indirecto a través de IDs adivinados (usar CUID/UUID)?
+-
+-> [!CAUTION]
+-> **BLOQUEO**: Cualquier query que "olvide" filtrar por `shopId` es un fallo catastrófico de seguridad multi-tenant.
+-
+-## 2. Inyección de SQL y Prisma Raw
+-Detección de patrones inseguros en la comunicación con la base de datos.
+-
+-- **Checklist**:
+-  - [ ] ¿Se usa `prisma.$queryRaw`? Si es así, ¿están las variables parametrizadas correctamente (no usar template literals directamente)?
+-  - [ ] ¿Se usan funciones de base de datos (`dbgenerated`) de forma segura?
+-
+-## 3. Autorización y Sesión
+-- **Admin Access**: ¿Toda ruta bajo `admin/` usa `requireAdmin(shop.id)`?
+-- **Public access**: ¿Las rutas de reserva validan que el `shopId` del servicio coincida con el de la tienda?
+-- **Sensitive Data**: ¿Se ocultan campos como emails de otros miembros o datos personales en roles con menos privilegios?
+-
+----
+-> [!IMPORTANT]
+-> El resultado de esta revisión debe ser una auditoría de **RIESGO: BAJO / MEDIO / ALTO**. Si el riesgo es MEDIO o ALTO, no se recomienda el despliegue.
+diff --git a/.agents/workflows/update-knowledge.md b/.agents/workflows/update-knowledge.md
+deleted file mode 100644
+index c42d70e..0000000
+--- a/.agents/workflows/update-knowledge.md
++++ /dev/null
+@@ -1,27 +0,0 @@
+----
+-description: Flujo para la actualización autónoma local del conocimiento del proyecto en la carpeta .agents/.
+----
+-
+-# Auto-Actualización de Conocimiento del Proyecto
+-
+-Este flujo es invocado por el Agente (Antigravity) cada vez que se descubre una regla técnica o patrón de diseño relevante durante el desarrollo.
+-
+-## Objetivo
+-Mantener la carpeta `.agents/` sincronizada con la realidad técnica del proyecto Bookia, asegurando que todos los desarrolladores y agentes compartan los mismos "aprendizajes".
+-
+-## Paso 1: Diagnóstico de Nueva Regla
+-Cuando se detecta un error recurrente o una mejora arquitectónica (ej. "el shopId debe ser obligatorio en Zod"):
+-1.  **Identificar el archivo afectado** en `.agents/docs/` o `.agents/rules/`.
+-2.  **Redactar la actualización** de forma clara y con un ejemplo de código si aplica.
+-
+-## Paso 2: Edición Local (Sin Push)
+-El agente actualiza el archivo localmente en el repositorio.
+-- **Importante**: No se realizarán commits ni pushes automáticos. Los cambios quedarán en el entorno local del desarrollador.
+-
+-## Paso 3: Notificación al Usuario
+-Al finalizar la actualización, el agente debe reportar en el chat:
+-> *"He aprendido que [PUNTO DE APRENDIZAJE] era necesario para [RAZÓN] y he actualizado los documentos en `.agents/` localmente. Estos cambios quedarán listos para tu siguiente PR."*
+-
+----
+-> [!NOTE]
+-> Este proceso asegura que el repositorio "aprende" de forma continua sin intervenir en el flujo de trabajo manual de Git.
+diff --git a/app/[slug]/admin/citas/page.tsx b/app/[slug]/admin/citas/page.tsx
+index e5cfb3b..4571ba3 100644
+--- a/app/[slug]/admin/citas/page.tsx
++++ b/app/[slug]/admin/citas/page.tsx
+@@ -45,7 +45,7 @@ export default async function CitasPage({ params, searchParams }: PageProps) {
+     })
+   ])
+ 
+-  const mappedServices = services.map(s => ({ id: s.id, name: s.name, price: s.price, duration: s.duration }))
++  const mappedServices = services.map(s => ({ id: s.id, name: s.name, price: s.price, duration: s.duration, description: s.description }))
+   const mappedStaff = staffData.map(m => ({ id: m.user.id, name: m.user.name || "Sin nombre" }))
+   const mappedClients = clientsData.map(m => ({ id: m.user.id, name: m.user.name || "Sin nombre", phone: m.user.phone }))
+ 
+diff --git a/app/schedule/actions.ts b/app/schedule/actions.ts
+index 0c3b43b..e8593de 100644
+--- a/app/schedule/actions.ts
++++ b/app/schedule/actions.ts
+@@ -364,8 +364,23 @@ export async function updateBooking(rawData: any) {
+     return { success: false, error: "Servicios inválidos" }
+   }
+ 
++  const existingAppointment = await prisma.appointment.findUnique({
++    where: { id: appointmentId, shopId },
++    include: { services: true }
++  })
++  if (!existingAppointment) {
++    return { success: false, error: "Cita no encontrada" }
++  }
++
++  const existingServiceIds = existingAppointment.services.map(s => s.id).sort()
++  const newServiceIds = [...serviceIds].sort()
++  const hasServicesChanged = JSON.stringify(existingServiceIds) !== JSON.stringify(newServiceIds)
++
+   const totalDuration = services.reduce((acc, s) => acc + s.duration, 0)
+-  const totalPrice = services.reduce((acc, s) => acc + s.price, 0)
++  const finalPriceAtBooking = hasServicesChanged 
++    ? services.reduce((acc, s) => acc + s.price, 0)
++    : existingAppointment.priceAtBooking
++
+   const startTime = combineDateAndTime(date, time)
+   const endTime = new Date(startTime.getTime() + totalDuration * 60 * 1000)
+ 
+@@ -384,7 +399,7 @@ export async function updateBooking(rawData: any) {
+         startTime,
+         endTime,
+         status,
+-        priceAtBooking: totalPrice,
++        priceAtBooking: finalPriceAtBooking,
+         customerName,
+         customerPhone,
+         serviceId: serviceIds[0], // backward compat
+diff --git a/components/admin/admin-stats.tsx b/components/admin/admin-stats.tsx
+index ac6b442..04da6d7 100644
+--- a/components/admin/admin-stats.tsx
++++ b/components/admin/admin-stats.tsx
+@@ -1,6 +1,6 @@
+ "use client"
+ 
+-import { DollarSign, TrendingUp } from "lucide-react"
++import { BadgeCent, TrendingUp } from "lucide-react"
+ 
+ import { BusinessType, getTerminology } from "@/lib/dictionaries"
+ 
+@@ -21,7 +21,7 @@ export function AdminStats({ totalRevenue, totalBookings, businessType }: AdminS
+     <div className="mb-8 grid gap-4 lg:grid-cols-2">
+       <div className="group flex items-center gap-4 rounded-xl border border-border bg-card p-4 sm:p-5 shadow-sm hover:shadow-md transition-all duration-300">
+         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-110">
+-          <DollarSign className="h-6 w-6" />
++          <BadgeCent className="h-6 w-6" />
+         </div>
+         <div>
+           <p className="text-sm font-medium text-muted-foreground">Ingreso total (este mes)</p>
+diff --git a/components/admin/appointments/add-appointment-sheet.tsx b/components/admin/appointments/add-appointment-sheet.tsx
+index b02e6eb..edf2e64 100644
+--- a/components/admin/appointments/add-appointment-sheet.tsx
++++ b/components/admin/appointments/add-appointment-sheet.tsx
+@@ -12,6 +12,7 @@ interface ServiceData {
+   name: string
+   price: number
+   duration: number
++  description: string | null
+ }
+ 
+ interface StaffData {
+diff --git a/components/admin/appointments/appointment-detail-sheet.tsx b/components/admin/appointments/appointment-detail-sheet.tsx
+index 1298ed8..8451996 100644
+--- a/components/admin/appointments/appointment-detail-sheet.tsx
++++ b/components/admin/appointments/appointment-detail-sheet.tsx
+@@ -134,6 +134,30 @@ export function AppointmentDetailSheet({
+     loadSlots()
+   }, [selectedDate, selectedStaff, mode, shopId, appointment?.id])
+ 
++  const isDirty = useMemo(() => {
++    if (!appointment || mode !== "edit") return false
++    
++    const initialServices = appointment.services?.map((s: any) => s.id) || (appointment.serviceId ? [appointment.serviceId] : [])
++    const initialStaff = appointment.staffId || ""
++    const apptDate = new Date(appointment.startTime)
++    const initialDate = apptDate.toISOString().split('T')[0]
++    const currentDateStr = selectedDate ? selectedDate.toISOString().split('T')[0] : ""
++    const initialTime = formatTime(appointment.startTime).split(' ')[0]
++    const initialName = appointment.customerName || ""
++    const initialPhone = appointment.customerPhone || ""
++
++    const servicesChanged = JSON.stringify([...selectedServices].sort()) !== JSON.stringify([...initialServices].sort())
++    
++    return (
++      servicesChanged ||
++      selectedStaff !== initialStaff ||
++      currentDateStr !== initialDate ||
++      selectedTime !== initialTime ||
++      customerName !== initialName ||
++      customerPhone !== initialPhone
++    )
++  }, [appointment, mode, selectedServices, selectedStaff, selectedDate, selectedTime, customerName, customerPhone])
++
+   const handleStatusUpdate = async (newStatus: AppointmentStatus) => {
+     setIsUpdating(true)
+     try {
+@@ -668,7 +692,7 @@ export function AppointmentDetailSheet({
+               <Button
+                 className="h-12 rounded-xl bg-primary hover:primary font-bold shadow-lg shadow-primary/30 w-full sm:flex-1"
+                 onClick={handleSaveEdit}
+-                disabled={isUpdating}
++                disabled={isUpdating || !isDirty}
+               >
+                 {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
+                 Guardar Cambios
+diff --git a/components/admin/create-user-modal.tsx b/components/admin/create-user-modal.tsx
+index 85bf01e..674578e 100644
+--- a/components/admin/create-user-modal.tsx
++++ b/components/admin/create-user-modal.tsx
+@@ -109,7 +109,10 @@ export function CreateUserModal({ currentUserRole, isSuperAdmin, shopId }: Creat
+           <span>Nuevo Usuario</span>
+         </Button>
+       </DialogTrigger>
+-      <DialogContent className="sm:max-w-[425px]">
++      <DialogContent 
++        onInteractOutside={(e) => e.preventDefault()}
++        className="sm:max-w-[425px]"
++      >
+         <form onSubmit={handleSubmit}>
+           <DialogHeader>
+             <DialogTitle className="flex items-center gap-2">
+diff --git a/components/admin/dashboard-content.tsx b/components/admin/dashboard-content.tsx
+index 5fcee77..cdfc68d 100644
+--- a/components/admin/dashboard-content.tsx
++++ b/components/admin/dashboard-content.tsx
+@@ -51,6 +51,9 @@ export function DashboardContent({
+ 
+   const activeAppointments = appointments.filter(a => a.status !== "CANCELLED" && a.status !== "NO_SHOW")
+   const todayIncome = activeAppointments.reduce((acc, curr) => {
++    if (curr.priceAtBooking != null) {
++      return acc + curr.priceAtBooking
++    }
+     if (curr.services && curr.services.length > 0) {
+       return acc + curr.services.reduce((sAcc: number, s: any) => sAcc + (s.price || 0), 0)
+     }
+@@ -92,8 +95,8 @@ export function DashboardContent({
+       </div>
+ 
+       <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+-        {stats.map((stat) => (
+-          <div key={stat.label} className="flex items-center gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:border-primary/20 hover:shadow-md group">
++        {stats.map((stat, index) => (
++          <div key={stat.label} className={`flex items-center gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:border-primary/20 hover:shadow-md group ${index !== 1 ? 'hidden md:flex' : ''}`}>
+             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+               <stat.icon className="h-6 w-6" />
+             </div>
+diff --git a/components/admin/service-card.tsx b/components/admin/service-card.tsx
+index 3d4ce18..815ed3f 100644
+--- a/components/admin/service-card.tsx
++++ b/components/admin/service-card.tsx
+@@ -1,4 +1,4 @@
+-import { Edit2, Clock, DollarSign } from "lucide-react"
++import { Edit2, Clock } from "lucide-react"
+ import { cn } from "@/lib/utils"
+ import { BusinessType } from "@/lib/dictionaries"
+ import { Badge } from "@/components/ui/badge"
+@@ -60,7 +60,6 @@ export function ServiceCard({
+             {name || "Nombre del Servicio"}
+           </h3>
+           <div className="flex items-center gap-1.5 mt-1 text-primary/80">
+-            <DollarSign className="h-3.5 w-3.5" />
+             <span className="text-lg font-black tracking-tighter">{formattedPrice}</span>
+           </div>
+         </div>
+diff --git a/components/admin/service-form.tsx b/components/admin/service-form.tsx
+index b77dcdf..3c53565 100644
+--- a/components/admin/service-form.tsx
++++ b/components/admin/service-form.tsx
+@@ -1,7 +1,7 @@
+ "use client"
+ 
+ import { useState } from "react"
+-import { Clock, DollarSign, Type, AlignLeft, Trash2, Loader2, Scissors } from "lucide-react"
++import { Clock, BadgeCent, Type, AlignLeft, Trash2, Loader2, Scissors } from "lucide-react"
+ import { Button } from "@/components/ui/button"
+ import { Input } from "@/components/ui/input"
+ import { Label } from "@/components/ui/label"
+@@ -43,6 +43,16 @@ export function ServiceForm({ slug, shopId, businessType = "BARBERIA", initialDa
+ 
+   const isEditing = !!initialData
+ 
++  const isValid = previewData.name.trim() !== "" && previewData.price !== "" && (previewData.hours !== "" || previewData.minutes !== "")
++  
++  const hasChanges = isEditing 
++    ? previewData.name !== (initialData?.name || "") ||
++      previewData.description !== (initialData?.description || "") ||
++      previewData.price !== (initialData?.price?.toString() || "") ||
++      previewData.hours !== initialHours.toString() ||
++      previewData.minutes !== initialMinutes.toString()
++    : isValid
++
+   // Selection of icon based on business type for the preview header
+   const ServiceIcon = getBusinessIcon(businessType)
+ 
+@@ -131,7 +141,7 @@ export function ServiceForm({ slug, shopId, businessType = "BARBERIA", initialDa
+         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+           <div className="grid gap-2.5">
+             <Label htmlFor="price" className="flex items-center gap-2 font-medium text-sm text-foreground/80">
+-              <DollarSign className="h-4 w-4 text-primary" /> Precio
++              <BadgeCent className="h-4 w-4 text-primary" /> Precio
+             </Label>
+             <div className="relative">
+               <span className="absolute left-3 top-3 text-muted-foreground text-sm font-medium">₡</span>
+@@ -209,7 +219,7 @@ export function ServiceForm({ slug, shopId, businessType = "BARBERIA", initialDa
+           <div className="flex flex-col gap-3 sm:flex-row sm:ml-auto w-full sm:w-auto">
+             <Button 
+               type="submit" 
+-              disabled={loading || deleting} 
++              disabled={loading || deleting || !hasChanges} 
+               className="w-full sm:w-auto px-8 h-11 font-semibold shadow-md active:scale-[0.98] transition-all"
+             >
+               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+diff --git a/components/admin/staff-schedule-dialog.tsx b/components/admin/staff-schedule-dialog.tsx
+index 9f1fe26..5dc2de9 100644
+--- a/components/admin/staff-schedule-dialog.tsx
++++ b/components/admin/staff-schedule-dialog.tsx
+@@ -205,7 +205,10 @@ export function StaffScheduleDialog({
+           Configurar Horario
+         </Button>
+       </DialogTrigger>
+-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0 border-border bg-background shadow-2xl [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:border-none [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40 transition-colors">
++      <DialogContent 
++        onInteractOutside={(e) => e.preventDefault()}
++        className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0 border-border bg-background shadow-2xl [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:border-none [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40 transition-colors"
++      >
+         <div className="p-6 sm:p-10 pb-0">
+           <DialogHeader>
+             <DialogTitle>Horario de {staffName}</DialogTitle>
+@@ -255,13 +258,11 @@ export function StaffScheduleDialog({
+                       <div className="grid grid-cols-2 gap-4">
+                         <TimeSelect
+                           label="Entrada"
+-                          className="bg-background/80"
+                           value={day.openTime}
+                           onChange={(val) => updateDay(idx, { openTime: val })}
+                         />
+                         <TimeSelect
+                           label="Salida"
+-                          className="bg-background/80"
+                           value={day.closeTime}
+                           onChange={(val) => updateDay(idx, { closeTime: val })}
+                         />
+diff --git a/components/landing/dashboard-preview.tsx b/components/landing/dashboard-preview.tsx
+index 6fe94be..3620818 100644
+--- a/components/landing/dashboard-preview.tsx
++++ b/components/landing/dashboard-preview.tsx
+@@ -57,7 +57,7 @@ export function DashboardPreview() {
+         <div className="rounded-2xl border border-border bg-card p-4 shadow-2xl shadow-primary/5 md:p-6">
+           {/* Stats row */}
+           <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+-            <div className="flex items-center gap-4 rounded-xl bg-secondary/50 p-4">
++            <div className="hidden sm:flex items-center gap-4 rounded-xl bg-secondary/50 p-4">
+               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                 <CalendarDays className="h-5 w-5" />
+               </div>
+@@ -77,7 +77,7 @@ export function DashboardPreview() {
+                 </p>
+               </div>
+             </div>
+-            <div className="flex items-center gap-4 rounded-xl bg-secondary/50 p-4">
++            <div className="hidden sm:flex items-center gap-4 rounded-xl bg-secondary/50 p-4">
+               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                 <User className="h-5 w-5" />
+               </div>
+@@ -109,7 +109,7 @@ export function DashboardPreview() {
+                       {formatTime(apt.startTime)}
+                     </span>
+                     <div>
+-                      <p className="font-medium text-card-foreground">{apt.customer?.name || apt.customerName || "Cliente"}</p>
++                      <p className="font-medium text-card-foreground">{apt.customer?.name || "Cliente"}</p>
+                       <p className="text-sm text-muted-foreground">
+                         {apt.service?.name} &middot; {apt.staff?.name || "Staff"}
+                       </p>

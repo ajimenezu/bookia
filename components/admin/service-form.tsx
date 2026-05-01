@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Clock, DollarSign, Type, AlignLeft, Trash2, Loader2, Scissors } from "lucide-react"
+import { Clock, BadgeCent, Type, AlignLeft, Trash2, Loader2, Scissors } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -42,6 +42,16 @@ export function ServiceForm({ slug, shopId, businessType = "BARBERIA", initialDa
   })
 
   const isEditing = !!initialData
+
+  const isValid = previewData.name.trim() !== "" && previewData.price !== "" && (previewData.hours !== "" || previewData.minutes !== "")
+  
+  const hasChanges = isEditing 
+    ? previewData.name !== (initialData?.name || "") ||
+      previewData.description !== (initialData?.description || "") ||
+      previewData.price !== (initialData?.price?.toString() || "") ||
+      previewData.hours !== initialHours.toString() ||
+      previewData.minutes !== initialMinutes.toString()
+    : isValid
 
   // Selection of icon based on business type for the preview header
   const ServiceIcon = getBusinessIcon(businessType)
@@ -131,7 +141,7 @@ export function ServiceForm({ slug, shopId, businessType = "BARBERIA", initialDa
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <div className="grid gap-2.5">
             <Label htmlFor="price" className="flex items-center gap-2 font-medium text-sm text-foreground/80">
-              <DollarSign className="h-4 w-4 text-primary" /> Precio
+              <BadgeCent className="h-4 w-4 text-primary" /> Precio
             </Label>
             <div className="relative">
               <span className="absolute left-3 top-3 text-muted-foreground text-sm font-medium">₡</span>
@@ -209,7 +219,7 @@ export function ServiceForm({ slug, shopId, businessType = "BARBERIA", initialDa
           <div className="flex flex-col gap-3 sm:flex-row sm:ml-auto w-full sm:w-auto">
             <Button 
               type="submit" 
-              disabled={loading || deleting} 
+              disabled={loading || deleting || !hasChanges} 
               className="w-full sm:w-auto px-8 h-11 font-semibold shadow-md active:scale-[0.98] transition-all"
             >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

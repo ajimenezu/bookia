@@ -1,6 +1,6 @@
 "use client"
 
-import { DollarSign, TrendingUp } from "lucide-react"
+import { BadgeCent, TrendingUp } from "lucide-react"
 
 import { BusinessType, getTerminology } from "@/lib/dictionaries"
 
@@ -21,7 +21,7 @@ export function AdminStats({ totalRevenue, totalBookings, businessType }: AdminS
     <div className="mb-8 grid gap-4 lg:grid-cols-2">
       <div className="group flex items-center gap-4 rounded-xl border border-border bg-card p-4 sm:p-5 shadow-sm hover:shadow-md transition-all duration-300">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-110">
-          <DollarSign className="h-6 w-6" />
+          <BadgeCent className="h-6 w-6" />
         </div>
         <div>
           <p className="text-sm font-medium text-muted-foreground">Ingreso total (este mes)</p>

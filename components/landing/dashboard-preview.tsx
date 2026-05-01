@@ -57,7 +57,7 @@ export function DashboardPreview() {
         <div className="rounded-2xl border border-border bg-card p-4 shadow-2xl shadow-primary/5 md:p-6">
           {/* Stats row */}
           <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="flex items-center gap-4 rounded-xl bg-secondary/50 p-4">
+            <div className="hidden sm:flex items-center gap-4 rounded-xl bg-secondary/50 p-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <CalendarDays className="h-5 w-5" />
               </div>
@@ -77,7 +77,7 @@ export function DashboardPreview() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-4 rounded-xl bg-secondary/50 p-4">
+            <div className="hidden sm:flex items-center gap-4 rounded-xl bg-secondary/50 p-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <User className="h-5 w-5" />
               </div>
@@ -109,7 +109,7 @@ export function DashboardPreview() {
                       {formatTime(apt.startTime)}
                     </span>
                     <div>
-                      <p className="font-medium text-card-foreground">{apt.customer?.name || apt.customerName || "Cliente"}</p>
+                      <p className="font-medium text-card-foreground">{apt.customer?.name || "Cliente"}</p>
                       <p className="text-sm text-muted-foreground">
                         {apt.service?.name} &middot; {apt.staff?.name || "Staff"}
                       </p>

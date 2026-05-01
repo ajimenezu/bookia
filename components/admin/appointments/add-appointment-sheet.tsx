@@ -12,6 +12,7 @@ interface ServiceData {
   name: string
   price: number
   duration: number
+  description: string | null
 }
 
 interface StaffData {

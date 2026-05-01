@@ -134,6 +134,30 @@ export function AppointmentDetailSheet({
     loadSlots()
   }, [selectedDate, selectedStaff, mode, shopId, appointment?.id])
 
+  const isDirty = useMemo(() => {
+    if (!appointment || mode !== "edit") return false
+    
+    const initialServices = appointment.services?.map((s: any) => s.id) || (appointment.serviceId ? [appointment.serviceId] : [])
+    const initialStaff = appointment.staffId || ""
+    const apptDate = new Date(appointment.startTime)
+    const initialDate = apptDate.toISOString().split('T')[0]
+    const currentDateStr = selectedDate ? selectedDate.toISOString().split('T')[0] : ""
+    const initialTime = formatTime(appointment.startTime).split(' ')[0]
+    const initialName = appointment.customerName || ""
+    const initialPhone = appointment.customerPhone || ""
+
+    const servicesChanged = JSON.stringify([...selectedServices].sort()) !== JSON.stringify([...initialServices].sort())
+    
+    return (
+      servicesChanged ||
+      selectedStaff !== initialStaff ||
+      currentDateStr !== initialDate ||
+      selectedTime !== initialTime ||
+      customerName !== initialName ||
+      customerPhone !== initialPhone
+    )
+  }, [appointment, mode, selectedServices, selectedStaff, selectedDate, selectedTime, customerName, customerPhone])
+
   const handleStatusUpdate = async (newStatus: AppointmentStatus) => {
     setIsUpdating(true)
     try {
@@ -668,7 +692,7 @@ export function AppointmentDetailSheet({
               <Button
                 className="h-12 rounded-xl bg-primary hover:primary font-bold shadow-lg shadow-primary/30 w-full sm:flex-1"
                 onClick={handleSaveEdit}
-                disabled={isUpdating}
+                disabled={isUpdating || !isDirty}
               >
                 {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
                 Guardar Cambios

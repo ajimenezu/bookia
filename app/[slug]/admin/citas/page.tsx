@@ -45,7 +45,7 @@ export default async function CitasPage({ params, searchParams }: PageProps) {
     })
   ])
 
-  const mappedServices = services.map(s => ({ id: s.id, name: s.name, price: s.price, duration: s.duration }))
+  const mappedServices = services.map(s => ({ id: s.id, name: s.name, price: s.price, duration: s.duration, description: s.description }))
   const mappedStaff = staffData.map(m => ({ id: m.user.id, name: m.user.name || "Sin nombre" }))
   const mappedClients = clientsData.map(m => ({ id: m.user.id, name: m.user.name || "Sin nombre", phone: m.user.phone }))
 

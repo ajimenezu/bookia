@@ -109,7 +109,10 @@ export function CreateUserModal({ currentUserRole, isSuperAdmin, shopId }: Creat
           <span>Nuevo Usuario</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent 
+        onInteractOutside={(e) => e.preventDefault()}
+        className="sm:max-w-[425px]"
+      >
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">

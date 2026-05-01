@@ -1,4 +1,5 @@
 "use client"
+import { useTransition } from "react"
 
 import Link from "next/link"
 import Image from "next/image"
@@ -19,6 +20,7 @@ import {
 import { signOut } from "@/app/auth/actions"
 import { BusinessType, getTerminology } from "@/lib/dictionaries"
 import { getBusinessIcon } from "@/lib/business-icons"
+import { cn } from "@/lib/utils"
 
 interface ShopNavbarProps {
   shop: {
@@ -30,12 +32,14 @@ interface ShopNavbarProps {
   }
   user?: {
     name?: string | null
+    email?: string | null
   } | null
   role?: string | null
   showScheduleButton?: boolean
 }
 
 export function ShopNavbar({ shop, user, role, showScheduleButton = true }: ShopNavbarProps) {
+  const [isPending, startTransition] = useTransition()
   const t = getTerminology(shop.businessType)
   const BusinessIcon = getBusinessIcon(shop.businessType)
   return (
@@ -92,10 +96,16 @@ export function ShopNavbar({ shop, user, role, showScheduleButton = true }: Shop
                 <DropdownMenuLabel className="font-normal px-3 py-3">
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-black text-foreground">{user.name}</p>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Mi cuenta</p>
+                    <p className="text-[10px] font-bold text-muted-foreground truncate max-w-[200px]">{user.email}</p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="mx-1" />
+                <DropdownMenuItem asChild>
+                  <Link href={`/${shop.slug}/profile`} className="cursor-pointer rounded-lg py-2.5 font-bold text-sm">
+                    <User className="mr-3 h-4 w-4 text-primary" />
+                    <span>Mi perfil</span>
+                  </Link>
+                </DropdownMenuItem>
                 {(role === "SUPER_ADMIN" || role === "OWNER" || role === "STAFF") && (
                   <DropdownMenuItem asChild>
                     <Link href={`/${shop.slug}/admin`} className="cursor-pointer rounded-lg py-2.5 font-bold text-sm">
@@ -105,11 +115,18 @@ export function ShopNavbar({ shop, user, role, showScheduleButton = true }: Shop
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem 
-                  className="text-destructive focus:text-destructive cursor-pointer rounded-lg py-2.5 font-bold text-sm"
-                  onClick={() => signOut(`/${shop.slug}`)}
+                  className={cn(
+                    "text-destructive focus:text-destructive cursor-pointer rounded-lg py-2.5 font-bold text-sm",
+                    isPending && "opacity-50 pointer-events-none"
+                  )}
+                  onClick={() => {
+                    startTransition(async () => {
+                      await signOut(`/${shop.slug}`)
+                    })
+                  }}
                 >
-                  <LogOut className="mr-3 h-4 w-4" />
-                  <span>Salir</span>
+                  <LogOut className={cn("mr-3 h-4 w-4", isPending && "animate-spin")} />
+                  <span>{isPending ? "Saliendo..." : "Salir"}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

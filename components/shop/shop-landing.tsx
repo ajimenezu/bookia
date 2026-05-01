@@ -50,6 +50,7 @@ interface ShopLandingProps {
   staff: StaffData[]
   user?: {
     name?: string | null
+    email?: string | null
     phone?: string | null
   } | null
   role?: string | null

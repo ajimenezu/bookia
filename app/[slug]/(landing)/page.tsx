@@ -24,6 +24,7 @@ export default async function ShopPublicPage({ params }: PageProps) {
   const account = await getAdminUser()
   const user = account?.user ? {
     name: account.user.user_metadata?.full_name || account.user.email,
+    email: account.user.email,
     phone: account.user.user_metadata?.phone || null
   } : null
 

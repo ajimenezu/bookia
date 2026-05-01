@@ -10,8 +10,8 @@ import {
 } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Check, Calendar, Clock, AlertCircle, Info } from "lucide-react"
-import { processRequest } from "@/app/[slug]/admin/staff/actions"
+import { Check, Calendar, Clock, AlertCircle, Info, User } from "lucide-react"
+import { processRequest, markAppointmentAsNotified } from "@/app/[slug]/admin/staff/actions"
 import { toast } from "sonner"
 import { Separator } from "@/components/ui/separator"
 
@@ -24,6 +24,7 @@ interface ApprovalSidePanelProps {
   initialRequests: {
     schedules: any[]
     timeOff: any[]
+    appointments: any[]
   }
 }
 
@@ -54,7 +55,19 @@ export function ApprovalSidePanel({
     })
   }
 
-  const hasRequests = requests.schedules.length > 0 || requests.timeOff.length > 0
+  const handleAcknowledgeAppointment = (id: string) => {
+    startTransition(async () => {
+      try {
+        await markAppointmentAsNotified(id, shopId)
+        toast.success("Cita reconocida")
+        setRequests(prev => ({ ...prev, appointments: prev.appointments.filter(a => a.id !== id) }))
+      } catch (e: any) {
+        toast.error(e.message)
+      }
+    })
+  }
+
+  const hasRequests = requests.schedules.length > 0 || requests.timeOff.length > 0 || requests.appointments.length > 0
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -188,6 +201,52 @@ export function ApprovalSidePanel({
                           Rechazar
                         </Button>
                       </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {((requests.schedules.length > 0 || requests.timeOff.length > 0) && requests.appointments.length > 0) && <Separator />}
+
+              {/* Appointments */}
+              {requests.appointments.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <Calendar className="h-3 w-3" /> Nuevas Citas
+                  </h3>
+                  {requests.appointments.map((app) => (
+                    <div key={app.id} className="rounded-xl border border-border bg-card p-4 space-y-3 shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
+                          <User className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold">{app.customerName}</p>
+                          <p className="text-[10px] text-muted-foreground font-medium uppercase">
+                            {app.services?.map((s: any) => s.name).join(", ") || "Servicio"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-sm bg-muted/30 rounded-lg p-2 border border-border/50">
+                        <p className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Fecha:</span>
+                          <span className="font-semibold">{new Date(app.startTime).toLocaleDateString()}</span>
+                        </p>
+                        <p className="flex items-center justify-between mt-1">
+                          <span className="text-muted-foreground">Hora:</span>
+                          <span className="font-semibold">
+                            {new Date(app.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </p>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        className="w-full h-8 bg-primary hover:bg-primary/90 text-primary-foreground" 
+                        onClick={() => handleAcknowledgeAppointment(app.id)}
+                        disabled={isPending}
+                      >
+                        Entendido
+                      </Button>
                     </div>
                   ))}
                 </div>

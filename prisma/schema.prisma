@@ -148,6 +148,7 @@ model Appointment {
   shop           Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
   staff          User?             @relation("StaffAppointments", fields: [staffId], references: [id])
   services       Service[]         @relation("AppointmentServices")
+  isNotified     Boolean           @default(false)
   notes          AppointmentNote[]
 
   @@index([staffId, startTime])

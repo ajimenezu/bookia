@@ -107,3 +107,32 @@ export async function createUser(formData: FormData) {
     return { success: false, error: error.message || "Error al crear el usuario" }
   }
 }
+
+export async function getClientDetails(clientId: string, shopId: string) {
+  try {
+    const { isSuperAdmin } = await requireAdmin(shopId)
+
+    const client = await prisma.user.findUnique({
+      where: { id: clientId },
+      include: {
+        appointmentsAsCustomer: {
+          where: { shopId }, // Always scoped to shopId as per user request
+          include: {
+            staff: { select: { name: true } },
+            services: { select: { name: true, price: true } },
+            service: { select: { name: true, price: true } } // Legacy support
+          },
+          orderBy: { startTime: "desc" }
+        }
+      }
+    })
+
+    if (!client) return { success: false, error: "Cliente no encontrado" }
+
+    return { success: true, data: client }
+  } catch (error) {
+    console.error("GET_CLIENT_DETAILS_ERROR:", error)
+    return { success: false, error: "Error al obtener detalles del cliente" }
+  }
+}
+

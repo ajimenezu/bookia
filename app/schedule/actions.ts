@@ -181,7 +181,8 @@ export async function createBooking(rawData: unknown) {
       priceAtBooking: totalPrice,
       customerName,
       customerPhone,
-      status: "CONFIRMED"
+      status: "CONFIRMED",
+      isNotified: isAdminBooking ?? false
     }
   })
 
@@ -382,6 +383,8 @@ export async function updateBooking(rawData: unknown) {
 
   // 4. Update
   try {
+    const hasStaffChanged = existingAppointment.staffId !== staffId
+
     await prisma.appointment.update({
       where: { id: appointmentId, shopId },
       data: {
@@ -392,6 +395,7 @@ export async function updateBooking(rawData: unknown) {
         priceAtBooking: finalPriceAtBooking,
         customerName,
         customerPhone,
+        isNotified: hasStaffChanged ? false : existingAppointment.isNotified,
         serviceId: serviceIds[0], // backward compat
         services: {
           set: [], // Clear existing relations

@@ -28,7 +28,7 @@ export function AdminSidebar({
   const BusinessIcon = getBusinessIcon(businessType)
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [pendingRequests, setPendingRequests] = useState<{ schedules: any[], timeOff: any[] }>({ schedules: [], timeOff: [] })
+  const [pendingRequests, setPendingRequests] = useState<{ schedules: any[], timeOff: any[], appointments: any[] }>({ schedules: [], timeOff: [], appointments: [] })
   const [isPanelOpen, setIsPanelOpen] = useState(false)
 
   useEffect(() => {
@@ -39,7 +39,7 @@ export function AdminSidebar({
     }
   }, [shopId])
 
-  const pendingCount = (pendingRequests?.schedules?.length || 0) + (pendingRequests?.timeOff?.length || 0)
+  const pendingCount = (pendingRequests?.schedules?.length || 0) + (pendingRequests?.timeOff?.length || 0) + (pendingRequests?.appointments?.length || 0)
 
   const navItems = [
     { href: `/${shopSlug}/admin`, label: "Dashboard", icon: LayoutDashboard },

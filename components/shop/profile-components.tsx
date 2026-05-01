@@ -22,6 +22,7 @@ import Link from "next/link"
 import { cancelAppointmentByCustomer } from "@/app/[slug]/profile/actions"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { EditProfileModal } from "./edit-profile-modal"
 
 interface UserData {
   name: string | null
@@ -41,7 +42,7 @@ interface AppointmentData {
   price: number | null
 }
 
-export function ProfileHeader({ user }: { user: UserData }) {
+export function ProfileHeader({ user, shopSlug }: { user: UserData, shopSlug: string }) {
   return (
     <div className="glass-card overflow-hidden rounded-[2.5rem] p-8 md:p-12 mb-10 relative">
       <div className="absolute top-0 right-0 h-64 w-64 bg-primary/5 blur-[100px] rounded-full translate-x-1/3 -translate-y-1/3" />
@@ -52,7 +53,10 @@ export function ProfileHeader({ user }: { user: UserData }) {
         </div>
         
         <div className="flex-1 text-center md:text-left space-y-4">
-          <h1 className="text-4xl font-black tracking-tight text-foreground">{user.name || "Usuario"}</h1>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <h1 className="text-4xl font-black tracking-tight text-foreground">{user.name || "Usuario"}</h1>
+            <EditProfileModal user={user as any} shopSlug={shopSlug} />
+          </div>
           <div className="flex flex-wrap justify-center md:justify-start gap-6 text-muted-foreground font-medium">
             <div className="flex items-center gap-2">
               <Mail className="h-4 w-4 text-primary" />

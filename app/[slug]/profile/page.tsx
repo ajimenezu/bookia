@@ -11,7 +11,7 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params
-  const shop = await prisma.shop.findUnique({ where: { slug } })
+  const shop = await prisma.shop.findFirst({ where: { slug } })
   return {
     title: `Mi Perfil | ${shop?.name || "Bookia"}`,
     description: "Gestiona tus citas y datos personales.",
@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ProfilePage({ params }: PageProps) {
   const { slug } = await params
-  const shop = await prisma.shop.findUnique({
+  const shop = await prisma.shop.findFirst({
     where: { slug },
   })
 
@@ -41,9 +41,12 @@ export default async function ProfilePage({ params }: PageProps) {
     redirect(`/${slug}/login`)
   }
 
-  // Fetch ALL appointments for this user across all shops
+  // Fetch appointments for this user in THIS shop
   const appointments = await prisma.appointment.findMany({
-    where: { customerId: dbUser.id },
+    where: { 
+      customerId: dbUser.id,
+      shopId: shop.id
+    },
     include: {
       shop: { select: { name: true, slug: true } },
       staff: { select: { name: true } },
@@ -81,7 +84,7 @@ export default async function ProfilePage({ params }: PageProps) {
       />
 
       <main className="mx-auto max-w-5xl px-6 py-12">
-        <ProfileHeader user={userData} />
+        <ProfileHeader user={userData} shopSlug={slug} />
         
         <div className="space-y-8">
           <div className="flex items-center justify-between">

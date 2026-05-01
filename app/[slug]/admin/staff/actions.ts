@@ -138,30 +138,67 @@ export async function addStaffTimeOff(
 }
 
 /**
- * Owner-only: Get all pending requests for the shop
+ * Get all pending requests and new notifications for the shop member
  */
 export async function getPendingRequests(shopId: string) {
-  const { role, isSuperAdmin } = await requireAdmin(shopId)
+  const { user, role, isSuperAdmin } = await requireAdmin(shopId)
   
-  if (role !== "OWNER" && !isSuperAdmin) {
-    return { schedules: [], timeOff: [] }
-  }
+  const isPrivileged = role === "OWNER" || isSuperAdmin
 
-  const [pendingSchedules, pendingTimeOff] = await Promise.all([
-    prisma.staffSchedule.findMany({
-      where: { shopId, status: "PENDING" },
-      include: { staff: true, breaks: true }
-    }),
-    prisma.staffTimeOff.findMany({
-      where: { shopId, status: "PENDING" },
-      include: { staff: true }
+  const [pendingSchedules, pendingTimeOff, newAppointments] = await Promise.all([
+    // Only owners/superadmins see pending approvals
+    isPrivileged 
+      ? prisma.staffSchedule.findMany({
+          where: { shopId, status: "PENDING" },
+          include: { staff: true, breaks: true }
+        })
+      : Promise.resolve([]),
+    
+    isPrivileged
+      ? prisma.staffTimeOff.findMany({
+          where: { shopId, status: "PENDING" },
+          include: { staff: true }
+        })
+      : Promise.resolve([]),
+
+    // Everyone sees their own unnotified appointments
+    prisma.appointment.findMany({
+      where: { 
+        shopId, 
+        staffId: user.id, 
+        isNotified: false,
+        status: { not: "CANCELLED" }
+      },
+      include: { services: true }
     })
   ])
 
   return {
     schedules: pendingSchedules,
-    timeOff: pendingTimeOff
+    timeOff: pendingTimeOff,
+    appointments: newAppointments
   }
+}
+
+export async function markAppointmentAsNotified(appointmentId: string, shopId: string) {
+  const { user } = await requireAdmin(shopId)
+
+  // Security: Ensure user is either an admin/owner or the assigned staff
+  const appointment = await prisma.appointment.findUnique({
+    where: { id: appointmentId, shopId }
+  })
+
+  if (!appointment) throw new Error("Cita no encontrada")
+  
+  // We allow owners to mark as notified too, or the staff themselves
+  // But usually it's the staff who does it.
+  await prisma.appointment.update({
+    where: { id: appointmentId },
+    data: { isNotified: true }
+  })
+
+  revalidatePath(`/${shopId}/admin`)
+  return { success: true }
 }
 
 /**

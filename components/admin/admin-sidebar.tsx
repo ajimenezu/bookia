@@ -68,7 +68,7 @@ export function AdminSidebar({
             >
               <Bell className="h-5 w-5 text-sidebar-foreground/70 transition-colors" />
               {pendingCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 h-3.5 w-3.5 bg-primary text-[8px] font-bold text-primary-foreground rounded-full flex items-center justify-center border-2 border-sidebar animate-in zoom-in duration-300">
+                <span className="absolute -top-0.5 -right-0.5 h-5 w-5 bg-primary text-[10px] font-bold text-primary-foreground rounded-full flex items-center justify-center border-2 border-sidebar shadow-sm animate-in zoom-in duration-300">
                   {pendingCount}
                 </span>
               )}
@@ -114,7 +114,7 @@ export function AdminSidebar({
               >
                 <Bell className="h-5 w-5 text-sidebar-foreground/70 transition-colors group-hover:text-sidebar-foreground" />
                 {pendingCount > 0 && (
-                  <span className="absolute top-1 right-1 h-3.5 w-3.5 bg-primary text-[8px] font-bold text-primary-foreground rounded-full flex items-center justify-center border-2 border-sidebar animate-in zoom-in duration-300">
+                  <span className="absolute -top-1 -right-1 h-5 w-5 bg-primary text-[10px] font-bold text-primary-foreground rounded-full flex items-center justify-center border-2 border-sidebar shadow-sm animate-in zoom-in duration-300">
                     {pendingCount}
                   </span>
                 )}

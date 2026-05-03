@@ -150,6 +150,7 @@ model Appointment {
   services       Service[]         @relation("AppointmentServices")
   isNotified     Boolean           @default(false)
   notes          AppointmentNote[]
+  serviceDetails Json?
 
   @@index([staffId, startTime])
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useState, useTransition, useEffect } from "react"
 import {
   Sheet,
   SheetContent,
@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Check, Calendar, Clock, AlertCircle, Info, User } from "lucide-react"
-import { processRequest, markAppointmentAsNotified } from "@/app/[slug]/admin/staff/actions"
+import { processRequest, markAppointmentAsNotified, markAllAppointmentsAsNotified } from "@/app/[slug]/admin/staff/actions"
 import { toast } from "sonner"
 import { Separator } from "@/components/ui/separator"
 
@@ -36,6 +36,10 @@ export function ApprovalSidePanel({
 }: ApprovalSidePanelProps) {
   const [isPending, startTransition] = useTransition()
   const [requests, setRequests] = useState(initialRequests)
+
+  useEffect(() => {
+    setRequests(initialRequests)
+  }, [initialRequests])
 
   const handleAction = (type: "SCHEDULE" | "TIMEOFF", id: string, action: "APPROVE" | "REJECT") => {
     startTransition(async () => {
@@ -67,6 +71,24 @@ export function ApprovalSidePanel({
     })
   }
 
+  const handleMarkAllAsRead = () => {
+    const previousAppointments = requests.appointments
+    
+    // Optimistic UI update: Clear immediately
+    setRequests(prev => ({ ...prev, appointments: [] }))
+    
+    startTransition(async () => {
+      try {
+        await markAllAppointmentsAsNotified(shopId)
+        toast.success("Todas las citas marcadas como leídas")
+      } catch (e: any) {
+        toast.error("Error al marcar citas: " + e.message)
+        // Rollback on error
+        setRequests(prev => ({ ...prev, appointments: previousAppointments }))
+      }
+    })
+  }
+
   const hasRequests = requests.schedules.length > 0 || requests.timeOff.length > 0 || requests.appointments.length > 0
 
   return (
@@ -82,8 +104,9 @@ export function ApprovalSidePanel({
           </SheetDescription>
         </SheetHeader>
 
-        <ScrollArea className="flex-1 p-6">
-          {!hasRequests ? (
+        <ScrollArea className="flex-1 overflow-y-auto">
+          <div className="p-6">
+            {!hasRequests ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4 text-muted-foreground">
                 <Check className="h-6 w-6" />
@@ -211,9 +234,20 @@ export function ApprovalSidePanel({
               {/* Appointments */}
               {requests.appointments.length > 0 && (
                 <div className="space-y-4">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                    <Calendar className="h-3 w-3" /> Nuevas Citas
-                  </h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                      <Calendar className="h-3 w-3" /> Nuevas Citas
+                    </h3>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-7 px-2 text-[10px] text-primary hover:text-primary/80 hover:bg-primary/5 font-bold"
+                      onClick={handleMarkAllAsRead}
+                      disabled={isPending}
+                    >
+                      Marcar todo como leído
+                    </Button>
+                  </div>
                   {requests.appointments.map((app) => (
                     <div key={app.id} className="rounded-xl border border-border bg-card p-4 space-y-3 shadow-sm">
                       <div className="flex items-center gap-3">
@@ -253,7 +287,8 @@ export function ApprovalSidePanel({
               )}
             </div>
           )}
-        </ScrollArea>
+        </div>
+      </ScrollArea>
       </SheetContent>
     </Sheet>
   )

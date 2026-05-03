@@ -31,7 +31,7 @@ export function ClientesTable({ clients, shopId, businessType, terminology }: Cl
               <tr className="border-b border-border bg-muted/20">
                 <th className="px-5 py-4 text-left text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/70">{t.client}</th>
                 <th className="px-5 py-4 text-left text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/70">Teléfono</th>
-                <th className="px-5 py-4 text-center text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/70">Visitas</th>
+                <th className="px-5 py-4 text-center text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/70">Visitas completadas</th>
                 <th className="px-5 py-4 text-right text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/70">Total gastado</th>
                 <th className="px-5 py-4 text-right text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/70">Última visita</th>
               </tr>

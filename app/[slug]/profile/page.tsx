@@ -56,17 +56,24 @@ export default async function ProfilePage({ params }: PageProps) {
     orderBy: { startTime: "desc" }
   })
 
-  const formattedAppointments = appointments.map(app => ({
-    id: app.id,
-    startTime: app.startTime,
-    endTime: app.endTime,
-    status: app.status,
-    serviceName: app.services[0]?.name || app.service?.name || "Servicio",
-    staffName: app.staff?.name || null,
-    shopName: app.shop.name,
-    shopSlug: app.shop.slug,
-    price: app.priceAtBooking
-  }))
+  const formattedAppointments = appointments.map(app => {
+    const bookedServices = app.serviceDetails as any[] | null
+    const serviceName = bookedServices?.length 
+      ? bookedServices.map(s => s.name).join(", ")
+      : (app.services[0]?.name || app.service?.name || "Servicio")
+
+    return {
+      id: app.id,
+      startTime: app.startTime,
+      endTime: app.endTime,
+      status: app.status,
+      serviceName,
+      staffName: app.staff?.name || null,
+      shopName: app.shop.name,
+      shopSlug: app.shop.slug,
+      price: app.priceAtBooking
+    }
+  })
 
   const userData = {
     name: dbUser.name || account.user.user_metadata?.full_name || "Usuario",

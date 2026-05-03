@@ -33,7 +33,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { StatusBadge } from "./status-badge"
-import { formatTime, toCRDate } from "@/lib/date-utils"
+import { formatTime, toCRDate, formatTime24h, convertTo12h } from "@/lib/date-utils"
 import { updateAppointmentStatus, updateBooking, fetchAvailableSlots, addAppointmentNote, deleteAppointmentNote } from "@/app/schedule/actions"
 import { AppointmentStatus } from "@prisma/client"
 import { toast } from "sonner"
@@ -66,6 +66,12 @@ interface AppointmentDetailSheetProps {
   businessType: BusinessType
   services: { id: string; name: string; price: number; duration: number }[]
   staff: { id: string; name: string }[]
+}
+
+type BookedService = {
+  id: string;
+  name: string;
+  price: number;
 }
 
 type Mode = "preview" | "edit"
@@ -104,7 +110,7 @@ export function AppointmentDetailSheet({
       setSelectedServices(appointment.services?.map((s: any) => s.id) || (appointment.serviceId ? [appointment.serviceId] : []))
       setSelectedStaff(appointment.staffId || "")
       setSelectedDate(apptDate)
-      setSelectedTime(formatTime(appointment.startTime).split(' ')[0]) // Get HH:MM
+      setSelectedTime(formatTime24h(appointment.startTime)) // Get HH:MM
       setCustomerName(appointment.customerName || "")
       setCustomerPhone(appointment.customerPhone || "")
       setNotes("") // Reset input notes
@@ -142,7 +148,7 @@ export function AppointmentDetailSheet({
     const apptDate = new Date(appointment.startTime)
     const initialDate = apptDate.toISOString().split('T')[0]
     const currentDateStr = selectedDate ? selectedDate.toISOString().split('T')[0] : ""
-    const initialTime = formatTime(appointment.startTime).split(' ')[0]
+    const initialTime = formatTime24h(appointment.startTime)
     const initialName = appointment.customerName || ""
     const initialPhone = appointment.customerPhone || ""
 
@@ -261,6 +267,10 @@ export function AppointmentDetailSheet({
   const totalPrice = useMemo(() => {
     if (!appointment) return 0
     if (mode === "preview") {
+      const bookedServices = appointment.serviceDetails as BookedService[] | null;
+      if (bookedServices?.length) {
+        return bookedServices.reduce((acc, s) => acc + s.price, 0);
+      }
       if (appointment.services?.length > 0) {
         return appointment.services.reduce((acc: number, s: any) => acc + (s.price || 0), 0)
       }
@@ -347,13 +357,46 @@ export function AppointmentDetailSheet({
                       <h3 className="font-bold">{t.servicePlural}</h3>
                     </div>
                     <div className="space-y-2">
-                      {appointment.services?.length > 0 ? (
-                        appointment.services.map((s: any) => (
-                          <div key={s.id} className="flex items-center justify-between rounded-lg bg-secondary/30 px-3 py-2 border border-border/50">
-                            <span className="text-sm font-medium">{s.name}</span>
-                            <span className="text-xs font-bold text-primary">₡{s.price.toLocaleString()}</span>
-                          </div>
-                        ))
+                      {(appointment.serviceDetails as BookedService[] | null)?.length ? (
+                        (appointment.serviceDetails as BookedService[]).map((s) => {
+                          const currentService = services.find(curr => curr.id === s.id);
+                          const hasPriceChanged = currentService && Math.abs(currentService.price - s.price) > 0.01;
+
+                          return (
+                            <div key={s.id} className="flex items-center justify-between rounded-lg bg-secondary/30 px-3 py-2 border border-border/50 group/price">
+                              <div className="flex flex-col">
+                                <span className="text-sm font-medium">{s.name}</span>
+                                {hasPriceChanged && (
+                                  <span className="text-[10px] text-primary/70 font-semibold flex items-center gap-1">
+                                    <AlertCircle className="h-2.5 w-2.5" /> Precio al reservar
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex flex-col items-end">
+                                <span className="text-xs font-bold text-primary">₡{s.price.toLocaleString()}</span>
+                                {hasPriceChanged && (
+                                  <span className="text-[9px] text-muted-foreground line-through opacity-60">
+                                    Actual: ₡{currentService.price.toLocaleString()}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : appointment.services?.length > 0 ? (
+                        appointment.services.map((s: any) => {
+                          // Fallback: If only one service and we have priceAtBooking, use that as the historical price
+                          const displayPrice = (appointment.services.length === 1 && appointment.priceAtBooking) 
+                            ? appointment.priceAtBooking 
+                            : s.price;
+                            
+                          return (
+                            <div key={s.id} className="flex items-center justify-between rounded-lg bg-secondary/30 px-3 py-2 border border-border/50">
+                              <span className="text-sm font-medium">{s.name}</span>
+                              <span className="text-xs font-bold text-primary">₡{displayPrice.toLocaleString()}</span>
+                            </div>
+                          );
+                        })
                       ) : (
                         <Badge variant="secondary" className="px-3 py-1">{appointment.service?.name || "Sin servicio"}</Badge>
                       )}
@@ -623,7 +666,7 @@ export function AppointmentDetailSheet({
                         ) : (
                           availableSlots.map((slot) => (
                             <SelectItem key={slot} value={slot} className="rounded-lg focus:bg-primary/10">
-                              {slot}
+                              {convertTo12h(slot)}
                             </SelectItem>
                           ))
                         )}

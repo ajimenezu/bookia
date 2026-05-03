@@ -145,6 +145,9 @@ export async function getPendingRequests(shopId: string) {
   
   const isPrivileged = role === "OWNER" || isSuperAdmin
 
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
   const [pendingSchedules, pendingTimeOff, newAppointments] = await Promise.all([
     // Only owners/superadmins see pending approvals
     isPrivileged 
@@ -165,9 +168,10 @@ export async function getPendingRequests(shopId: string) {
     prisma.appointment.findMany({
       where: { 
         shopId, 
-        staffId: user.id, 
+        ...(isPrivileged ? {} : { staffId: user.id }),
         isNotified: false,
-        status: { not: "CANCELLED" }
+        status: { not: "CANCELLED" },
+        startTime: { gte: thirtyDaysAgo }
       },
       include: { services: true }
     })
@@ -194,6 +198,28 @@ export async function markAppointmentAsNotified(appointmentId: string, shopId: s
   // But usually it's the staff who does it.
   await prisma.appointment.update({
     where: { id: appointmentId },
+    data: { isNotified: true }
+  })
+
+  revalidatePath(`/${shopId}/admin`)
+  return { success: true }
+}
+
+export async function markAllAppointmentsAsNotified(shopId: string) {
+  const { user, role, isSuperAdmin } = await requireAdmin(shopId)
+  const isPrivileged = role === "OWNER" || isSuperAdmin
+
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+  await prisma.appointment.updateMany({
+    where: {
+      shopId,
+      ...(isPrivileged ? {} : { staffId: user.id }),
+      isNotified: false,
+      status: { not: "CANCELLED" },
+      startTime: { gte: thirtyDaysAgo }
+    },
     data: { isNotified: true }
   })
 

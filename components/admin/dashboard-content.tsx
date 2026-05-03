@@ -148,9 +148,11 @@ export function DashboardContent({
                   <div className="min-w-0">
                     <p className="font-bold text-card-foreground leading-tight truncate">{apt.customer?.name || apt.customerName || t.client}</p>
                     <p className="text-xs text-muted-foreground mt-1 truncate">
-                      {apt.services && apt.services.length > 0 
-                        ? apt.services.map((s: any) => s.name).join(", ") 
-                        : (apt.service?.name || "Sin servicio")}
+                      {(apt.serviceDetails as any[])?.length 
+                        ? (apt.serviceDetails as any[]).map(s => s.name).join(", ") 
+                        : (apt.services && apt.services.length > 0 
+                          ? apt.services.map((s: any) => s.name).join(", ") 
+                          : (apt.service?.name || "Sin servicio"))}
                     </p>
                     <div className="flex items-center gap-1.5 mt-1.5">
                       <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium bg-muted/30 px-2 py-0.5 rounded-md">

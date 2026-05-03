@@ -88,14 +88,42 @@ export function getWeekOffset(selectedDate: Date) {
 /**
  * Formats a Date object as a time string in the America/Costa_Rica timezone.
  */
+/**
+ * Formats a Date object as a time string in the America/Costa_Rica timezone.
+ * Defaults to 12h format for display.
+ */
 export function formatTime(date: Date | string) {
   const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleTimeString("es-ES", {
+  return d.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "UTC",
+  });
+}
+
+/**
+ * Formats a Date object as a 24h time string (HH:mm) for internal use.
+ */
+export function formatTime24h(date: Date | string) {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
     timeZone: "UTC",
   });
+}
+
+/**
+ * Converts a 24h time string (HH:mm) to a 12h display string.
+ */
+export function convertTo12h(time24: string) {
+  if (!time24) return "";
+  const [hours, minutes] = time24.split(":").map(Number);
+  const period = hours >= 12 ? "PM" : "AM";
+  const h12 = hours % 12 || 12;
+  return `${h12}:${minutes.toString().padStart(2, "0")} ${period}`;
 }
 
 /**

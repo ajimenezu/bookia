@@ -12,6 +12,8 @@ import {
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 
+import { convertTo12h } from "@/lib/date-utils"
+
 interface TimeSelectProps {
   value: string | null
   onChange: (val: string) => void
@@ -50,7 +52,7 @@ export function TimeSelect({
         <SelectContent className="max-h-[300px] bg-popover/95 backdrop-blur-md border-border shadow-xl">
           {times.map((t) => (
             <SelectItem key={t} value={t} className="text-sm">
-              {t}
+              {convertTo12h(t)}
             </SelectItem>
           ))}
         </SelectContent>

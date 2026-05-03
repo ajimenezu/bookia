@@ -182,7 +182,8 @@ export async function createBooking(rawData: unknown) {
       customerName,
       customerPhone,
       status: "CONFIRMED",
-      isNotified: isAdminBooking ?? false
+      isNotified: isAdminBooking ?? false,
+      serviceDetails: services.map(s => ({ id: s.id, name: s.name, price: s.price }))
     }
   })
 
@@ -368,10 +369,6 @@ export async function updateBooking(rawData: unknown) {
   const hasServicesChanged = JSON.stringify(existingServiceIds) !== JSON.stringify(newServiceIds)
 
   const totalDuration = services.reduce((acc, s) => acc + s.duration, 0)
-  const finalPriceAtBooking = hasServicesChanged 
-    ? services.reduce((acc, s) => acc + s.price, 0)
-    : existingAppointment.priceAtBooking
-
   const startTime = combineDateAndTime(date, time)
   const endTime = new Date(startTime.getTime() + totalDuration * 60 * 1000)
 
@@ -384,6 +381,18 @@ export async function updateBooking(rawData: unknown) {
   // 4. Update
   try {
     const hasStaffChanged = existingAppointment.staffId !== staffId
+    // --- Intelligent Snapshot Merging ---
+    const oldDetails = (existingAppointment.serviceDetails as any[]) || []
+    const finalServiceDetails = services.map(s => {
+      // If the service was already in the appointment, keep its historical details
+      const existingDetail = oldDetails.find(d => d.id === s.id)
+      if (existingDetail) return existingDetail
+      
+      // If it's a brand new service being added, use current price snapshot
+      return { id: s.id, name: s.name, price: s.price }
+    })
+
+    const finalPriceAtBooking = finalServiceDetails.reduce((acc, s) => acc + s.price, 0)
 
     await prisma.appointment.update({
       where: { id: appointmentId, shopId },
@@ -400,7 +409,8 @@ export async function updateBooking(rawData: unknown) {
         services: {
           set: [], // Clear existing relations
           connect: serviceIds.map(id => ({ id }))
-        }
+        },
+        serviceDetails: finalServiceDetails
       }
     })
 

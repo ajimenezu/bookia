@@ -6,6 +6,7 @@ import { CalendarDays, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { getAvailableStaffForSlot } from "@/app/schedule/actions"
+import { convertTo12h } from "@/lib/date-utils"
 
 interface TimeStepProps {
   selectedDate: Date | undefined
@@ -90,7 +91,7 @@ export function TimeStep({
                   : "border-border bg-card text-card-foreground hover:border-primary/40 hover:bg-primary/5"
               )}
             >
-              {time}
+              {convertTo12h(time)}
             </button>
           ))}
         </div>

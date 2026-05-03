@@ -124,7 +124,7 @@ export function ClientDetailSheet({
                     <div className="p-2 rounded-lg bg-primary/10 text-primary">
                       <UserCheck className="h-4 w-4" />
                     </div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Visitas</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Visitas completadas</p>
                   </div>
                   <p className="text-3xl font-black text-foreground">{completedVisits}</p>
                 </div>
@@ -158,7 +158,7 @@ export function ClientDetailSheet({
                 <div className="space-y-4">
                   {appointments.length > 0 ? (
                     appointments.map((app: any) => (
-                      <div key={app.id} className="group glass-card rounded-2xl p-5 border-border/40 hover:border-primary/30 transition-all">
+                      <div key={app.id} className="group glass-card rounded-2xl p-5 border border-border shadow-sm hover:border-primary/30 transition-all bg-card/40">
                         <div className="flex items-start justify-between gap-4 mb-4">
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
@@ -188,7 +188,9 @@ export function ClientDetailSheet({
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-bold truncate">
-                                {app.services?.map((s: any) => s.name).join(", ") || app.service?.name}
+                                {(app.serviceDetails as any[])?.length 
+                                  ? (app.serviceDetails as any[]).map(s => s.name).join(", ") 
+                                  : (app.services?.map((s: any) => s.name).join(", ") || app.service?.name)}
                               </p>
                             </div>
                           </div>

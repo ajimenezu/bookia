@@ -1,31 +1,20 @@
-import { Star } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
 import { getTerminology } from "@/lib/dictionaries"
 import prisma from "@/lib/prisma"
-import { Prisma } from "@prisma/client"
-import { StaffScheduleDialog } from "./staff-schedule-dialog"
+import { Role, AppointmentStatus } from "@prisma/client"
+import { StaffMemberCard } from "./staff-member-card"
 
 interface StaffContentProps {
   shopId: string
   role: string
+  currentUserId: string
   isSuperAdmin: boolean
   businessType: string
 }
 
-interface StaffStats {
-  name: string
-  initials: string
-  specialty: string
-  status: string
-  rating: number
-  todayAppointments: number
-  weekAppointments: number
-}
-
-export async function StaffContent({ shopId, role, isSuperAdmin, businessType }: StaffContentProps) {
+export async function StaffContent({ shopId, role, currentUserId, isSuperAdmin, businessType }: StaffContentProps) {
 
   let whereClause: any = {
-    role: { in: ["OWNER", "STAFF"] }
+    role: { in: [Role.OWNER, Role.STAFF] }
   }
   
   if (isSuperAdmin && shopId === "ALL") {
@@ -37,11 +26,16 @@ export async function StaffContent({ shopId, role, isSuperAdmin, businessType }:
   const now = new Date()
   const todayStart = new Date(now)
   todayStart.setHours(0, 0, 0, 0)
+  const todayEnd = new Date(now)
+  todayEnd.setHours(23, 59, 59, 999)
+
   const diffToMonday = now.getDay() === 0 ? -6 : 1 - now.getDay()
   const weekStart = new Date(now)
   weekStart.setDate(now.getDate() + diffToMonday)
   weekStart.setHours(0, 0, 0, 0)
-  const earliestDate = weekStart
+  const weekEnd = new Date(weekStart)
+  weekEnd.setDate(weekStart.getDate() + 6)
+  weekEnd.setHours(23, 59, 59, 999)
 
   const rawMembers = await prisma.shopMember.findMany({
     where: whereClause,
@@ -50,8 +44,9 @@ export async function StaffContent({ shopId, role, isSuperAdmin, businessType }:
         include: {
           appointmentsAsStaff: {
             where: {
-              status: "COMPLETED",
-              startTime: { gte: earliestDate }
+              shopId,
+              status: { in: [AppointmentStatus.CONFIRMED, AppointmentStatus.COMPLETED, AppointmentStatus.PENDING] },
+              startTime: { gte: weekStart, lte: weekEnd }
             }
           },
           staffSchedules: {
@@ -72,7 +67,7 @@ export async function StaffContent({ shopId, role, isSuperAdmin, businessType }:
   })
 
 
-  const isOwner = role === "OWNER" || isSuperAdmin
+  const isOwner = role === Role.OWNER || isSuperAdmin
   const t = getTerminology(businessType as any)
 
   return (
@@ -82,24 +77,26 @@ export async function StaffContent({ shopId, role, isSuperAdmin, businessType }:
         const name = user.name || user.email.split("@")[0]
         const initials = name
           .split(" ")
+          .filter(Boolean)
           .slice(0, 2)
           .map((n: string) => n[0])
           .join("")
           .toUpperCase()
+        
         const appointments = user.appointmentsAsStaff || []
         let todayAppointments = 0,
           weekAppointments = 0
 
         for (const appt of appointments) {
           const time = appt.startTime.getTime()
-          if (time >= todayStart.getTime()) todayAppointments++
-          if (time >= weekStart.getTime()) weekAppointments++
+          if (time >= todayStart.getTime() && time <= todayEnd.getTime()) todayAppointments++
+          if (time >= weekStart.getTime() && time <= weekEnd.getTime()) weekAppointments++
         }
 
         let specialty = "Cliente"
-        if (member.role === "OWNER") specialty = "Propietario / Gerente"
-        else if (member.role === "STAFF") specialty = "Personal"
-        else if (member.role === "SUPER_ADMIN") specialty = "Administrador"
+        if (member.role === Role.OWNER) specialty = "Propietario / Gerente"
+        else if (member.role === Role.STAFF) specialty = "Personal"
+        else if (member.role === Role.SUPER_ADMIN) specialty = "Administrador"
 
         return (
           <StaffMemberCard
@@ -107,6 +104,9 @@ export async function StaffContent({ shopId, role, isSuperAdmin, businessType }:
             shopId={shopId}
             staffId={user.id}
             isOwner={isOwner}
+            currentUserRole={role as Role}
+            currentUserId={currentUserId}
+            isSuperAdmin={isSuperAdmin}
             schedules={user.staffSchedules}
             timeOff={user.staffTimeOff}
             terminology={t}
@@ -114,8 +114,8 @@ export async function StaffContent({ shopId, role, isSuperAdmin, businessType }:
               name,
               initials,
               specialty,
-              status: "Activo",
-              rating: 5.0,
+              status: member.isActive ? "Activo" : "Inactivo",
+              isActive: member.isActive,
               todayAppointments,
               weekAppointments,
             }}
@@ -127,82 +127,6 @@ export async function StaffContent({ shopId, role, isSuperAdmin, businessType }:
           No se encontraron {t.staffPlural.toLowerCase()}.
         </div>
       )}
-    </div>
-  )
-}
-
-function StaffMemberCard({
-  shopId,
-  staffId,
-  isOwner,
-  schedules,
-  timeOff,
-  stats,
-  terminology: t,
-}: {
-  shopId: string
-  staffId: string
-  isOwner: boolean
-  schedules: any[]
-  timeOff: any[]
-  stats: StaffStats
-  terminology: any
-}) {
-  return (
-    <div className="rounded-2xl border border-border bg-card p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group overflow-hidden">
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-xl font-black text-primary border border-primary/20 shadow-inner group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-500">
-              {stats.initials}
-            </div>
-            <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-success border-2 border-card shadow-sm" />
-          </div>
-          <div>
-            <h3 className="text-xl font-bold text-card-foreground tracking-tight group-hover:text-primary transition-colors">
-              {stats.name}
-            </h3>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{stats.specialty}</p>
-          </div>
-        </div>
-        <Badge className="bg-success/15 text-success border-success/30 hover:bg-success/20 h-fit rounded-lg px-2.5 py-1 font-bold text-[10px] uppercase tracking-wider">
-          {stats.status}
-        </Badge>
-      </div>
-
-      <div className="grid gap-4">
-        <div className="flex items-center justify-between text-sm bg-muted/5 p-3 rounded-xl border border-border/40">
-          <span className="flex items-center gap-2.5 text-muted-foreground font-medium">
-            <Star className="h-4 w-4 text-primary fill-primary" /> Calificación
-          </span>
-          <span className="font-black text-card-foreground">
-            {stats.rating.toFixed(1)} <span className="text-[10px] text-muted-foreground/60">/ 5.0</span>
-          </span>
-        </div>
-        
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col gap-1 text-sm bg-muted/5 p-3 rounded-xl border border-border/40">
-            <span className="text-[10px] uppercase font-black text-muted-foreground/50 tracking-wider">{t.appointmentPlural} hoy</span>
-            <span className="font-black text-lg text-card-foreground">{stats.todayAppointments}</span>
-          </div>
-          <div className="flex flex-col gap-1 text-sm bg-muted/5 p-3 rounded-xl border border-border/40">
-            <span className="text-[10px] uppercase font-black text-muted-foreground/50 tracking-wider">{t.appointmentPlural} semana</span>
-            <span className="font-black text-lg text-card-foreground">{stats.weekAppointments}</span>
-          </div>
-        </div>
-
-      </div>
-
-      <div className="mt-6 pt-5 border-t border-border/60">
-        <StaffScheduleDialog
-          shopId={shopId}
-          staffId={staffId}
-          staffName={stats.name}
-          initialSchedules={schedules}
-          initialTimeOff={timeOff}
-          isOwner={isOwner}
-        />
-      </div>
     </div>
   )
 }

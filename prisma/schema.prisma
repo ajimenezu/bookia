@@ -44,6 +44,7 @@ model User {
   staffSchedules         StaffSchedule[] @relation("UserSchedules")
   staffTimeOff           StaffTimeOff[]  @relation("UserTimeOff")
   authoredNotes          AppointmentNote[] @relation("NoteAuthor")
+  staffServices          Service[]       @relation("StaffServices")
 }
 
 model ShopMember {
@@ -51,6 +52,7 @@ model ShopMember {
   userId    String   @db.Uuid
   shopId    String
   role      Role     @default(CUSTOMER)
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
@@ -127,6 +129,7 @@ model Service {
   appointments      Appointment[] @relation("LegacyService")
   shop              Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
   multiAppointments Appointment[] @relation("AppointmentServices")
+  staffMembers      User[]        @relation("StaffServices")
 }
 
 model Appointment {

@@ -13,6 +13,7 @@ const userSchema = z.object({
   role: z.enum(["SUPER_ADMIN", "OWNER", "STAFF", "CUSTOMER"]),
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres").optional().or(z.literal("")),
   shopId: z.string().min(1, "El ID de la tienda es obligatorio"),
+  serviceIds: z.string().optional(), // JSON array string for FormData transport
 })
 
 export async function createUser(formData: FormData) {
@@ -23,6 +24,7 @@ export async function createUser(formData: FormData) {
     role: formData.get("role"),
     password: formData.get("password"),
     shopId: formData.get("shopId"),
+    serviceIds: formData.get("serviceIds"),
   }
 
   const validated = userSchema.safeParse(rawData)
@@ -30,8 +32,16 @@ export async function createUser(formData: FormData) {
     return { success: false, error: validated.error.errors[0].message }
   }
 
-  const { name, email, phone, role, password: rawPassword, shopId: targetShopId } = validated.data
+  const { name, email, phone, role, password: rawPassword, shopId: targetShopId, serviceIds: serviceIdsRaw } = validated.data
   const password = rawPassword || "Bookia123!"
+
+  // Parse serviceIds from JSON string (FormData transport)
+  const serviceIds: string[] = serviceIdsRaw ? JSON.parse(serviceIdsRaw) : []
+
+  // Validate: STAFF/OWNER must have service selection (even if empty = "Ninguno")
+  if ((role === "STAFF" || role === "OWNER") && serviceIdsRaw === undefined) {
+    return { success: false, error: "Debes seleccionar al menos un servicio (o 'Ninguno')" }
+  }
 
   try {
     // SECURITY FIX: Mandatory targetShopId validation
@@ -91,12 +101,24 @@ export async function createUser(formData: FormData) {
       }
     })
 
-    // 3. Link to Shop (including SUPER_ADMIN roles)
+    // 3. Link to Shop
     if (targetShopId && targetShopId !== "ALL") {
       await prisma.shopMember.upsert({
         where: { userId_shopId: { userId: user.id, shopId: targetShopId } },
-        update: { role },
-        create: { userId: user.id, shopId: targetShopId, role }
+        update: { role, isActive: true },
+        create: { userId: user.id, shopId: targetShopId, role, isActive: true }
+      })
+    }
+
+    // 4. Assign services for STAFF/OWNER roles
+    if (role === "STAFF" || role === "OWNER") {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          staffServices: {
+            set: serviceIds.map(id => ({ id }))
+          }
+        }
       })
     }
 
@@ -105,6 +127,20 @@ export async function createUser(formData: FormData) {
   } catch (error: any) {
     console.error("CREATE_USER_ERROR:", error)
     return { success: false, error: error.message || "Error al crear el usuario" }
+  }
+}
+
+export async function getShopServices(shopId: string) {
+  try {
+    await requireAdmin(shopId)
+    const services = await prisma.service.findMany({
+      where: { shopId },
+      select: { id: true, name: true, duration: true },
+      orderBy: { name: "asc" }
+    })
+    return { success: true, data: services }
+  } catch (error: any) {
+    return { success: false, error: error.message }
   }
 }
 

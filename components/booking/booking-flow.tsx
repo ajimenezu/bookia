@@ -29,6 +29,7 @@ interface ServiceData {
 interface StaffData {
   id: string
   name: string
+  serviceIds: string[]
 }
 
 interface ClientData {
@@ -249,9 +250,15 @@ export function BookingFlow({
     clearBookingState()
   }
 
-  const allStaff = staff.length > 1
-    ? [{ id: "auto", name: "Asignación automática" }, ...staff]
-    : staff
+  // Filter staff to only those offering at least one of the selected services
+  // Staff with serviceIds.length === 0 ("Ninguno") are excluded
+  const filteredStaff = selectedServices.length > 0
+    ? staff.filter(s => s.serviceIds.length > 0 && selectedServices.some(sid => s.serviceIds.includes(sid)))
+    : staff.filter(s => s.serviceIds.length > 0)
+
+  const allStaff = filteredStaff.length > 1
+    ? [{ id: "auto", name: "Asignación automática", serviceIds: [] }, ...filteredStaff]
+    : filteredStaff
 
   const selectedServicesDetails = services.filter((s) => selectedServices.includes(s.id))
   const totalPrice = selectedServicesDetails.reduce((sum, s) => sum + s.price, 0)

@@ -36,8 +36,16 @@ export default async function CitasPage({ params, searchParams }: PageProps) {
   const [services, staffData, clientsData] = await Promise.all([
     prisma.service.findMany({ where: { shopId }, orderBy: { price: "asc" } }),
     prisma.shopMember.findMany({
-      where: { shopId, role: { in: ["STAFF", "OWNER"] } },
-      include: { user: { select: { id: true, name: true } } }
+      where: { shopId, role: { in: ["STAFF", "OWNER"] }, isActive: true },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            staffServices: { select: { id: true } }
+          }
+        }
+      }
     }),
     prisma.shopMember.findMany({
       where: { shopId, role: "CUSTOMER" },
@@ -46,7 +54,7 @@ export default async function CitasPage({ params, searchParams }: PageProps) {
   ])
 
   const mappedServices = services.map(s => ({ id: s.id, name: s.name, price: s.price, duration: s.duration, description: s.description }))
-  const mappedStaff = staffData.map(m => ({ id: m.user.id, name: m.user.name || "Sin nombre" }))
+  const mappedStaff = staffData.map(m => ({ id: m.user.id, name: m.user.name || "Sin nombre", serviceIds: m.user.staffServices.map(s => s.id) }))
   const mappedClients = clientsData.map(m => ({ id: m.user.id, name: m.user.name || "Sin nombre", phone: m.user.phone }))
 
   // Fetch all schedules to evaluate natively on the client

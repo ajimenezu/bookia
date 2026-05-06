@@ -278,3 +278,106 @@ export async function getStaffScheduleContext(shopId: string, staffId: string) {
 
   return { schedules, timeOff }
 }
+
+export async function getStaffDetails(staffId: string, shopId: string) {
+  try {
+    const { isSuperAdmin } = await requireAdmin(shopId)
+
+    const staff = await prisma.user.findUnique({
+      where: { id: staffId },
+      include: {
+        memberships: {
+          where: { shopId }
+        },
+        staffServices: {
+          select: { id: true, name: true }
+        },
+        appointmentsAsStaff: {
+          where: { shopId },
+          include: {
+            customer: { select: { name: true } },
+            services: { select: { name: true, price: true } }
+          },
+          orderBy: { startTime: "desc" },
+          take: 10
+        }
+      }
+    })
+
+    if (!staff) return { success: false, error: "Personal no encontrado" }
+
+    return { success: true, data: staff }
+  } catch (error) {
+    console.error("GET_STAFF_DETAILS_ERROR:", error)
+    return { success: false, error: "Error al obtener detalles" }
+  }
+}
+
+export async function updateStaffStatus(staffId: string, shopId: string, isActive: boolean) {
+  try {
+    const { role: currentUserRole, isSuperAdmin } = await requireAdmin(shopId)
+    
+    // Get target user role
+    const targetMember = await prisma.shopMember.findUnique({
+      where: { userId_shopId: { userId: staffId, shopId } }
+    })
+
+    if (!targetMember) throw new Error("Miembro no encontrado")
+
+    // RBAC: 
+    // Owners can deactivate staff.
+    // Super admins can deactivate staff and owners.
+    if (currentUserRole === "OWNER") {
+      if (targetMember.role !== "STAFF") throw new Error("Dueños solo pueden desactivar personal")
+    } else if (!isSuperAdmin) {
+      throw new Error("No autorizado")
+    }
+
+    await prisma.shopMember.update({
+      where: { userId_shopId: { userId: staffId, shopId } },
+      data: { isActive }
+    })
+
+    revalidatePath(`/${shopId}/admin/staff`)
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+export async function updateStaffProfile(staffId: string, shopId: string, data: { name?: string; phone?: string; serviceIds: string[] }) {
+  try {
+    const { user: currentUser, isSuperAdmin } = await requireAdmin(shopId)
+
+    const isSelf = currentUser.id === staffId
+    
+    if (!isSuperAdmin && !isSelf) {
+      throw new Error("Solo puedes editar tu propio perfil")
+    }
+
+    if (isSuperAdmin && !isSelf) {
+      const targetMember = await prisma.shopMember.findUnique({
+        where: { userId_shopId: { userId: staffId, shopId } }
+      })
+      if (targetMember?.role === "SUPER_ADMIN") {
+        throw new Error("No puedes editar a otro Super Admin")
+      }
+    }
+
+    await prisma.user.update({
+      where: { id: staffId },
+      data: {
+        name: data.name,
+        phone: data.phone,
+        staffServices: {
+          set: data.serviceIds.map(id => ({ id }))
+        }
+      }
+    })
+
+    revalidatePath(`/${shopId}/admin/staff`)
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}

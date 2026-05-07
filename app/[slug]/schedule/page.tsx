@@ -37,8 +37,19 @@ export default async function ShopSchedulePage({ params, searchParams }: PagePro
         orderBy: { price: "asc" }
       },
       memberships: {
-        where: { role: { in: ["STAFF", "OWNER"] } },
-        include: { user: { select: { id: true, name: true } } }
+        where: { role: { in: ["STAFF", "OWNER"] }, isActive: true },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              staffServices: { 
+                where: { shop: { slug } },
+                select: { id: true } 
+              }
+            }
+          }
+        }
       }
     }
   })
@@ -58,6 +69,7 @@ export default async function ShopSchedulePage({ params, searchParams }: PagePro
   const staff = shop.memberships.map(m => ({
     id: m.user.id,
     name: m.user.name || "Sin nombre",
+    serviceIds: m.user.staffServices?.map(s => s.id) || [],
   }))
 
   // Fetch all schedules for this shop to evaluate dynamically on the client

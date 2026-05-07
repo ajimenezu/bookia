@@ -18,6 +18,7 @@ interface ServiceData {
 interface StaffData {
   id: string
   name: string
+  serviceIds: string[]
 }
 
 interface ClientData {

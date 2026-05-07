@@ -15,7 +15,7 @@ export default async function ConfiguracionPage({ params }: PageProps) {
   if (!shop) notFound()
 
   // SECURITY: Only Owners and Super Admins can access configuration
-  const session = await requireAdmin(shop.id)
+  const session = await requireAdmin(shop.id, `/${slug}/login`)
   if (!session.isSuperAdmin && session.role !== "OWNER") {
     redirect(`/${slug}/admin`)
   }

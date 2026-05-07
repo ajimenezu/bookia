@@ -157,7 +157,7 @@ export function InfoStep({
                 <div className="space-y-1">
                   <p className="text-[10px] uppercase font-black text-muted-foreground/50 tracking-widest">{t.staff}</p>
                   <p className="font-bold text-card-foreground">
-                    {selectedBarber === "auto" ? assignedAutoStaff?.name : barber?.name}
+                    {selectedBarber === "auto" ? (assignedAutoStaff?.name || "Asignación automática") : barber?.name}
                   </p>
                 </div>
                 <div className="space-y-1">

@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Plus, UserPlus, Loader2 } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Plus, UserPlus, Loader2, Wrench, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -21,72 +21,105 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { createUser } from "@/app/[slug]/admin/clientes/actions"
+import { Badge } from "@/components/ui/badge"
+import { createUser, getShopServices } from "@/app/[slug]/admin/clientes/actions"
 import { toast } from "sonner"
 import { Role } from "@prisma/client"
+import { cn } from "@/lib/utils"
+
+interface ServiceOption { id: string; name: string; duration: number }
 
 interface CreateUserModalProps {
   currentUserRole: Role
   isSuperAdmin: boolean
   shopId?: string
+  mode?: 'CLIENT' | 'STAFF'
 }
 
-export function CreateUserModal({ currentUserRole, isSuperAdmin, shopId }: CreateUserModalProps) {
+export function CreateUserModal({ currentUserRole, isSuperAdmin, shopId, mode = 'CLIENT' }: CreateUserModalProps) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [services, setServices] = useState<ServiceOption[]>([])
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([])
+  const [noneSelected, setNoneSelected] = useState(false)
+  const [serviceSearch, setServiceSearch] = useState("")
 
-  // Determine available roles based on current user role
+  const filteredServices = services.filter(s =>
+    s.name.toLowerCase().includes(serviceSearch.toLowerCase())
+  )
+
+  useEffect(() => {
+    if (open && mode === 'STAFF' && shopId) {
+      getShopServices(shopId).then(res => {
+        if (res.success && res.data) setServices(res.data)
+      })
+    }
+  }, [open, mode, shopId])
+
   const getAvailableRoles = () => {
-    if (isSuperAdmin) {
-      return [
-        { value: "CUSTOMER", label: "Cliente" },
-        { value: "STAFF", label: "Staff" },
-        { value: "OWNER", label: "Dueño" },
-        { value: "SUPER_ADMIN", label: "Super Admin" },
-      ]
-    }
-    if (currentUserRole === "OWNER") {
-      return [
-        { value: "CUSTOMER", label: "Cliente" },
-        { value: "STAFF", label: "Staff" },
-      ]
-    }
-    if (currentUserRole === "STAFF") {
-      return [
-        { value: "CUSTOMER", label: "Cliente" },
-      ]
-    }
+    if (mode === 'CLIENT') return [{ value: "CUSTOMER", label: "Cliente" }]
+    if (isSuperAdmin) return [
+      { value: "STAFF", label: "Personal" },
+      { value: "OWNER", label: "Dueño / Gerente" },
+    ]
+    if (currentUserRole === "OWNER") return [{ value: "STAFF", label: "Personal" }]
     return []
   }
 
   const availableRoles = getAvailableRoles()
+  const showRoleSelect = mode === 'STAFF' && isSuperAdmin
+  const defaultRole = mode === 'CLIENT' ? 'CUSTOMER' : 'STAFF'
 
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
   const [touched, setTouched] = useState({ name: false, email: false, phone: false })
 
-  const isFormValid = name.trim() !== "" && email.trim() !== "" && phone.trim() !== ""
+  const serviceSelectionValid = mode === 'CLIENT' || noneSelected || selectedServiceIds.length > 0
+  const isFormValid = name.trim() !== "" && email.trim() !== "" && phone.trim() !== "" && serviceSelectionValid
+
+  const toggleService = (id: string) => {
+    setNoneSelected(false)
+    setSelectedServiceIds(prev =>
+      prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
+    )
+  }
+
+  const handleNone = () => {
+    setNoneSelected(true)
+    setSelectedServiceIds([])
+  }
+
+  const resetForm = () => {
+    setName(""); setEmail(""); setPhone("")
+    setTouched({ name: false, email: false, phone: false })
+    setSelectedServiceIds([]); setNoneSelected(false); setServiceSearch("")
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (!serviceSelectionValid) {
+      toast.error("Debes seleccionar al menos un servicio o 'Ninguno'")
+      return
+    }
     setLoading(true)
-
     const formData = new FormData(event.currentTarget)
-    
+
+    // Append serviceIds as JSON string (required for STAFF/OWNER)
+    if (mode === 'STAFF') {
+      formData.set("serviceIds", JSON.stringify(selectedServiceIds))
+    }
+
     try {
       const result = await createUser(formData)
       if (result.success) {
         toast.success("Usuario creado exitosamente")
         setOpen(false)
-        setName("")
-        setEmail("")
-        setPhone("")
-        setTouched({ name: false, email: false, phone: false })
+        resetForm()
       } else {
         toast.error(result.error || "Error al crear usuario")
       }
-    } catch (error) {
+    } catch {
       toast.error("Ocurrió un error inesperado")
     } finally {
       setLoading(false)
@@ -96,108 +129,159 @@ export function CreateUserModal({ currentUserRole, isSuperAdmin, shopId }: Creat
   return (
     <Dialog open={open} onOpenChange={(val) => {
       setOpen(val)
-      if (!val) {
-        setName("")
-        setEmail("")
-        setPhone("")
-        setTouched({ name: false, email: false, phone: false })
-      }
+      if (!val) resetForm()
     }}>
       <DialogTrigger asChild>
         <Button className="gap-2">
           <Plus className="h-4 w-4" />
-          <span>Nuevo Usuario</span>
+          <span>Nuevo {mode === 'STAFF' ? 'Personal' : 'Usuario'}</span>
         </Button>
       </DialogTrigger>
       <DialogContent 
         onInteractOutside={(e) => e.preventDefault()}
-        className="sm:max-w-[425px]"
+        className="sm:max-w-[480px] max-h-[90dvh] overflow-y-auto"
       >
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <UserPlus className="h-5 w-5 text-primary" />
-              Crear Nuevo Usuario
+              {mode === 'STAFF' ? 'Crear Nuevo Personal' : 'Crear Nuevo Cliente'}
             </DialogTitle>
             <DialogDescription>
-              Ingrese la información del nuevo usuario. Los campos marcados con * son obligatorios.
+              Los campos marcados con * son obligatorios.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <input type="hidden" name="shopId" value={shopId || ""} />
+
             <div className="grid gap-1">
               <Label htmlFor="name" className={touched.name && !name.trim() ? "text-destructive" : ""}>Nombre Completo *</Label>
               <Input 
-                id="name" 
-                name="name" 
-                value={name} 
+                id="name" name="name" value={name} 
                 onChange={(e) => setName(e.target.value)} 
                 onBlur={() => setTouched(prev => ({ ...prev, name: true }))}
-                placeholder="Ej: Juan Pérez" 
-                required 
+                placeholder="Ej: Juan Pérez" required 
                 className={touched.name && !name.trim() ? "border-destructive focus-visible:ring-destructive" : ""}
               />
-              {touched.name && !name.trim() && (
-                <p className="text-xs text-destructive">El nombre es requerido</p>
-              )}
+              {touched.name && !name.trim() && <p className="text-xs text-destructive">El nombre es requerido</p>}
             </div>
+
             <div className="grid gap-1">
               <Label htmlFor="email" className={touched.email && !email.trim() ? "text-destructive" : ""}>Correo Electrónico *</Label>
               <Input 
-                id="email" 
-                name="email" 
-                value={email} 
+                id="email" name="email" value={email} 
                 onChange={(e) => setEmail(e.target.value)} 
                 onBlur={() => setTouched(prev => ({ ...prev, email: true }))}
-                type="email" 
-                placeholder="juan@ejemplo.com" 
-                required 
+                type="email" placeholder="juan@ejemplo.com" required 
                 className={touched.email && !email.trim() ? "border-destructive focus-visible:ring-destructive" : ""}
               />
-              {touched.email && !email.trim() && (
-                <p className="text-xs text-destructive">El correo electrónico es requerido</p>
-              )}
+              {touched.email && !email.trim() && <p className="text-xs text-destructive">El correo es requerido</p>}
             </div>
+
             <div className="grid gap-1">
               <Label htmlFor="phone" className={touched.phone && !phone.trim() ? "text-destructive" : ""}>Teléfono *</Label>
               <Input 
-                id="phone" 
-                name="phone" 
-                value={phone}
+                id="phone" name="phone" value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 onBlur={() => setTouched(prev => ({ ...prev, phone: true }))}
-                placeholder="+506 8888 8888" 
-                required
+                placeholder="+506 8888 8888" required
                 className={touched.phone && !phone.trim() ? "border-destructive focus-visible:ring-destructive" : ""}
               />
-              {touched.phone && !phone.trim() && (
-                <p className="text-xs text-destructive">El teléfono es requerido</p>
-              )}
+              {touched.phone && !phone.trim() && <p className="text-xs text-destructive">El teléfono es requerido</p>}
             </div>
-            {isSuperAdmin ? (
+
+            {showRoleSelect ? (
               <div className="grid gap-1">
                 <Label htmlFor="role">Tipo de Usuario *</Label>
-                <Select name="role" defaultValue="CUSTOMER" required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccione un rol" />
-                  </SelectTrigger>
+                <Select name="role" defaultValue={defaultRole} required>
+                  <SelectTrigger><SelectValue placeholder="Seleccione un rol" /></SelectTrigger>
                   <SelectContent>
                     {availableRoles.map((role) => (
-                      <SelectItem key={role.value} value={role.value}>
-                        {role.label}
-                      </SelectItem>
+                      <SelectItem key={role.value} value={role.value}>{role.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             ) : (
-              <input type="hidden" name="role" value="CUSTOMER" />
+              <input type="hidden" name="role" value={defaultRole} />
+            )}
+
+            {/* Service Assignment — STAFF mode only */}
+            {mode === 'STAFF' && (
+              <div className="grid gap-2">
+                <Label className={cn("flex items-center gap-1.5", !serviceSelectionValid ? "text-destructive" : "")}>
+                  <Wrench className="h-3.5 w-3.5 text-primary" />
+                  Servicios que ofrece *
+                </Label>
+                {services.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">Cargando servicios...</p>
+                ) : (
+                  <div className="space-y-2">
+                    {/* Search */}
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                      <Input
+                        id="service-search"
+                        type="text"
+                        placeholder="Buscar servicio..."
+                        value={serviceSearch}
+                        onChange={e => setServiceSearch(e.target.value)}
+                        className="h-8 pl-8 text-xs bg-background/50"
+                        aria-label="Buscar servicio por nombre"
+                      />
+                    </div>
+                    {/* Pills — 4-row scrollable */}
+                    <div
+                      className="flex flex-wrap gap-2 overflow-y-auto max-h-40 pr-1 scrollbar-thin scrollbar-thumb-primary/10 scrollbar-track-transparent"
+                      role="group"
+                      aria-label="Selección de servicios"
+                    >
+                      {/* Ninguno always first */}
+                      <button
+                        type="button"
+                        aria-pressed={noneSelected}
+                        onClick={handleNone}
+                        className={cn(
+                          "inline-flex items-center rounded-xl border px-3 py-1.5 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-primary",
+                          noneSelected
+                            ? "border-muted-foreground bg-muted text-muted-foreground"
+                            : "border-border bg-muted/30 text-muted-foreground hover:border-muted-foreground/40"
+                        )}
+                      >
+                        Ninguno
+                      </button>
+                      {filteredServices.map(s => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          aria-pressed={selectedServiceIds.includes(s.id)}
+                          onClick={() => toggleService(s.id)}
+                          className={cn(
+                            "inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-primary",
+                            selectedServiceIds.includes(s.id)
+                              ? "border-primary bg-primary/10 text-primary shadow-sm"
+                              : "border-border bg-muted/30 text-muted-foreground hover:border-primary/40 hover:bg-muted/60"
+                          )}
+                        >
+                          {s.name}
+                          <span className="text-[10px] opacity-60 font-normal">{s.duration}min</span>
+                        </button>
+                      ))}
+                      {filteredServices.length === 0 && serviceSearch && (
+                        <p className="text-xs text-muted-foreground italic py-1">Sin resultados para "{serviceSearch}"</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {!serviceSelectionValid && (
+                  <p className="text-xs text-destructive">Selecciona al menos un servicio o "Ninguno"</p>
+                )}
+              </div>
             )}
           </div>
+
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Cancelar
-            </Button>
+            <Button type="button" variant="outline" onClick={() => { resetForm(); setOpen(false) }}>Cancelar</Button>
             <Button type="submit" disabled={loading || !isFormValid}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Crear Usuario

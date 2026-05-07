@@ -87,6 +87,7 @@ export function DashboardContent({
           shopId={shopId}
           shopName={shopName}
           shopSlug={slug}
+          businessType={businessType as any}
           whatsappPhone={whatsappPhone}
           services={mappedServices}
           staff={mappedStaff}

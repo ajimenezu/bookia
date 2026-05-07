@@ -49,11 +49,11 @@ export const getAdminUser = cache(async () => {
  * If user is SUPER_ADMIN, they bypass shop-specific checks.
  * Otherwise, they must be an OWNER or STAFF of the requested shop.
  */
-export async function requireAdmin(targetShopId?: string) {
+export async function requireAdmin(targetShopId?: string, loginRedirect?: string) {
   const account = await getAdminUser()
 
   if (!account?.user) {
-    redirect("/login")
+    redirect(loginRedirect ?? "/login")
   }
 
   // Super Admin has global access
@@ -78,12 +78,12 @@ export async function requireAdmin(targetShopId?: string) {
   if (targetShopId) {
     activeMembership = memberships.find((m: any) => m.shopId === targetShopId)
     if (!activeMembership || (activeMembership.role !== "OWNER" && activeMembership.role !== "STAFF")) {
-      redirect("/schedule")
+      redirect(loginRedirect ?? "/login")
     }
   } else {
     activeMembership = memberships.find((m: any) => m.role === "OWNER" || m.role === "STAFF")
     if (!activeMembership) {
-      redirect("/schedule")
+      redirect(loginRedirect ?? "/login")
     }
   }
 

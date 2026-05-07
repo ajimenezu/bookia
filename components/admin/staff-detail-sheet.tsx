@@ -63,7 +63,8 @@ export function StaffDetailSheet({
   const [editServiceIds, setEditServiceIds] = useState<string[]>([])
   const [editNone, setEditNone] = useState(false)
   const [shopServices, setShopServices] = useState<{id: string; name: string; duration: number}[]>([])
-  const [isPending, startTransition] = useTransition()
+  const [isSavePending, startSaveTransition] = useTransition()
+  const [isStatusPending, startStatusTransition] = useTransition()
 
   useEffect(() => {
     async function loadData() {
@@ -104,7 +105,7 @@ export function StaffDetailSheet({
   const canDeactivate = (isSuperAdmin && targetRole !== Role.SUPER_ADMIN) || (currentUserRole === Role.OWNER && targetRole === Role.STAFF)
 
   const handleToggleStatus = () => {
-    startTransition(async () => {
+    startStatusTransition(async () => {
       const result = await updateStaffStatus(staffId!, shopId, !isActive)
       if (result.success) {
         toast.success(isActive ? "Personal desactivado" : "Personal activado")
@@ -119,7 +120,7 @@ export function StaffDetailSheet({
   }
 
   const handleSaveProfile = () => {
-    startTransition(async () => {
+    startSaveTransition(async () => {
       const result = await updateStaffProfile(staffId!, shopId, {
         ...editForm,
         serviceIds: editServiceIds
@@ -189,9 +190,9 @@ export function StaffDetailSheet({
                     isActive ? "text-destructive border-destructive/20 hover:bg-destructive/5" : "text-success border-success/20 hover:bg-success/5"
                   )}
                   onClick={handleToggleStatus}
-                  disabled={isPending}
+                  disabled={isStatusPending}
                 >
-                  {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Power className="h-4 w-4" />}
+                  {isStatusPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Power className="h-4 w-4" />}
                   {isActive ? "Desactivar" : "Activar"}
                 </Button>
               )}
@@ -210,15 +211,14 @@ export function StaffDetailSheet({
           </div>
         </SheetHeader>
 
-        <div className="flex-1 overflow-hidden flex flex-col">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center h-64 gap-3 text-muted-foreground">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-sm font-bold animate-pulse">Cargando información...</p>
-            </div>
-          ) : staffData ? (
-            <ScrollArea className="flex-1">
-              <div className="p-6 sm:p-10 space-y-10">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center flex-1 gap-3 text-muted-foreground">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm font-bold animate-pulse">Cargando información...</p>
+          </div>
+        ) : staffData ? (
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="p-6 sm:p-10 space-y-10">
                 {/* Profile Details */}
                 <section className="space-y-6">
                   <div className="flex items-center justify-between">
@@ -231,10 +231,10 @@ export function StaffDetailSheet({
                         <Button 
                           size="sm" 
                           onClick={handleSaveProfile} 
-                          disabled={isPending || !isDirty} 
+                          disabled={isSavePending || !isDirty} 
                           className="h-7 text-[10px] font-black uppercase tracking-widest gap-1 bg-success hover:bg-success/90"
                         >
-                          {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />} Guardar
+                          {isSavePending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />} Guardar
                         </Button>
                       </div>
                     )}
@@ -343,77 +343,70 @@ export function StaffDetailSheet({
                       <h3 className="font-black uppercase tracking-widest text-xs">Citas Recientes</h3>
                     </div>
                     <Badge variant="outline" className="rounded-lg font-black text-[10px]">
-                      ÚLTIMAS 10
+                      ÚLTIMAS 5
                     </Badge>
                   </div>
 
-                  <div className="relative">
-                    <div className="max-h-[500px] overflow-y-auto pr-2 space-y-4 scrollbar-thin scrollbar-thumb-primary/10 scrollbar-track-transparent">
-                      {appointments.length > 0 ? (
-                        appointments.map((app: any) => (
-                          <div key={app.id} className="group glass-card rounded-2xl p-5 border border-border shadow-sm hover:border-primary/30 transition-all bg-card/40">
-                            <div className="flex items-start justify-between gap-4 mb-4">
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <Calendar className="h-3.5 w-3.5 text-primary" />
-                                  <p className="text-sm font-black">
-                                    {new Date(app.startTime).toLocaleDateString('es-ES', { 
-                                      day: '2-digit', 
-                                      month: 'short', 
-                                      year: 'numeric' 
-                                    })}
-                                  </p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                                  <p className="text-xs font-bold text-muted-foreground">
-                                    {formatTime(app.startTime)}
-                                  </p>
-                                </div>
+                  <div className="space-y-4">
+                    {appointments.length > 0 ? (
+                      appointments.map((app: any) => (
+                        <div key={app.id} className="group glass-card rounded-2xl p-5 border border-border shadow-sm hover:border-primary/30 transition-all bg-card/40">
+                          <div className="flex items-start justify-between gap-4 mb-4">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="h-3.5 w-3.5 text-primary" />
+                                <p className="text-sm font-black">
+                                  {new Date(app.startTime).toLocaleDateString('es-ES', { 
+                                    day: '2-digit', 
+                                    month: 'short', 
+                                    year: 'numeric' 
+                                  })}
+                                </p>
                               </div>
-                              <StatusBadge status={app.status} className="px-2 py-0.5 text-[10px]" />
-                            </div>
-
-                            <div className="space-y-3 pt-3 border-t border-border/20">
-                              <div className="flex items-center gap-3">
-                                <div className="p-1.5 rounded-lg bg-secondary text-secondary-foreground">
-                                  <Tag className="h-3 w-3" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-bold truncate">
-                                    {app.services?.map((s: any) => s.name).join(", ") || app.service?.name}
-                                  </p>
-                                </div>
-                              </div>
-                              
-                              <div className="flex items-center gap-3">
-                                <div className="p-1.5 rounded-lg bg-secondary text-secondary-foreground">
-                                  <User className="h-3 w-3" />
-                                </div>
-                                <p className="text-xs font-medium text-muted-foreground">
-                                  Cliente: <span className="text-foreground font-bold">{app.customer?.name || "Cliente sin nombre"}</span>
+                              <div className="flex items-center gap-2">
+                                <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                                <p className="text-xs font-bold text-muted-foreground">
+                                  {formatTime(app.startTime)}
                                 </p>
                               </div>
                             </div>
+                            <StatusBadge status={app.status} className="px-2 py-0.5 text-[10px]" />
                           </div>
-                        ))
-                      ) : (
-                        <div className="text-center py-12 px-6 rounded-[2rem] border border-dashed border-border/60 bg-muted/5">
-                          <History className="h-8 w-8 mx-auto mb-3 text-muted-foreground/30" />
-                          <p className="text-xs font-bold text-muted-foreground">Sin actividad reciente</p>
+
+                          <div className="space-y-3 pt-3 border-t border-border/20">
+                            <div className="flex items-center gap-3">
+                              <div className="p-1.5 rounded-lg bg-secondary text-secondary-foreground">
+                                <Tag className="h-3 w-3" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-bold truncate">
+                                  {app.services?.map((s: any) => s.name).join(", ") || app.service?.name}
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-3">
+                              <div className="p-1.5 rounded-lg bg-secondary text-secondary-foreground">
+                                <User className="h-3 w-3" />
+                              </div>
+                              <p className="text-xs font-medium text-muted-foreground">
+                                Cliente: <span className="text-foreground font-bold">{app.customer?.name || "Cliente sin nombre"}</span>
+                              </p>
+                            </div>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                    {/* Fade effect to indicate more content and avoid "cropped" look */}
-                    {appointments.length > 2 && (
-                      <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-background to-transparent pointer-events-none rounded-b-2xl" />
+                      ))
+                    ) : (
+                      <div className="text-center py-12 px-6 rounded-[2rem] border border-dashed border-border/60 bg-muted/5">
+                        <History className="h-8 w-8 mx-auto mb-3 text-muted-foreground/30" />
+                        <p className="text-xs font-bold text-muted-foreground">Sin actividad reciente</p>
+                      </div>
                     )}
                   </div>
                 </section>
               </div>
-            </ScrollArea>
-          ) : null}
-        </div>
+          </ScrollArea>
+        ) : null}
       </SheetContent>
     </Sheet>
   )

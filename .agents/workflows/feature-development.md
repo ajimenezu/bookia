@@ -4,6 +4,12 @@ description: Comprehensive checklist for developing new features, including UI g
 
 # Feature & UI Development
 
+## 0. Core AI Directives
+- **Knowledge**: ALWAYS consult KIs/KB first. Use as few tokens as possible while maintaining high quality.
+- **Planning**: ALWAYS present an Implementation Plan and ask necessary questions *before* proceeding with code changes.
+- **Standards**: Strictly follow Next.js, React, Tailwind, Prisma, and Supabase best practices.
+- **Holistic Design**: Ensure Security, UI/UX (premium glassmorphism), Accessibility, SEO, and current app patterns are integrated.
+
 ## 1. Routing & Guards
 - **Location**: `app/[slug]/admin/[feature]/page.tsx`
 - **Guard**: MUST use `await requireAdmin(shop.id)`

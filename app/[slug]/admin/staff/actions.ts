@@ -279,8 +279,17 @@ export async function getStaffScheduleContext(shopId: string, staffId: string) {
   return { schedules, timeOff }
 }
 
-export async function getStaffDetails(staffId: string, shopId: string) {
+const getStaffDetailsSchema = z.object({
+  staffId: z.string().min(1, "El ID del personal es obligatorio"),
+  shopId: z.string().min(1, "El ID de la tienda es obligatorio")
+})
+
+export async function getStaffDetails(staffIdRaw: string, shopIdRaw: string) {
   try {
+    const validated = getStaffDetailsSchema.safeParse({ staffId: staffIdRaw, shopId: shopIdRaw })
+    if (!validated.success) return { success: false, error: "Parámetros inválidos" }
+    
+    const { staffId, shopId } = validated.data
     const { isSuperAdmin } = await requireAdmin(shopId)
 
     const staff = await prisma.user.findUnique({
@@ -290,16 +299,17 @@ export async function getStaffDetails(staffId: string, shopId: string) {
           where: { shopId }
         },
         staffServices: {
+          where: { shopId },
           select: { id: true, name: true }
         },
         appointmentsAsStaff: {
-          where: { shopId },
+          where: { shopId, endTime: { lte: new Date() } },
           include: {
             customer: { select: { name: true } },
             services: { select: { name: true, price: true } }
           },
           orderBy: { startTime: "desc" },
-          take: 10
+          take: 5
         }
       }
     })
@@ -313,8 +323,18 @@ export async function getStaffDetails(staffId: string, shopId: string) {
   }
 }
 
-export async function updateStaffStatus(staffId: string, shopId: string, isActive: boolean) {
+const updateStaffStatusSchema = z.object({
+  staffId: z.string().min(1, "El ID del personal es obligatorio"),
+  shopId: z.string().min(1, "El ID de la tienda es obligatorio"),
+  isActive: z.boolean()
+})
+
+export async function updateStaffStatus(staffIdRaw: string, shopIdRaw: string, isActiveRaw: boolean) {
   try {
+    const validated = updateStaffStatusSchema.safeParse({ staffId: staffIdRaw, shopId: shopIdRaw, isActive: isActiveRaw })
+    if (!validated.success) throw new Error("Parámetros inválidos")
+
+    const { staffId, shopId, isActive } = validated.data
     const { role: currentUserRole, isSuperAdmin } = await requireAdmin(shopId)
     
     // Get target user role
@@ -345,24 +365,54 @@ export async function updateStaffStatus(staffId: string, shopId: string, isActiv
   }
 }
 
-export async function updateStaffProfile(staffId: string, shopId: string, data: { name?: string; phone?: string; serviceIds: string[] }) {
+const updateStaffProfileSchema = z.object({
+  staffId: z.string().min(1, "El ID del personal es obligatorio"),
+  shopId: z.string().min(1, "El ID de la tienda es obligatorio"),
+  data: z.object({
+    name: z.string().optional(),
+    phone: z.string().optional(),
+    serviceIds: z.array(z.string())
+  })
+})
+
+export async function updateStaffProfile(staffIdRaw: string, shopIdRaw: string, dataRaw: { name?: string; phone?: string; serviceIds: string[] }) {
   try {
-    const { user: currentUser, isSuperAdmin } = await requireAdmin(shopId)
+    const validated = updateStaffProfileSchema.safeParse({ staffId: staffIdRaw, shopId: shopIdRaw, data: dataRaw })
+    if (!validated.success) throw new Error("Parámetros inválidos")
+
+    const { staffId, shopId, data } = validated.data
+    const { user: currentUser, role: currentUserRole, isSuperAdmin } = await requireAdmin(shopId)
+
+    const targetMember = await prisma.shopMember.findUnique({
+      where: { userId_shopId: { userId: staffId, shopId } }
+    })
+    if (!targetMember) throw new Error("Miembro no encontrado en esta tienda")
 
     const isSelf = currentUser.id === staffId
+    const isOwnerEditingStaff = currentUserRole === "OWNER" && targetMember.role === "STAFF"
     
-    if (!isSuperAdmin && !isSelf) {
-      throw new Error("Solo puedes editar tu propio perfil")
+    if (!isSuperAdmin && !isSelf && !isOwnerEditingStaff) {
+      throw new Error("No tienes permisos para editar este perfil")
     }
 
-    if (isSuperAdmin && !isSelf) {
-      const targetMember = await prisma.shopMember.findUnique({
-        where: { userId_shopId: { userId: staffId, shopId } }
+    if (isSuperAdmin && !isSelf && targetMember.role === "SUPER_ADMIN") {
+      throw new Error("No puedes editar a otro Super Admin")
+    }
+
+    // Cross-tenant validation for services
+    if (data.serviceIds.length > 0) {
+      const validServices = await prisma.service.findMany({
+        where: { id: { in: data.serviceIds }, shopId }
       })
-      if (targetMember?.role === "SUPER_ADMIN") {
-        throw new Error("No puedes editar a otro Super Admin")
+      if (validServices.length !== data.serviceIds.length) {
+        throw new Error("Servicios inválidos o no pertenecen a esta tienda")
       }
     }
+
+    const currentShopServices = await prisma.service.findMany({
+      where: { shopId, staffMembers: { some: { id: staffId } } },
+      select: { id: true }
+    })
 
     await prisma.user.update({
       where: { id: staffId },
@@ -370,7 +420,8 @@ export async function updateStaffProfile(staffId: string, shopId: string, data: 
         name: data.name,
         phone: data.phone,
         staffServices: {
-          set: data.serviceIds.map(id => ({ id }))
+          disconnect: currentShopServices.map(s => ({ id: s.id })),
+          connect: data.serviceIds.map(id => ({ id }))
         }
       }
     })
@@ -381,3 +432,4 @@ export async function updateStaffProfile(staffId: string, shopId: string, data: 
     return { success: false, error: error.message }
   }
 }
+

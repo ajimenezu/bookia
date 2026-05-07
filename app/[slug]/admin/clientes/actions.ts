@@ -13,7 +13,16 @@ const userSchema = z.object({
   role: z.enum(["SUPER_ADMIN", "OWNER", "STAFF", "CUSTOMER"]),
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres").optional().or(z.literal("")),
   shopId: z.string().min(1, "El ID de la tienda es obligatorio"),
-  serviceIds: z.string().optional(), // JSON array string for FormData transport
+  serviceIds: z.string()
+    .optional()
+    .transform((val) => {
+      try {
+        return val ? JSON.parse(val) : []
+      } catch {
+        return []
+      }
+    })
+    .pipe(z.array(z.string())),
 })
 
 export async function createUser(formData: FormData) {
@@ -32,14 +41,11 @@ export async function createUser(formData: FormData) {
     return { success: false, error: validated.error.errors[0].message }
   }
 
-  const { name, email, phone, role, password: rawPassword, shopId: targetShopId, serviceIds: serviceIdsRaw } = validated.data
+  const { name, email, phone, role, password: rawPassword, shopId: targetShopId, serviceIds } = validated.data
   const password = rawPassword || "Bookia123!"
 
-  // Parse serviceIds from JSON string (FormData transport)
-  const serviceIds: string[] = serviceIdsRaw ? JSON.parse(serviceIdsRaw) : []
-
   // Validate: STAFF/OWNER must have service selection (even if empty = "Ninguno")
-  if ((role === "STAFF" || role === "OWNER") && serviceIdsRaw === undefined) {
+  if ((role === "STAFF" || role === "OWNER") && formData.get("serviceIds") === null) {
     return { success: false, error: "Debes seleccionar al menos un servicio (o 'Ninguno')" }
   }
 
@@ -112,11 +118,27 @@ export async function createUser(formData: FormData) {
 
     // 4. Assign services for STAFF/OWNER roles
     if (role === "STAFF" || role === "OWNER") {
+      // Cross-tenant validation
+      if (serviceIds && serviceIds.length > 0) {
+        const validServices = await prisma.service.findMany({
+          where: { id: { in: serviceIds }, shopId: targetShopId }
+        })
+        if (validServices.length !== serviceIds.length) {
+          throw new Error("Servicios inválidos o no pertenecen a esta tienda")
+        }
+      }
+
+      const currentShopServices = await prisma.service.findMany({
+        where: { shopId: targetShopId, staffMembers: { some: { id: user.id } } },
+        select: { id: true }
+      })
+
       await prisma.user.update({
         where: { id: user.id },
         data: {
           staffServices: {
-            set: serviceIds.map(id => ({ id }))
+            disconnect: currentShopServices.map(s => ({ id: s.id })),
+            connect: serviceIds.map(id => ({ id }))
           }
         }
       })
@@ -130,8 +152,14 @@ export async function createUser(formData: FormData) {
   }
 }
 
-export async function getShopServices(shopId: string) {
+const getShopServicesSchema = z.string().min(1, "El ID de la tienda es obligatorio")
+
+export async function getShopServices(shopIdRaw: string) {
   try {
+    const validated = getShopServicesSchema.safeParse(shopIdRaw)
+    if (!validated.success) throw new Error("Parámetros inválidos")
+    const shopId = validated.data
+
     await requireAdmin(shopId)
     const services = await prisma.service.findMany({
       where: { shopId },
@@ -144,8 +172,17 @@ export async function getShopServices(shopId: string) {
   }
 }
 
-export async function getClientDetails(clientId: string, shopId: string) {
+const getClientDetailsSchema = z.object({
+  clientId: z.string().min(1, "El ID del cliente es obligatorio"),
+  shopId: z.string().min(1, "El ID de la tienda es obligatorio")
+})
+
+export async function getClientDetails(clientIdRaw: string, shopIdRaw: string) {
   try {
+    const validated = getClientDetailsSchema.safeParse({ clientId: clientIdRaw, shopId: shopIdRaw })
+    if (!validated.success) throw new Error("Parámetros inválidos")
+    const { clientId, shopId } = validated.data
+
     const { isSuperAdmin } = await requireAdmin(shopId)
 
     const client = await prisma.user.findUnique({

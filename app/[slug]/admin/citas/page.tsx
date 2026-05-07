@@ -25,7 +25,7 @@ export default async function CitasPage({ params, searchParams }: PageProps) {
   const shop = await getShopBySlug(slug)
   if (!shop) notFound()
 
-  const { businessType, shopId } = await requireAdmin(shop.id)
+  const { businessType, shopId } = await requireAdmin(shop.id, `/${slug}/login`)
   const t = getTerminology(businessType)
 
   const sp = await searchParams
@@ -42,7 +42,10 @@ export default async function CitasPage({ params, searchParams }: PageProps) {
           select: {
             id: true,
             name: true,
-            staffServices: { select: { id: true } }
+            staffServices: { 
+              where: { shopId },
+              select: { id: true } 
+            }
           }
         }
       }
@@ -54,7 +57,7 @@ export default async function CitasPage({ params, searchParams }: PageProps) {
   ])
 
   const mappedServices = services.map(s => ({ id: s.id, name: s.name, price: s.price, duration: s.duration, description: s.description }))
-  const mappedStaff = staffData.map(m => ({ id: m.user.id, name: m.user.name || "Sin nombre", serviceIds: m.user.staffServices.map(s => s.id) }))
+  const mappedStaff = staffData.map(m => ({ id: m.user.id, name: m.user.name || "Sin nombre", serviceIds: m.user.staffServices?.map(s => s.id) || [] }))
   const mappedClients = clientsData.map(m => ({ id: m.user.id, name: m.user.name || "Sin nombre", phone: m.user.phone }))
 
   // Fetch all schedules to evaluate natively on the client

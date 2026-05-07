@@ -43,7 +43,10 @@ export default async function ShopSchedulePage({ params, searchParams }: PagePro
             select: {
               id: true,
               name: true,
-              staffServices: { select: { id: true } }
+              staffServices: { 
+                where: { shop: { slug } },
+                select: { id: true } 
+              }
             }
           }
         }
@@ -66,7 +69,7 @@ export default async function ShopSchedulePage({ params, searchParams }: PagePro
   const staff = shop.memberships.map(m => ({
     id: m.user.id,
     name: m.user.name || "Sin nombre",
-    serviceIds: m.user.staffServices.map(s => s.id),
+    serviceIds: m.user.staffServices?.map(s => s.id) || [],
   }))
 
   // Fetch all schedules for this shop to evaluate dynamically on the client

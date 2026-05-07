@@ -253,8 +253,8 @@ export function BookingFlow({
   // Filter staff to only those offering at least one of the selected services
   // Staff with serviceIds.length === 0 ("Ninguno") are excluded
   const filteredStaff = selectedServices.length > 0
-    ? staff.filter(s => s.serviceIds.length > 0 && selectedServices.some(sid => s.serviceIds.includes(sid)))
-    : staff.filter(s => s.serviceIds.length > 0)
+    ? staff.filter(s => (s.serviceIds || []).length > 0 && selectedServices.some(sid => (s.serviceIds || []).includes(sid)))
+    : staff.filter(s => (s.serviceIds || []).length > 0)
 
   const allStaff = filteredStaff.length > 1
     ? [{ id: "auto", name: "Asignación automática", serviceIds: [] }, ...filteredStaff]

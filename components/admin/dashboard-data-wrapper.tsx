@@ -23,7 +23,18 @@ export async function DashboardDataWrapper({
     prisma.service.findMany({ where: { shopId }, orderBy: { price: "asc" } }),
     prisma.shopMember.findMany({
       where: { shopId, role: { in: ["STAFF", "OWNER"] } },
-      include: { user: { select: { id: true, name: true } } }
+      include: { 
+        user: { 
+          select: { 
+            id: true, 
+            name: true,
+            staffServices: {
+              where: { shopId },
+              select: { id: true }
+            }
+          } 
+        } 
+      }
     }),
     prisma.shopMember.findMany({
       where: { shopId, role: "CUSTOMER" },
@@ -41,6 +52,7 @@ export async function DashboardDataWrapper({
   const mappedStaff = staffData.map(m => ({
     id: m.userId,
     name: m.user.name || "Sin nombre",
+    serviceIds: m.user.staffServices?.map(s => s.id) || [],
   }))
 
   const mappedClients = clientsData.map(m => ({

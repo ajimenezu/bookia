@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, UserPlus, Loader2, Wrench } from "lucide-react"
+import { Plus, UserPlus, Loader2, Wrench, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -42,6 +42,11 @@ export function CreateUserModal({ currentUserRole, isSuperAdmin, shopId, mode = 
   const [services, setServices] = useState<ServiceOption[]>([])
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([])
   const [noneSelected, setNoneSelected] = useState(false)
+  const [serviceSearch, setServiceSearch] = useState("")
+
+  const filteredServices = services.filter(s =>
+    s.name.toLowerCase().includes(serviceSearch.toLowerCase())
+  )
 
   useEffect(() => {
     if (open && mode === 'STAFF' && shopId) {
@@ -88,7 +93,7 @@ export function CreateUserModal({ currentUserRole, isSuperAdmin, shopId, mode = 
   const resetForm = () => {
     setName(""); setEmail(""); setPhone("")
     setTouched({ name: false, email: false, phone: false })
-    setSelectedServiceIds([]); setNoneSelected(false)
+    setSelectedServiceIds([]); setNoneSelected(false); setServiceSearch("")
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -211,37 +216,61 @@ export function CreateUserModal({ currentUserRole, isSuperAdmin, shopId, mode = 
                 {services.length === 0 ? (
                   <p className="text-xs text-muted-foreground italic">Cargando servicios...</p>
                 ) : (
-                  <div className="flex flex-wrap gap-2" role="group" aria-label="Selección de servicios">
-                    {services.map(s => (
+                  <div className="space-y-2">
+                    {/* Search */}
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                      <Input
+                        id="service-search"
+                        type="text"
+                        placeholder="Buscar servicio..."
+                        value={serviceSearch}
+                        onChange={e => setServiceSearch(e.target.value)}
+                        className="h-8 pl-8 text-xs bg-background/50"
+                        aria-label="Buscar servicio por nombre"
+                      />
+                    </div>
+                    {/* Pills — 4-row scrollable */}
+                    <div
+                      className="flex flex-wrap gap-2 overflow-y-auto max-h-40 pr-1 scrollbar-thin scrollbar-thumb-primary/10 scrollbar-track-transparent"
+                      role="group"
+                      aria-label="Selección de servicios"
+                    >
+                      {/* Ninguno always first */}
                       <button
-                        key={s.id}
                         type="button"
-                        aria-pressed={selectedServiceIds.includes(s.id)}
-                        onClick={() => toggleService(s.id)}
+                        aria-pressed={noneSelected}
+                        onClick={handleNone}
                         className={cn(
-                          "inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-primary",
-                          selectedServiceIds.includes(s.id)
-                            ? "border-primary bg-primary/10 text-primary shadow-sm"
-                            : "border-border bg-muted/30 text-muted-foreground hover:border-primary/40 hover:bg-muted/60"
+                          "inline-flex items-center rounded-xl border px-3 py-1.5 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-primary",
+                          noneSelected
+                            ? "border-muted-foreground bg-muted text-muted-foreground"
+                            : "border-border bg-muted/30 text-muted-foreground hover:border-muted-foreground/40"
                         )}
                       >
-                        {s.name}
-                        <span className="text-[10px] opacity-60 font-normal">{s.duration}min</span>
+                        Ninguno
                       </button>
-                    ))}
-                    <button
-                      type="button"
-                      aria-pressed={noneSelected}
-                      onClick={handleNone}
-                      className={cn(
-                        "inline-flex items-center rounded-xl border px-3 py-1.5 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-primary",
-                        noneSelected
-                          ? "border-muted-foreground bg-muted text-muted-foreground"
-                          : "border-border bg-muted/30 text-muted-foreground hover:border-muted-foreground/40"
+                      {filteredServices.map(s => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          aria-pressed={selectedServiceIds.includes(s.id)}
+                          onClick={() => toggleService(s.id)}
+                          className={cn(
+                            "inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-primary",
+                            selectedServiceIds.includes(s.id)
+                              ? "border-primary bg-primary/10 text-primary shadow-sm"
+                              : "border-border bg-muted/30 text-muted-foreground hover:border-primary/40 hover:bg-muted/60"
+                          )}
+                        >
+                          {s.name}
+                          <span className="text-[10px] opacity-60 font-normal">{s.duration}min</span>
+                        </button>
+                      ))}
+                      {filteredServices.length === 0 && serviceSearch && (
+                        <p className="text-xs text-muted-foreground italic py-1">Sin resultados para "{serviceSearch}"</p>
                       )}
-                    >
-                      Ninguno
-                    </button>
+                    </div>
                   </div>
                 )}
                 {!serviceSelectionValid && (
@@ -252,7 +281,7 @@ export function CreateUserModal({ currentUserRole, isSuperAdmin, shopId, mode = 
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+            <Button type="button" variant="outline" onClick={() => { resetForm(); setOpen(false) }}>Cancelar</Button>
             <Button type="submit" disabled={loading || !isFormValid}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Crear Usuario

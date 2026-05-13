@@ -1,28 +1,34 @@
 import { ClientesInfiniteList } from "./clientes-infinite-list"
 import prisma from "@/lib/prisma"
-import { Role } from "@prisma/client"
-import { getTerminology } from "@/lib/dictionaries"
+import { Role, Prisma } from "@prisma/client"
+import { getTerminology, BusinessType } from "@/lib/dictionaries"
 import { calculateAppointmentPrice } from "@/lib/appointments"
-
-
-// formatLastVisit removed (using lib/date-utils)
-
+import { formatLastVisit } from "@/lib/date-utils"
 
 interface ClientesContentProps {
   shopId: string
   isSuperAdmin: boolean
-  businessType: string
+  businessType: BusinessType
   q?: string
 }
 
 export async function ClientesContent({ shopId, isSuperAdmin, businessType, q }: ClientesContentProps) {
-  const t = getTerminology(businessType as any)
+  const t = getTerminology(businessType)
 
-  const whereClause = {
-    AND: [
-      { memberships: { some: { shopId, role: Role.CUSTOMER } } },
-      q ? { OR: [{ name: { contains: q, mode: 'insensitive' } }, { email: { contains: q, mode: 'insensitive' } }, { phone: { contains: q, mode: 'insensitive' } }] } : {}
-    ]
+  const whereClause: Prisma.UserWhereInput = {
+    memberships: { 
+      some: { 
+        shopId, 
+        role: Role.CUSTOMER 
+      } 
+    },
+    ...(q ? { 
+      OR: [
+        { name: { contains: q, mode: 'insensitive' as Prisma.QueryMode } }, 
+        { email: { contains: q, mode: 'insensitive' as Prisma.QueryMode } }, 
+        { phone: { contains: q, mode: 'insensitive' as Prisma.QueryMode } }
+      ] 
+    } : {})
   }
 
   const [dbUsers, totalCount] = await Promise.all([
@@ -43,7 +49,7 @@ export async function ClientesContent({ shopId, isSuperAdmin, businessType, q }:
       take: 10
     }),
     prisma.user.count({ where: whereClause })
-  ]) as [any[], number]
+  ])
 
 
   const clients = dbUsers.map((user: any) => {
@@ -64,10 +70,6 @@ export async function ClientesContent({ shopId, isSuperAdmin, businessType, q }:
       lastVisit: lastVisitDate ? formatLastVisit(new Date(lastVisitDate)) : "Sin visitas"
     }
   })
-  // Sort is removed from initial load to match server action behavior (sorting by name)
-  // or I can keep it if I want, but for pagination it's better to sort in the query.
-  // I updated the query to sort by name.
-
 
   return (
     <>
@@ -84,7 +86,6 @@ export async function ClientesContent({ shopId, isSuperAdmin, businessType, q }:
         q={q}
         terminology={t}
       />
-
     </>
   )
 }

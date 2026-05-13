@@ -30,6 +30,8 @@ export default async function ConfiguracionPage({ params }: PageProps) {
         description: true,
         whatsappPhone: true,
         address: true,
+        latitude: true,
+        longitude: true,
       }
     }),
     prisma.shopSchedule.findMany({

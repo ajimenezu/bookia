@@ -16,6 +16,8 @@ model Shop {
   updatedAt      DateTime        @updatedAt
   businessType   BusinessType    @default(BARBERIA)
   address        String?
+  latitude       Float?
+  longitude      Float?
   description    String?
   facebookUrl    String?
   instagramUrl   String?

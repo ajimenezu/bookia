@@ -10,6 +10,8 @@ const shopConfigSchema = z.object({
   description: z.string().optional().nullable(),
   whatsappPhone: z.string().optional().nullable(),
   address: z.string().optional().nullable(),
+  latitude: z.number().optional().nullable(),
+  longitude: z.number().optional().nullable(),
 })
 
 const scheduleSchema = z.object({

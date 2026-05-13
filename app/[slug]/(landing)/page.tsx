@@ -64,6 +64,8 @@ export default async function ShopPublicPage({ params }: PageProps) {
     tagline: (shop as any).tagline as string | null,
     description: (shop as any).description as string | null,
     address: (shop as any).address as string | null,
+    latitude: (shop as any).latitude as number | null,
+    longitude: (shop as any).longitude as number | null,
     whatsappPhone: (shop as any).whatsappPhone as string | null,
     instagramUrl: (shop as any).instagramUrl as string | null,
     facebookUrl: (shop as any).facebookUrl as string | null,

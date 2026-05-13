@@ -97,3 +97,38 @@ export async function requireAdmin(targetShopId?: string, loginRedirect?: string
     isSuperAdmin: false
   }
 }
+
+/**
+ * Shared redirection logic based on user roles and context
+ */
+export function getRedirectPath(dbUser: any, currentShopSlug?: string): string {
+  if (dbUser.needsPasswordChange) {
+    return "/admin/perfil/cambiar-password"
+  }
+
+  const memberships = dbUser.memberships || []
+  
+  // 1. Super Admin always goes to an admin view
+  const isSuperAdmin = memberships.some((m: any) => m.role === "SUPER_ADMIN")
+  if (isSuperAdmin) {
+    return currentShopSlug ? `/${currentShopSlug}/admin` : "/admin"
+  }
+
+  // 2. If in shop context, check if they are STAFF/OWNER of THIS shop
+  if (currentShopSlug) {
+    const shopMembership = memberships.find((m: any) => m.shop?.slug === currentShopSlug)
+    if (shopMembership && (shopMembership.role === "OWNER" || shopMembership.role === "STAFF")) {
+      return `/${currentShopSlug}/admin`
+    }
+    return `/${currentShopSlug}`
+  }
+
+  // 3. General login (outside shop context) - find first admin role
+  const firstAdminMembership = memberships.find((m: any) => m.role === "OWNER" || m.role === "STAFF")
+  if (firstAdminMembership?.shop) {
+    return `/${firstAdminMembership.shop.slug}/admin`
+  }
+
+  return "/"
+}
+

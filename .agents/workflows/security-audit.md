@@ -5,7 +5,8 @@ description: Critical security and data isolation audit checklist for PRs and ne
 # Security & Isolation Audit
 
 ## 1. Multi-Tenant Isolation (BLOCKING)
-- **FAIL IF**: DB query on `Service`, `Appointment`, `ShopMember`, `StaffSchedule`, `ShopSchedule`, or `StaffTimeOff` lacks `where: { shopId }`.
+- **FAIL IF**: DB query on `Service`, `Appointment`, `ShopMember`, `StaffSchedule`, `ShopSchedule`, `StaffTimeOff`, `Client`, or `ServiceAssignment` lacks `where: { shopId }`.
+- **FAIL IF**: Administrative server actions perform updates/deletes without verifying the `shopId` of the target record against the current user's `shopId`.
 - **FAIL IF**: `shopId` is sourced from untrusted client input instead of session (`auth()`) or verified slug.
 
 ## 2. SQL & Query Injection

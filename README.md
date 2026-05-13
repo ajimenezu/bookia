@@ -76,7 +76,13 @@ npx prisma generate
 npm run dev
 ```
 
-## 📜 Standards & Notes
-- **Server Components:** Prioritized for data fetching to reduce client-side bundle size.
-- **Type Safety:** Full end-to-end type safety using Prisma-generated types.
-- **I18n:** Current UI copy is in Spanish (targeted at the LATAM/Spain market).
+## 📜 Standards & Design Patterns
+
+To maintain a premium, multi-tenant experience, all developers MUST adhere to the following:
+
+- **Timezone Management:** The canonical timezone for this project is `America/Costa_Rica`. Use `@/lib/date-utils` (`toCRDate`, `combineDateAndTime`) for all date transformations.
+- **Security & Validation:** EVERY Server Action MUST use a **Zod schema** for input validation and the `requireAdmin(shopId)` guard for administrative routes to ensure multi-tenant isolation.
+- **UI Stability:** To prevent layout shifts (jumping UI) during `Suspense` resolution, keep high-level layout elements (headers, "Create" buttons) at the **Page level (Server Component)** rather than inside suspended Client Components.
+- **Data Integrity:** Historical pricing and service names are preserved via JSON snapshots in the `serviceDetails` field. Always use `@/lib/appointments.ts` utilities to resolve prices and names.
+- **Aesthetics:** Strictly follow the **Glassmorphism** design system (`.glass-card`) using `oklch` tokens. Never use hardcoded hex/rgb colors.
+- **I18n & Terminology:** Use `@/lib/dictionaries` (`getTerminology`) to fetch dynamic labels (e.g., "Staff" vs "Barbero") based on the shop's `businessType`.

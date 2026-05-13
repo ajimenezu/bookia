@@ -13,6 +13,7 @@ description: Comprehensive checklist for developing new features, including UI g
 ## 1. Routing & Guards
 - **Location**: `app/[slug]/admin/[feature]/page.tsx`
 - **Guard**: MUST use `await requireAdmin(shop.id)`
+- **Redirection**: Use centralized logic in `lib/auth-utils.ts` for consistent redirection patterns.
 - **Data Fetch**: Derive `shopId` from `params.slug` via DB.
 
 ## 2. Design System & Tokens
@@ -24,6 +25,8 @@ description: Comprehensive checklist for developing new features, including UI g
 ## 3. Layout & Skeletons
 - **Responsiveness**: Mobile-first (`flex-col` -> `md:flex-row`).
 - **Loading State**: `loading.tsx` MUST perfectly match `page.tsx` skeleton layout.
+- **UI Stability**: To prevent layout "jumping" when `Suspense` resolves, keep high-level layout elements (like headers and "Create" buttons) at the page level (Server Component) rather than inside the suspended Client Component.
+- **Pagination**: Implement server-side pagination (10 per page) with infinite scroll for administrative lists (e.g., Client list).
 - **IDs**: Use unique UUID/CUID for elements to ensure multi-tenant auto-fill isolation.
 
 *(Refs: `admin_guidelines.md`, `ui_standards.md`)*

@@ -4,7 +4,7 @@ import { Search, Loader2 } from "lucide-react"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { useTransition, useEffect, useState } from "react"
 
-export function ClientSearch({ placeholder }: { placeholder: string }) {
+export function ClientSearch({ placeholder, className }: { placeholder: string; className?: string }) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -34,7 +34,7 @@ export function ClientSearch({ placeholder }: { placeholder: string }) {
   }, [term, pathname, router, searchParams])
 
   return (
-    <div className="relative">
+    <div className={`relative ${className || ""}`}>
       {isPending ? (
         <Loader2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-primary" />
       ) : (
@@ -45,7 +45,7 @@ export function ClientSearch({ placeholder }: { placeholder: string }) {
         value={term}
         onChange={(e) => setTerm(e.target.value)}
         placeholder={placeholder}
-        className="h-9 w-full rounded-lg border border-border bg-input pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring sm:w-64"
+        className="h-9 w-full rounded-lg border border-border bg-input pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring sm:w-96"
       />
     </div>
   )

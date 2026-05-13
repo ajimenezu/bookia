@@ -107,6 +107,7 @@ export async function StaffContent({ shopId, role, currentUserId, isSuperAdmin, 
             currentUserRole={role as Role}
             currentUserId={currentUserId}
             isSuperAdmin={isSuperAdmin}
+            businessType={businessType}
             schedules={user.staffSchedules}
             timeOff={user.staffTimeOff}
             terminology={t}

@@ -28,6 +28,7 @@ interface StaffMemberCardProps {
   timeOff: any[]
   stats: StaffStats
   terminology: any
+  businessType: string
 }
 
 export function StaffMemberCard({
@@ -41,6 +42,7 @@ export function StaffMemberCard({
   timeOff,
   stats,
   terminology: t,
+  businessType
 }: StaffMemberCardProps) {
   const [isSheetOpen, setIsSheetOpen] = useState(false)
 
@@ -119,6 +121,7 @@ export function StaffMemberCard({
         currentUserRole={currentUserRole}
         currentUserId={currentUserId}
         isSuperAdmin={isSuperAdmin}
+        businessType={businessType}
       />
     </>
   )

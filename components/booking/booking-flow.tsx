@@ -57,6 +57,9 @@ interface BookingFlowProps {
     isOpen: boolean
   }[]
   initialServiceId?: string
+  rescheduleId?: string
+  initialSelectedServices?: string[]
+  initialSelectedStaffId?: string | null
 }
 
 type Step = "service" | "barber" | "date" | "time" | "info"
@@ -75,16 +78,19 @@ export function BookingFlow({
   isAdmin = false,
   clients = [],
   shopSchedules = [],
-  initialServiceId
+  initialServiceId,
+  rescheduleId,
+  initialSelectedServices,
+  initialSelectedStaffId
 }: BookingFlowProps) {
   const t = getTerminology(businessType)
   const BusinessIcon = getBusinessIcon(businessType)
   const [selectedServices, setSelectedServices] = useState<string[]>(
-    initialServiceId ? [initialServiceId] : []
+    initialSelectedServices || (initialServiceId ? [initialServiceId] : [])
   )
-  const [isServiceStepDone, setIsServiceStepDone] = useState(false)
+  const [isServiceStepDone, setIsServiceStepDone] = useState(!!initialSelectedServices)
   const [selectedBarber, setSelectedBarber] = useState<string | null>(
-    staff.length === 1 ? staff[0].id : null
+    initialSelectedStaffId || (staff.length === 1 ? staff[0].id : null)
   )
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
@@ -222,6 +228,7 @@ export function BookingFlow({
         time: selectedTime,
         customerName: clientName,
         customerPhone: clientPhone,
+        rescheduleId,
         ...(isAdmin ? { isAdminBooking: true, customerId: clientType === 'registered' ? selectedClientId || undefined : undefined } : {})
       })
 
@@ -298,7 +305,13 @@ export function BookingFlow({
         {/* Shop name */}
         <div className={cn("text-center space-y-2 px-4 sm:px-6", isAdmin ? "mb-6" : "mb-10")}>
           <h1 className="text-3xl font-black text-foreground tracking-tight">{shopName}</h1>
-          <p className="text-muted-foreground font-medium text-sm">Agenda tu {t.appointment.toLowerCase()} en segundos</p>
+          {rescheduleId ? (
+            <p className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary font-black text-[10px] uppercase tracking-widest">
+              Reagendando cita
+            </p>
+          ) : (
+            <p className="text-muted-foreground font-medium text-sm">Agenda tu {t.appointment.toLowerCase()} en segundos</p>
+          )}
         </div>
 
         {/* Progress */}

@@ -34,6 +34,7 @@ import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { StatusBadge } from "./status-badge"
 import { formatTime, toCRDate, formatTime24h, convertTo12h } from "@/lib/date-utils"
+import { calculateAppointmentPrice, getAppointmentServicesName } from "@/lib/appointments"
 import { updateAppointmentStatus, updateBooking, fetchAvailableSlots, addAppointmentNote, deleteAppointmentNote } from "@/app/schedule/actions"
 import { AppointmentStatus } from "@prisma/client"
 import { toast } from "sonner"
@@ -267,14 +268,7 @@ export function AppointmentDetailSheet({
   const totalPrice = useMemo(() => {
     if (!appointment) return 0
     if (mode === "preview") {
-      const bookedServices = appointment.serviceDetails as BookedService[] | null;
-      if (bookedServices?.length) {
-        return bookedServices.reduce((acc, s) => acc + s.price, 0);
-      }
-      if (appointment.services?.length > 0) {
-        return appointment.services.reduce((acc: number, s: any) => acc + (s.price || 0), 0)
-      }
-      return appointment.priceAtBooking || appointment.service?.price || 0
+      return calculateAppointmentPrice(appointment)
     } else {
       return services
         .filter(s => selectedServices.includes(s.id))

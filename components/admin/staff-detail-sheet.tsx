@@ -36,6 +36,8 @@ import { Role } from "@prisma/client"
 import { StatusBadge } from "./appointments/status-badge"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { getTerminology } from "@/lib/dictionaries"
+import { getAppointmentServicesName } from "@/lib/appointments"
 
 interface StaffDetailSheetProps {
   staffId: string | null
@@ -45,6 +47,7 @@ interface StaffDetailSheetProps {
   currentUserRole: Role
   currentUserId: string
   isSuperAdmin: boolean
+  businessType: string
 }
 
 export function StaffDetailSheet({ 
@@ -54,7 +57,8 @@ export function StaffDetailSheet({
   onOpenChange,
   currentUserRole,
   currentUserId,
-  isSuperAdmin
+  isSuperAdmin,
+  businessType
 }: StaffDetailSheetProps) {
   const [loading, setLoading] = useState(false)
   const [staffData, setStaffData] = useState<any>(null)
@@ -62,6 +66,7 @@ export function StaffDetailSheet({
   const [editForm, setEditForm] = useState({ name: "", phone: "" })
   const [editServiceIds, setEditServiceIds] = useState<string[]>([])
   const [editNone, setEditNone] = useState(false)
+  const t = getTerminology(businessType as any)
   const [shopServices, setShopServices] = useState<{id: string; name: string; duration: number}[]>([])
   const [isSavePending, startSaveTransition] = useTransition()
   const [isStatusPending, startStatusTransition] = useTransition()
@@ -340,7 +345,7 @@ export function StaffDetailSheet({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-primary">
                       <History className="h-5 w-5" />
-                      <h3 className="font-black uppercase tracking-widest text-xs">Citas Recientes</h3>
+                      <h3 className="font-black uppercase tracking-widest text-xs">{t.appointmentHistory}</h3>
                     </div>
                     <Badge variant="outline" className="rounded-lg font-black text-[10px]">
                       ÚLTIMAS 5
@@ -380,7 +385,7 @@ export function StaffDetailSheet({
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-bold truncate">
-                                  {app.services?.map((s: any) => s.name).join(", ") || app.service?.name}
+                                  {getAppointmentServicesName(app)}
                                 </p>
                               </div>
                             </div>

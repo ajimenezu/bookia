@@ -10,7 +10,8 @@ import {
 } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Check, Calendar, Clock, AlertCircle, Info, User } from "lucide-react"
+import { Check, Calendar, Clock, AlertCircle, Info, User, XCircle } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { processRequest, markAppointmentAsNotified, markAllAppointmentsAsNotified } from "@/app/[slug]/admin/staff/actions"
 import { toast } from "sonner"
 import { Separator } from "@/components/ui/separator"
@@ -26,13 +27,15 @@ interface ApprovalSidePanelProps {
     timeOff: any[]
     appointments: any[]
   }
+  onRequestsChange?: (requests: any) => void
 }
 
 export function ApprovalSidePanel({
   shopId,
   open,
   onOpenChange,
-  initialRequests
+  initialRequests,
+  onRequestsChange
 }: ApprovalSidePanelProps) {
   const [isPending, startTransition] = useTransition()
   const [requests, setRequests] = useState(initialRequests)
@@ -49,9 +52,13 @@ export function ApprovalSidePanel({
         
         // Optimistic UI update
         if (type === "SCHEDULE") {
-          setRequests(prev => ({ ...prev, schedules: prev.schedules.filter(s => s.id !== id) }))
+          const updated = { ...requests, schedules: requests.schedules.filter(s => s.id !== id) }
+          setRequests(updated)
+          onRequestsChange?.(updated)
         } else {
-          setRequests(prev => ({ ...prev, timeOff: prev.timeOff.filter(s => s.id !== id) }))
+          const updated = { ...requests, timeOff: requests.timeOff.filter(s => s.id !== id) }
+          setRequests(updated)
+          onRequestsChange?.(updated)
         }
       } catch (e: any) {
         toast.error(e.message)
@@ -64,7 +71,9 @@ export function ApprovalSidePanel({
       try {
         await markAppointmentAsNotified(id, shopId)
         toast.success("Cita reconocida")
-        setRequests(prev => ({ ...prev, appointments: prev.appointments.filter(a => a.id !== id) }))
+        const updated = { ...requests, appointments: requests.appointments.filter(a => a.id !== id) }
+        setRequests(updated)
+        onRequestsChange?.(updated)
       } catch (e: any) {
         toast.error(e.message)
       }
@@ -75,7 +84,9 @@ export function ApprovalSidePanel({
     const previousAppointments = requests.appointments
     
     // Optimistic UI update: Clear immediately
-    setRequests(prev => ({ ...prev, appointments: [] }))
+    const updated = { ...requests, appointments: [] }
+    setRequests(updated)
+    onRequestsChange?.(updated)
     
     startTransition(async () => {
       try {
@@ -236,7 +247,7 @@ export function ApprovalSidePanel({
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                      <Calendar className="h-3 w-3" /> Nuevas Citas
+                      <Calendar className="h-3 w-3" /> Notificaciones de Citas
                     </h3>
                     <Button 
                       variant="ghost" 
@@ -251,11 +262,23 @@ export function ApprovalSidePanel({
                   {requests.appointments.map((app) => (
                     <div key={app.id} className="rounded-xl border border-border bg-card p-4 space-y-3 shadow-sm">
                       <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
-                          <User className="h-4 w-4" />
+                        <div className={cn(
+                          "h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold",
+                          app.status === "CANCELLED" 
+                            ? "bg-destructive/10 text-destructive" 
+                            : "bg-primary/10 text-primary"
+                        )}>
+                          {app.status === "CANCELLED" ? <XCircle className="h-4 w-4" /> : <User className="h-4 w-4" />}
                         </div>
                         <div>
-                          <p className="text-sm font-bold">{app.customerName}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-bold">{app.customerName}</p>
+                            {app.status === "CANCELLED" && (
+                              <span className="text-[9px] font-black bg-destructive text-destructive-foreground px-1.5 py-0.5 rounded-full uppercase tracking-tighter">
+                                Cancelada
+                              </span>
+                            )}
+                          </div>
                           <p className="text-[10px] text-muted-foreground font-medium uppercase">
                             {app.services?.map((s: any) => s.name).join(", ") || "Servicio"}
                           </p>
@@ -275,11 +298,16 @@ export function ApprovalSidePanel({
                       </div>
                       <Button 
                         size="sm" 
-                        className="w-full h-8 bg-primary hover:bg-primary/90 text-primary-foreground" 
+                        className={cn(
+                          "w-full h-8",
+                          app.status === "CANCELLED"
+                            ? "bg-muted hover:bg-muted/80 text-muted-foreground"
+                            : "bg-primary hover:bg-primary/90 text-primary-foreground"
+                        )}
                         onClick={() => handleAcknowledgeAppointment(app.id)}
                         disabled={isPending}
                       >
-                        Entendido
+                        {app.status === "CANCELLED" ? "Entendido (Cita Cancelada)" : "Entendido (Nueva Cita)"}
                       </Button>
                     </div>
                   ))}

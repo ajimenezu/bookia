@@ -89,7 +89,7 @@ export async function updateService(formData: FormData) {
     }
 
     await prisma.service.update({
-      where: { id: serviceId },
+      where: { id: serviceId, shopId: targetShopId }, // SECURITY: Defense-in-depth scoping
       data: {
         name: validated.data.name,
         description: validated.data.description,
@@ -113,7 +113,7 @@ export async function deleteService(serviceId: string) {
     await validateServiceOwnership(serviceId, membershipShopId, isSuperAdmin)
 
     await prisma.service.delete({
-      where: { id: serviceId },
+      where: { id: serviceId, shopId: membershipShopId }, // SECURITY: Defense-in-depth scoping
     })
 
     revalidatePath("/", "layout")

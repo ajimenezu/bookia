@@ -29,6 +29,8 @@ import { formatTime } from "@/lib/date-utils"
 import { AppointmentStatus } from "@prisma/client"
 import { StatusBadge } from "./appointments/status-badge"
 import { cn } from "@/lib/utils"
+import { getTerminology } from "@/lib/dictionaries"
+import { calculateAppointmentPrice, getAppointmentServicesName } from "@/lib/appointments"
 
 interface ClientDetailSheetProps {
   clientId: string | null
@@ -47,6 +49,7 @@ export function ClientDetailSheet({
 }: ClientDetailSheetProps) {
   const [loading, setLoading] = useState(false)
   const [clientData, setClientData] = useState<any>(null)
+  const t = getTerminology(businessType as any)
 
   useEffect(() => {
     async function loadData() {
@@ -70,8 +73,7 @@ export function ClientDetailSheet({
   const completedVisits = appointments.filter((a: any) => a.status === AppointmentStatus.COMPLETED).length
   const totalSpent = appointments.reduce((acc: number, app: any) => {
     if (app.status !== AppointmentStatus.COMPLETED) return acc
-    const price = app.priceAtBooking ?? app.services?.reduce((sAcc: number, s: any) => sAcc + (s.price || 0), 0) ?? app.service?.price ?? 0
-    return acc + price
+    return acc + calculateAppointmentPrice(app)
   }, 0)
 
   return (
@@ -93,7 +95,7 @@ export function ClientDetailSheet({
           </div>
         </SheetHeader>
 
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 min-h-0">
           {loading ? (
             <div className="flex flex-col items-center justify-center h-64 gap-3 text-muted-foreground">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -116,7 +118,7 @@ export function ClientDetailSheet({
                   <p className="font-bold text-foreground">{clientData.phone || "No registrado"}</p>
                 </div>
               </section>
-
+ 
               {/* Stats Cards */}
               <section className="grid grid-cols-2 gap-4">
                 <div className="glass-card rounded-2xl p-5 border-primary/10 bg-primary/5">
@@ -140,18 +142,18 @@ export function ClientDetailSheet({
                   </p>
                 </div>
               </section>
-
+ 
               <Separator className="opacity-50" />
-
+ 
               {/* Appointment History */}
               <section className="space-y-6 pb-10">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-primary">
                     <History className="h-5 w-5" />
-                    <h3 className="font-black uppercase tracking-widest text-xs">Historial de Citas</h3>
+                    <h3 className="font-black uppercase tracking-widest text-xs">{t.appointmentHistory}</h3>
                   </div>
                   <Badge variant="outline" className="rounded-lg font-black text-[10px]">
-                    {appointments.length} TOTAL
+                    ÚLTIMAS 5
                   </Badge>
                 </div>
 
@@ -188,9 +190,7 @@ export function ClientDetailSheet({
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-bold truncate">
-                                {(app.serviceDetails as any[])?.length 
-                                  ? (app.serviceDetails as any[]).map(s => s.name).join(", ") 
-                                  : (app.services?.map((s: any) => s.name).join(", ") || app.service?.name)}
+                                {getAppointmentServicesName(app)}
                               </p>
                             </div>
                           </div>

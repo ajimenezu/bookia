@@ -18,6 +18,7 @@ const bookingSchema = z.object({
   customerPhone: z.string().optional(),
   customerId: z.string().optional(),
   isAdminBooking: z.boolean().optional(),
+  rescheduleId: z.string().optional(),
 })
 
 const querySchema = z.object({
@@ -46,7 +47,7 @@ export async function createBooking(rawData: unknown) {
     return { success: false, error: "Datos de reserva inválidos" }
   }
 
-  const { shopId, serviceIds, staffId, date, time, customerName, customerPhone, customerId: inputCustomerId, isAdminBooking } = validated.data
+  const { shopId, serviceIds, staffId, date, time, customerName, customerPhone, customerId: inputCustomerId, isAdminBooking, rescheduleId } = validated.data
 
   // 1. Get services to calculate end time and capture total price
   // SECURITY FIX: Mandatory shopId filter to prevent cross-tenant service selection
@@ -166,26 +167,50 @@ export async function createBooking(rawData: unknown) {
     }
   }
 
-  // 5. Create the appointment
-  const appointment = await prisma.appointment.create({
-    data: {
-      shopId,
-      serviceId: serviceIds[0], // Keep for backward compatibility
-      services: {
-        connect: serviceIds.map(id => ({ id }))
-      },
-      staffId: resolvedStaffId,
-      customerId,
-      startTime,
-      endTime,
-      priceAtBooking: totalPrice,
-      customerName,
-      customerPhone,
-      status: "CONFIRMED",
-      isNotified: isAdminBooking ?? false,
-      serviceDetails: services.map(s => ({ id: s.id, name: s.name, price: s.price }))
+  // 5. Create or Update the appointment
+  const appointmentData = {
+    shopId,
+    serviceId: serviceIds[0], // Keep for backward compatibility
+    services: {
+      set: [], // Clear existing relations if updating
+      connect: serviceIds.map(id => ({ id }))
+    },
+    staffId: resolvedStaffId,
+    customerId,
+    startTime,
+    endTime,
+    priceAtBooking: totalPrice,
+    customerName,
+    customerPhone,
+    status: "CONFIRMED" as AppointmentStatus,
+    isNotified: false, // Always reset to false on creation or reschedule
+    serviceDetails: services.map(s => ({ id: s.id, name: s.name, price: s.price }))
+  }
+
+  let appointment
+  if (rescheduleId) {
+    // Security: Verify ownership before updating
+    const existing = await prisma.appointment.findUnique({
+      where: { id: rescheduleId, shopId }
+    })
+    
+    if (!existing) throw new Error("Cita original no encontrada")
+    if (!isAdminBooking && existing.customerId !== customerId) {
+      throw new Error("No tienes permiso para reagendar esta cita")
     }
-  })
+
+    appointment = await prisma.appointment.update({
+      where: { id: rescheduleId },
+      data: appointmentData
+    })
+  } else {
+    appointment = await prisma.appointment.create({
+      data: {
+        ...appointmentData,
+        isNotified: isAdminBooking ?? false, // For brand new admin bookings, mark as notified
+      }
+    })
+  }
 
   return { success: true, appointmentId: appointment.id }
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useState, useTransition, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -21,11 +21,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { setOptions, importLibrary } from "@googlemaps/js-api-loader"
+import type { Shop, ShopSchedule } from "@prisma/client"
 
 interface ShopConfigContentProps {
   shopId: string
-  initialShop: any
-  initialSchedules: any[]
+  initialShop: Partial<Shop>
+  initialSchedules: ShopSchedule[]
 }
 
 const DAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
@@ -38,6 +40,8 @@ export function ShopConfigContent({ shopId, initialShop, initialSchedules }: Sho
     description: initialShop.description || "",
     whatsappPhone: initialShop.whatsappPhone || "",
     address: initialShop.address || "",
+    latitude: initialShop.latitude ?? null,
+    longitude: initialShop.longitude ?? null,
   }
   const [shopInfo, setShopInfo] = useState(defaultShopInfo)
 
@@ -49,6 +53,170 @@ export function ShopConfigContent({ shopId, initialShop, initialSchedules }: Sho
 
   const isInfoDirty = JSON.stringify(shopInfo) !== JSON.stringify(defaultShopInfo)
   const isScheduleDirty = JSON.stringify(schedules) !== JSON.stringify(defaultSchedules)
+
+  // Google Maps State & Refs
+  const mapRef = useRef<HTMLDivElement>(null)
+  const markerRef = useRef<google.maps.Marker | null>(null)
+  const mapInstanceRef = useRef<google.maps.Map | null>(null)
+  const initializedRef = useRef(false)
+  const [mapLoading, setMapLoading] = useState(true)
+
+  useEffect(() => {
+    if (initializedRef.current) return
+
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+    if (!apiKey) {
+      setMapLoading(false)
+      return
+    }
+
+    initializedRef.current = true
+
+    setOptions({
+      key: apiKey,
+      v: "weekly",
+      language: "es",
+      libraries: ["places"],
+    })
+
+    Promise.all([
+      importLibrary("maps"),
+      importLibrary("marker"),
+      importLibrary("places"),
+      importLibrary("geocoding")
+    ]).then(([mapsLib, markerLib, placesLib, geocodingLib]) => {
+      setMapLoading(false)
+      if (!mapRef.current) return
+
+      const initialLat = initialShop.latitude ?? null
+      const initialLng = initialShop.longitude ?? null
+      const hasInitialCoords = initialLat !== null && initialLng !== null
+
+      const defaultCenter = hasInitialCoords
+        ? { lat: initialLat, lng: initialLng }
+        : { lat: 9.9281, lng: -84.0907 } // Default: San José, Costa Rica
+
+      const map = new mapsLib.Map(mapRef.current, {
+        center: defaultCenter,
+        zoom: hasInitialCoords ? 16 : 12,
+        mapTypeControl: false,
+        streetViewControl: false,
+      })
+      mapInstanceRef.current = map as any
+
+      const marker = new markerLib.Marker({
+        map: map as any,
+        position: hasInitialCoords ? defaultCenter : undefined,
+        draggable: true,
+        animation: google.maps.Animation.DROP,
+      })
+      markerRef.current = marker as any
+
+      const geocoder = new geocodingLib.Geocoder()
+
+      // Update coordinates and reverse geocode on drag end
+      marker.addListener("dragend", () => {
+        const pos = marker.getPosition()
+        if (pos) {
+          const lat = pos.lat()
+          const lng = pos.lng()
+          setShopInfo(prev => ({
+            ...prev,
+            latitude: lat,
+            longitude: lng,
+          }))
+
+          geocoder.geocode({ location: { lat, lng } })
+            .then((response) => {
+              if (response.results && response.results[0]) {
+                const formattedAddress = response.results[0].formatted_address
+                setShopInfo(prev => ({
+                  ...prev,
+                  address: formattedAddress
+                }))
+              }
+            })
+            .catch((err) => console.error("Geocoder failed due to:", err))
+        }
+      })
+
+      // Update coordinates and reverse geocode on map click
+      map.addListener("click", (e: any) => {
+        if (e.latLng) {
+          const lat = e.latLng.lat()
+          const lng = e.latLng.lng()
+          marker.setPosition(e.latLng)
+          setShopInfo(prev => ({
+            ...prev,
+            latitude: lat,
+            longitude: lng,
+          }))
+
+          geocoder.geocode({ location: { lat, lng } })
+            .then((response) => {
+              if (response.results && response.results[0]) {
+                const formattedAddress = response.results[0].formatted_address
+                setShopInfo(prev => ({
+                  ...prev,
+                  address: formattedAddress
+                }))
+              }
+            })
+            .catch((err) => console.error("Geocoder failed due to:", err))
+        }
+      })
+
+      // Fallback to browser geolocation if store location is completely unset
+      if (!hasInitialCoords && navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const userPos = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            }
+            map.setCenter(userPos)
+            map.setZoom(14)
+            // Leave marker empty/unset until explicitly chosen
+          },
+          () => {
+            // Geolocation blocked or unavailable, retain standard view
+          }
+        )
+      }
+
+      // Initialize Places Autocomplete natively via DOM node
+      const inputElement = document.getElementById("address") as HTMLInputElement
+      if (inputElement) {
+        const autocomplete = new placesLib.Autocomplete(inputElement, {
+          componentRestrictions: { country: "cr" },
+          fields: ["formatted_address", "geometry", "name"],
+        })
+
+        autocomplete.addListener("place_changed", () => {
+          const place = autocomplete.getPlace()
+          if (!place.geometry || !place.geometry.location) return
+
+          const newLat = place.geometry.location.lat()
+          const newLng = place.geometry.location.lng()
+          const newAddress = place.formatted_address || place.name || ""
+
+          map.setCenter(place.geometry.location)
+          map.setZoom(16)
+          marker.setPosition(place.geometry.location)
+
+          setShopInfo(prev => ({
+            ...prev,
+            address: newAddress,
+            latitude: newLat,
+            longitude: newLng,
+          }))
+        })
+      }
+    }).catch((err: unknown) => {
+      console.error("Error loading Google Maps API:", err)
+      setMapLoading(false)
+    })
+  }, [initialShop.latitude, initialShop.longitude])
 
   const handleSaveInfo = async () => {
     startTransition(async () => {
@@ -97,42 +265,62 @@ export function ShopConfigContent({ shopId, initialShop, initialSchedules }: Sho
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="name">Nombre del Negocio</Label>
-                <div className="relative">
-                  <Store className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <div className="relative flex items-center">
+                  <Store className="absolute left-3 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
                   <Input 
                     id="name" 
                     value={shopInfo.name} 
                     onChange={e => setShopInfo(prev => ({ ...prev, name: e.target.value }))}
-                    className="pl-10"
+                    style={{ paddingLeft: "2.5rem" }}
                   />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">WhatsApp de Reservas</Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <div className="relative flex items-center">
+                  <Phone className="absolute left-3 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
                   <Input 
                     id="phone" 
                     value={shopInfo.whatsappPhone} 
                     onChange={e => setShopInfo(prev => ({ ...prev, whatsappPhone: e.target.value }))}
-                    className="pl-10"
+                    style={{ paddingLeft: "2.5rem" }}
                     placeholder="+506 8888 8888"
                   />
                 </div>
               </div>
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="address">Dirección Física</Label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  id="address" 
-                  value={shopInfo.address} 
-                  onChange={e => setShopInfo(prev => ({ ...prev, address: e.target.value }))}
-                  className="pl-10"
-                  placeholder="San José, Costa Rica..."
-                />
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="address">Dirección Física e Integración de Mapa</Label>
+                <div className="relative flex items-center">
+                  <MapPin className="absolute left-3 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
+                  <Input 
+                    id="address" 
+                    value={shopInfo.address} 
+                    onChange={e => setShopInfo(prev => ({ ...prev, address: e.target.value }))}
+                    style={{ paddingLeft: "2.5rem" }}
+                    placeholder="Escribe una ubicación en Costa Rica para autocompletar..."
+                    onKeyDown={e => {
+                      // Prevent form submission if user presses enter to choose a place suggestion
+                      if (e.key === "Enter") e.preventDefault()
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Busca y selecciona una ubicación sugerida, o haz clic directamente sobre el mapa para fijar tu marcador.
+                </p>
+              </div>
+
+              {/* Interactive Google Map container */}
+              <div className="relative w-full h-[280px] rounded-xl overflow-hidden border border-border/50 shadow-inner bg-muted/10">
+                {mapLoading && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-background/80 backdrop-blur-sm z-10 animate-in fade-in duration-200">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    <span className="text-xs text-muted-foreground font-medium">Cargando mapa interactivo...</span>
+                  </div>
+                )}
+                <div ref={mapRef} className="w-full h-full" />
               </div>
             </div>
 

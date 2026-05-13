@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { signInToShop } from "@/app/auth/actions"
+import { GoogleSignInButton } from "@/components/auth/google-signin-button"
 import Link from "next/link"
 import { BusinessType, getTerminology } from "@/lib/dictionaries"
 import { getBusinessIcon } from "@/lib/business-icons"
@@ -26,6 +27,7 @@ export function ShopLoginForm({ slug, shopName, businessType, logoUrl }: ShopLog
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
+
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -142,6 +144,22 @@ export function ShopLoginForm({ slug, shopName, businessType, logoUrl }: ShopLog
                   </span>
                 )}
               </Button>
+
+              <div className="relative w-full">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">O continuar con</span>
+                </div>
+              </div>
+
+              <GoogleSignInButton 
+                redirectTo={`/${slug}`}
+                onError={setError} 
+                disabled={loading} 
+              />
+
               <p className="text-center text-sm text-muted-foreground">
                 ¿No tienes una cuenta?{" "}
                 <Link href={`/${slug}/register`} className="text-primary hover:underline font-semibold">

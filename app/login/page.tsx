@@ -7,13 +7,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { signIn } from "@/app/auth/actions"
-
+import { GoogleSignInButton } from "@/components/auth/google-signin-button"
 import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -110,6 +111,20 @@ export default function LoginPage() {
                   </span>
                 )}
               </Button>
+
+              <div className="relative w-full">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">O continuar con</span>
+                </div>
+              </div>
+
+              <GoogleSignInButton 
+                onError={setError} 
+                disabled={loading} 
+              />
             </CardFooter>
           </Card>
         </form>

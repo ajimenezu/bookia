@@ -16,6 +16,7 @@ import { getTerminology } from "@/lib/dictionaries"
 import type { BusinessType } from "@/lib/dictionaries"
 import { ShopNavbar } from "./shop-navbar"
 import { getBusinessIcon } from "@/lib/business-icons"
+import { shortenAddress } from "@/lib/utils"
 
 interface ServiceData {
   id: string
@@ -39,10 +40,13 @@ interface ShopData {
   tagline: string | null
   description: string | null
   address: string | null
+  latitude: number | null
+  longitude: number | null
   whatsappPhone: string | null
   instagramUrl: string | null
   facebookUrl: string | null
 }
+
 
 interface ShopLandingProps {
   shop: ShopData
@@ -142,12 +146,21 @@ export function ShopLanding({ shop, services, staff, user, role }: ShopLandingPr
             {/* Social & Address pills */}
             <div className="flex flex-wrap justify-center gap-5 pt-6 animate-in fade-in duration-1000 delay-700">
               {shop.address && (
-                <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-foreground transition-colors group">
+                <a
+                  href={
+                    shop.latitude && shop.longitude
+                      ? `https://www.google.com/maps/dir/?api=1&destination=${shop.latitude},${shop.longitude}`
+                      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shop.address)}`
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-primary transition-all group"
+                >
                   <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-muted/50 group-hover:bg-primary/10 transition-colors">
                     <MapPin className="h-4 w-4 text-primary" />
                   </div>
-                  {shop.address}
-                </div>
+                  {shortenAddress(shop.address)}
+                </a>
               )}
               <div className="flex gap-4">
                 {shop.instagramUrl && (
@@ -318,10 +331,19 @@ export function ShopLanding({ shop, services, staff, user, role }: ShopLandingPr
                   </a>
                 )}
                 {shop.address && (
-                  <div className="flex items-center gap-2 text-sm font-bold text-foreground">
+                  <a
+                    href={
+                      shop.latitude && shop.longitude
+                        ? `https://www.google.com/maps/dir/?api=1&destination=${shop.latitude},${shop.longitude}`
+                        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shop.address)}`
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-sm font-bold text-foreground hover:text-primary transition-colors"
+                  >
                     <MapPin className="h-4 w-4 text-primary" />
-                    {shop.address}
-                  </div>
+                    {shortenAddress(shop.address)}
+                  </a>
                 )}
               </div>
             </div>

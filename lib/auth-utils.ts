@@ -3,6 +3,23 @@ import prisma from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { cache } from "react"
 import { getShopById } from "@/lib/shop"
+import { Role } from "@prisma/client"
+
+export interface MembershipWithShop {
+  role: Role
+  shopId: string
+  shop?: {
+    slug: string
+    id: string
+  } | null
+}
+
+export interface UserWithMemberships {
+  id: string
+  email: string
+  needsPasswordChange?: boolean
+  memberships?: MembershipWithShop[]
+}
 
 /**
  * Gets the current authenticated user and their metadata.
@@ -97,3 +114,47 @@ export async function requireAdmin(targetShopId?: string, loginRedirect?: string
     isSuperAdmin: false
   }
 }
+
+/**
+ * Shared redirection logic based on user roles and context
+ */
+export async function getRedirectPath(
+  dbUser: UserWithMemberships, 
+  currentShopSlug?: string
+): Promise<string> {
+  if (dbUser.needsPasswordChange) {
+    return "/admin/perfil/cambiar-password"
+  }
+
+  const memberships = dbUser.memberships || []
+  
+  // 1. Super Admin always goes to an admin view
+  const isSuperAdmin = memberships.some(m => m.role === "SUPER_ADMIN")
+  if (isSuperAdmin) {
+    if (currentShopSlug) return `/${currentShopSlug}/admin`
+    
+    // If no shop context, try to find the first shop for this super admin or just any shop
+    const firstShop = await prisma.shop.findFirst({
+      select: { slug: true }
+    })
+    return firstShop ? `/${firstShop.slug}/admin` : "/admin"
+  }
+
+  // 2. If in shop context, check if they are STAFF/OWNER of THIS shop
+  if (currentShopSlug) {
+    const shopMembership = memberships.find(m => m.shop?.slug === currentShopSlug)
+    if (shopMembership && (shopMembership.role === "OWNER" || shopMembership.role === "STAFF")) {
+      return `/${currentShopSlug}/admin`
+    }
+    return `/${currentShopSlug}`
+  }
+
+  // 3. General login (outside shop context) - find first admin role
+  const firstAdminMembership = memberships.find(m => m.role === "OWNER" || m.role === "STAFF")
+  if (firstAdminMembership?.shop) {
+    return `/${firstAdminMembership.shop.slug}/admin`
+  }
+
+  return "/"
+}
+

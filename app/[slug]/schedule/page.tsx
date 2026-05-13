@@ -21,8 +21,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ShopSchedulePage({ params, searchParams }: PageProps) {
   const { slug } = await params
-  const { service } = await searchParams
+  const { service, rescheduleId } = await searchParams
   const initialServiceId = typeof service === 'string' ? service : undefined
+  const initialRescheduleId = typeof rescheduleId === 'string' ? rescheduleId : undefined
   const account = await getAdminUser()
 
   const user = account?.user ? {
@@ -56,6 +57,21 @@ export default async function ShopSchedulePage({ params, searchParams }: PagePro
 
   if (!shop) {
     notFound()
+  }
+
+  // Pre-fetch rescheduling data if needed
+  let rescheduleData = null
+  if (initialRescheduleId) {
+    const existingApp = await prisma.appointment.findUnique({
+      where: { id: initialRescheduleId, shopId: shop.id },
+      include: { services: { select: { id: true } } }
+    })
+    if (existingApp) {
+      rescheduleData = {
+        serviceIds: existingApp.services.map(s => s.id),
+        staffId: existingApp.staffId || null
+      }
+    }
   }
 
   const services = shop.services.map(s => ({
@@ -111,6 +127,9 @@ export default async function ShopSchedulePage({ params, searchParams }: PagePro
               hideHeader={true}
               shopSchedules={mappedSchedules}
               initialServiceId={initialServiceId}
+              rescheduleId={initialRescheduleId}
+              initialSelectedServices={rescheduleData?.serviceIds}
+              initialSelectedStaffId={rescheduleData?.staffId}
             />
           </div>
         </div>

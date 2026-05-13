@@ -27,10 +27,19 @@ const timeOffSchema = z.object({
 })
 
 export async function updateStaffSchedule(
-  shopId: string,
-  staffId: string,
-  schedules: z.infer<typeof scheduleSchema>[]
+  shopIdRaw: string,
+  staffIdRaw: string,
+  schedulesRaw: z.infer<typeof scheduleSchema>[]
 ) {
+  const validated = z.object({
+    shopId: z.string().min(1),
+    staffId: z.string().min(1),
+    schedules: z.array(scheduleSchema)
+  }).safeParse({ shopId: shopIdRaw, staffId: staffIdRaw, schedules: schedulesRaw })
+
+  if (!validated.success) throw new Error("Parámetros inválidos")
+  const { shopId, staffId, schedules } = validated.data
+
   const { user, role, isSuperAdmin } = await requireAdmin(shopId)
 
   // Permission check: Staff can only edit their own. Owner/Admin can edit anyone.
@@ -104,10 +113,19 @@ export async function updateStaffSchedule(
 }
 
 export async function addStaffTimeOff(
-  shopId: string,
-  staffId: string,
-  data: z.infer<typeof timeOffSchema>
+  shopIdRaw: string,
+  staffIdRaw: string,
+  dataRaw: z.infer<typeof timeOffSchema>
 ) {
+  const validated = z.object({
+    shopId: z.string().min(1),
+    staffId: z.string().min(1),
+    data: timeOffSchema
+  }).safeParse({ shopId: shopIdRaw, staffId: staffIdRaw, data: dataRaw })
+
+  if (!validated.success) throw new Error("Parámetros inválidos")
+  const { shopId, staffId, data } = validated.data
+
   const { user, role, isSuperAdmin } = await requireAdmin(shopId)
 
   const isSelf = user.id === staffId
@@ -140,7 +158,11 @@ export async function addStaffTimeOff(
 /**
  * Get all pending requests and new notifications for the shop member
  */
-export async function getPendingRequests(shopId: string) {
+export async function getPendingRequests(shopIdRaw: string) {
+  const validated = z.string().min(1).safeParse(shopIdRaw)
+  if (!validated.success) throw new Error("ID de tienda inválido")
+  const shopId = validated.data
+
   const { user, role, isSuperAdmin } = await requireAdmin(shopId)
   
   const isPrivileged = role === "OWNER" || isSuperAdmin
@@ -170,7 +192,6 @@ export async function getPendingRequests(shopId: string) {
         shopId, 
         ...(isPrivileged ? {} : { staffId: user.id }),
         isNotified: false,
-        status: { not: "CANCELLED" },
         startTime: { gte: thirtyDaysAgo }
       },
       include: { services: true }
@@ -184,7 +205,15 @@ export async function getPendingRequests(shopId: string) {
   }
 }
 
-export async function markAppointmentAsNotified(appointmentId: string, shopId: string) {
+export async function markAppointmentAsNotified(appointmentIdRaw: string, shopIdRaw: string) {
+  const validated = z.object({
+    appointmentId: z.string().min(1),
+    shopId: z.string().min(1)
+  }).safeParse({ appointmentId: appointmentIdRaw, shopId: shopIdRaw })
+
+  if (!validated.success) throw new Error("Parámetros inválidos")
+  const { appointmentId, shopId } = validated.data
+
   const { user } = await requireAdmin(shopId)
 
   // Security: Ensure user is either an admin/owner or the assigned staff
@@ -205,7 +234,11 @@ export async function markAppointmentAsNotified(appointmentId: string, shopId: s
   return { success: true }
 }
 
-export async function markAllAppointmentsAsNotified(shopId: string) {
+export async function markAllAppointmentsAsNotified(shopIdRaw: string) {
+  const validated = z.string().min(1).safeParse(shopIdRaw)
+  if (!validated.success) throw new Error("ID de tienda inválido")
+  const shopId = validated.data
+
   const { user, role, isSuperAdmin } = await requireAdmin(shopId)
   const isPrivileged = role === "OWNER" || isSuperAdmin
 
@@ -217,7 +250,6 @@ export async function markAllAppointmentsAsNotified(shopId: string) {
       shopId,
       ...(isPrivileged ? {} : { staffId: user.id }),
       isNotified: false,
-      status: { not: "CANCELLED" },
       startTime: { gte: thirtyDaysAgo }
     },
     data: { isNotified: true }
@@ -231,11 +263,21 @@ export async function markAllAppointmentsAsNotified(shopId: string) {
  * Owner-only: Approve or Reject a request
  */
 export async function processRequest(
-  shopId: string,
-  type: "SCHEDULE" | "TIMEOFF",
-  id: string,
-  action: "APPROVE" | "REJECT"
+  shopIdRaw: string,
+  typeRaw: "SCHEDULE" | "TIMEOFF",
+  idRaw: string,
+  actionRaw: "APPROVE" | "REJECT"
 ) {
+  const validated = z.object({
+    shopId: z.string().min(1),
+    type: z.enum(["SCHEDULE", "TIMEOFF"]),
+    id: z.string().min(1),
+    action: z.enum(["APPROVE", "REJECT"])
+  }).safeParse({ shopId: shopIdRaw, type: typeRaw, id: idRaw, action: actionRaw })
+
+  if (!validated.success) throw new Error("Parámetros inválidos")
+  const { shopId, type, id, action } = validated.data
+
   const { role, isSuperAdmin } = await requireAdmin(shopId)
   
   if (role !== "OWNER" && !isSuperAdmin) {
@@ -246,12 +288,12 @@ export async function processRequest(
 
   if (type === "SCHEDULE") {
     await prisma.staffSchedule.update({
-      where: { id },
+      where: { id, shopId }, // SECURITY: Strict shopId scoping
       data: { status: targetStatus }
     })
   } else {
     await prisma.staffTimeOff.update({
-      where: { id },
+      where: { id, shopId }, // SECURITY: Strict shopId scoping
       data: { status: targetStatus }
     })
   }
@@ -260,7 +302,14 @@ export async function processRequest(
   return { success: true }
 }
 
-export async function getStaffScheduleContext(shopId: string, staffId: string) {
+export async function getStaffScheduleContext(shopIdRaw: string, staffIdRaw: string) {
+  const validated = z.object({
+    shopId: z.string().min(1),
+    staffId: z.string().min(1)
+  }).safeParse({ shopId: shopIdRaw, staffId: staffIdRaw })
+
+  if (!validated.success) throw new Error("Parámetros inválidos")
+  const { shopId, staffId } = validated.data
   const [schedules, timeOff] = await Promise.all([
     prisma.staffSchedule.findMany({
       where: { shopId, staffId },

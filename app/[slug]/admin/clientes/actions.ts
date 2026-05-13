@@ -5,6 +5,11 @@ import prisma from "@/lib/prisma"
 import { requireAdmin } from "@/lib/auth-utils"
 import { createServiceRoleClient } from "@/lib/supabase/service-role"
 import { z } from "zod"
+import { Role } from "@prisma/client"
+import { formatLastVisit } from "@/lib/date-utils"
+import { calculateAppointmentPrice } from "@/lib/appointments"
+
+
 
 const userSchema = z.object({
   name: z.string().optional(),
@@ -195,7 +200,8 @@ export async function getClientDetails(clientIdRaw: string, shopIdRaw: string) {
             services: { select: { name: true, price: true } },
             service: { select: { name: true, price: true } } // Legacy support
           },
-          orderBy: { startTime: "desc" }
+          orderBy: { startTime: "desc" },
+          take: 5
         }
       }
     })
@@ -208,4 +214,70 @@ export async function getClientDetails(clientIdRaw: string, shopIdRaw: string) {
     return { success: false, error: "Error al obtener detalles del cliente" }
   }
 }
+
+const getClientsSchema = z.object({
+  shopId: z.string().min(1, "El ID de la tienda es obligatorio"),
+  page: z.number().int().min(1).default(1),
+  limit: z.number().int().min(1).max(100).default(10),
+  q: z.string().optional()
+})
+
+export async function getClients(shopIdRaw: string, pageRaw: number = 1, limitRaw: number = 10, qRaw?: string) {
+  try {
+    const validated = getClientsSchema.safeParse({ shopId: shopIdRaw, page: pageRaw, limit: limitRaw, q: qRaw })
+    if (!validated.success) throw new Error("Parámetros inválidos")
+    
+    const { shopId, page, limit, q } = validated.data
+    await requireAdmin(shopId)
+    
+    const skip = (page - 1) * limit
+
+    const dbUsers = await prisma.user.findMany({
+      where: {
+        AND: [
+          { memberships: { some: { shopId, role: Role.CUSTOMER } } },
+          q ? { OR: [{ name: { contains: q, mode: 'insensitive' } }, { email: { contains: q, mode: 'insensitive' } }, { phone: { contains: q, mode: 'insensitive' } }] } : {}
+        ]
+      },
+      include: {
+        appointmentsAsCustomer: {
+          where: { shopId, status: "COMPLETED" },
+          include: { 
+            services: { select: { price: true } },
+            service: { select: { price: true } }
+          },
+          orderBy: { startTime: "desc" }
+        }
+      },
+      orderBy: { name: "asc" },
+      skip,
+      take: limit
+    }) as any[]
+
+    const clients = dbUsers.map((user: any) => {
+      const completedApps = user.appointmentsAsCustomer || []
+      const totalVisits = completedApps.length
+      
+      const totalSpentValue = completedApps.reduce((acc: number, app: any) => {
+        return acc + calculateAppointmentPrice(app)
+      }, 0)
+
+      const lastVisitDate = completedApps[0]?.startTime
+      return {
+        id: user.id,
+        name: user.name || user.email || "Cliente sin nombre",
+        phone: user.phone || "Sin teléfono",
+        visits: totalVisits,
+        totalSpent: new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'CRC' }).format(totalSpentValue).replace("CRC", "₡"),
+        lastVisit: lastVisitDate ? formatLastVisit(new Date(lastVisitDate)) : "Sin visitas"
+      }
+    })
+
+    return { success: true, data: clients }
+  } catch (error: any) {
+    console.error("GET_CLIENTS_ERROR:", error)
+    return { success: false, error: error.message || "Error al obtener clientes" }
+  }
+}
+
 

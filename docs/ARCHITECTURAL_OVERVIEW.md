@@ -32,7 +32,15 @@ Upon successful login (`signIn` action), the application fetches the user's role
 
 The schema supports multitenancy through the `Shop` model. 
 - **Shop Association:** All `User` (via `ShopMember`), `Service`, and `Appointment` records are tied to a `ShopId`. This allows the platform to support multiple independent businesses on the same infrastructure.
-- **Multi-Service Appointments:** The `Appointment` model has an implicit many-to-many relationship with `Service` (`services Service[]`), allowing clients to book multiple services natively in a single continuous appointment duration. The combined price is statically snapshotted via the `priceAtBooking` property to preserve historical financial records.
+- **Multi-Service Appointments:** The `Appointment` model supports multiple services via an implicit many-to-many relationship. To preserve historical records against future price or service name changes, we implement a **Historical Snapshotting** pattern:
+  - `priceAtBooking`: The total price at the moment of creation.
+  - `serviceDetails`: A JSON array storing the exact names and prices of services at that moment.
+  - **Resolution Rule**: Use `@/lib/appointments.ts` to resolve data in order: Snapshot > Relation > Legacy Fallback.
+
+## 🎨 Dynamic Experience & Terminology
+The platform is designed to be business-agnostic:
+- **Terminology System**: The `getTerminology(businessType)` utility translates generic concepts (e.g., "Service", "Staff") into business-specific terms (e.g., "Corte", "Barbero") used throughout the UI.
+- **Shop Theming**: Shop-specific `oklch` tokens are injected into the `:root` via `BusinessThemeProvider` to ensure all components, including Radix Portals, reflect the brand's identity.
 
 ## 🛠 Shared Libraries
 - **@prisma/client:** Type-safe database access.
@@ -40,6 +48,6 @@ The schema supports multitenancy through the `Shop` model.
 - **lucide-react:** Consistent iconography across the dashboard.
 
 ## 💾 Development Standards
-- **Component Reusability:** Complex UI elements must be abstracted into reusable units in `components/`. For example, Admin views utilize abstracted modules like `<CalendarView />`, `<ListView />`, and `<StatusBadge />` instead of monolithic page files.
-- **Centralized Logic:** Core business calculations, such as schedule availability and complex date-ranges, are centralized within `lib/` utilities (e.g., `lib/availability.ts`, `lib/appointments.ts`). This prevents duplication and tightly couples data-gathering capabilities.
-- **Server Components:** Utilized by default for secure, fast read-only rendering, delegating mutations exclusively to Server Actions.
+- **Validation**: Strict **Zod schemas** required for all Server Actions to prevent malformed data and cross-tenant leakage.
+- **Timezone**: All application logic operates on `America/Costa_Rica` time. Absolute dates are stored as UTC but always interpreted via `@/lib/date-utils`.
+- **Layout Stability**: Stable UI elements (headers, actions) must remain in Server Components to avoid "jumping" layouts during `Suspense` data resolution.

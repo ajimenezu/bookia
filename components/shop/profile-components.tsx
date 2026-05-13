@@ -174,8 +174,8 @@ export function AppointmentCard({ appointment, currentShopSlug }: { appointment:
           </div>
         )}
         
-        <div className="flex items-center gap-2 ml-auto">
-          {isUpcoming ? (
+        <div className="flex flex-wrap items-center gap-2 ml-auto">
+          {isUpcoming && (
             <button
               onClick={handleCancel}
               disabled={isCancelling}
@@ -184,15 +184,15 @@ export function AppointmentCard({ appointment, currentShopSlug }: { appointment:
               <Trash2 className="h-4 w-4" />
               Cancelar
             </button>
-          ) : (
-            <Link
-              href={`/${appointment.shopSlug}/schedule?service=${appointment.serviceName}`}
-              className="flex h-10 items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 text-xs font-black uppercase tracking-widest text-primary transition-all hover:bg-primary hover:text-primary-foreground"
-            >
-              <RotateCcw className="h-4 w-4" />
-              Reagendar
-            </Link>
           )}
+          
+          <Link
+            href={`/${appointment.shopSlug}/schedule?rescheduleId=${appointment.id}`}
+            className="flex h-10 items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 text-xs font-black uppercase tracking-widest text-primary transition-all hover:bg-primary hover:text-primary-foreground"
+          >
+            <RotateCcw className="h-4 w-4" />
+            Reagendar
+          </Link>
           
           <Link
             href={`/${appointment.shopSlug}`}

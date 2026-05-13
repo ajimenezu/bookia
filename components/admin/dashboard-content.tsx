@@ -5,6 +5,7 @@ import { CalendarDays, BadgeCent, TrendingUp, Clock, User } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { getTerminology } from "@/lib/dictionaries"
 import { formatTime } from "@/lib/date-utils"
+import { calculateAppointmentPrice, getAppointmentServicesName } from "@/lib/appointments"
 import { AppointmentActions } from "@/components/admin/appointments/appointment-actions"
 import { AppointmentDetailSheet } from "@/components/admin/appointments/appointment-detail-sheet"
 import { AddAppointmentSheet } from "@/components/admin/appointments/add-appointment-sheet"
@@ -51,13 +52,7 @@ export function DashboardContent({
 
   const activeAppointments = appointments.filter(a => a.status !== "CANCELLED" && a.status !== "NO_SHOW")
   const todayIncome = activeAppointments.reduce((acc, curr) => {
-    if (curr.priceAtBooking != null) {
-      return acc + curr.priceAtBooking
-    }
-    if (curr.services && curr.services.length > 0) {
-      return acc + curr.services.reduce((sAcc: number, s: any) => sAcc + (s.price || 0), 0)
-    }
-    return acc + (curr.service?.price || 0)
+    return acc + calculateAppointmentPrice(curr)
   }, 0)
 
   const stats = [
@@ -149,11 +144,7 @@ export function DashboardContent({
                   <div className="min-w-0">
                     <p className="font-bold text-card-foreground leading-tight truncate">{apt.customer?.name || apt.customerName || t.client}</p>
                     <p className="text-xs text-muted-foreground mt-1 truncate">
-                      {(apt.serviceDetails as any[])?.length 
-                        ? (apt.serviceDetails as any[]).map(s => s.name).join(", ") 
-                        : (apt.services && apt.services.length > 0 
-                          ? apt.services.map((s: any) => s.name).join(", ") 
-                          : (apt.service?.name || "Sin servicio"))}
+                      {getAppointmentServicesName(apt)}
                     </p>
                     <div className="flex items-center gap-1.5 mt-1.5">
                       <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium bg-muted/30 px-2 py-0.5 rounded-md">

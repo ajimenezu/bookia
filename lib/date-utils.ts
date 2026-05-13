@@ -1,4 +1,6 @@
 export const TIMEZONE = "America/Costa_Rica";
+import { isToday, isYesterday, differenceInDays } from "date-fns"
+
 
 export function toCRDate(date: Date) {
   return new Date(date.toLocaleString("en-US", { timeZone: TIMEZONE }));
@@ -154,4 +156,15 @@ export function combineDateAndTime(dateStr: string, timeStr: string) {
   
   // In Naive Wall Time, we save as UTC to match the intended local time
   return new Date(`${dateStr}T${normalizedTime}Z`);
+}
+
+export function formatLastVisit(date: Date) {
+  if (isToday(date)) return "Hoy"
+  if (isYesterday(date)) return "Ayer"
+  const days = differenceInDays(new Date(), date)
+  if (days < 7) return `Hace ${days} días`
+  if (days < 30) { const weeks = Math.floor(days / 7); return `Hace ${weeks} ${weeks === 1 ? 'semana' : 'semanas'}` }
+  if (days < 365) { const months = Math.floor(days / 30); return `Hace ${months} ${months === 1 ? 'mes' : 'meses'}` }
+  const years = Math.floor(days / 365)
+  return `Hace ${years} ${years === 1 ? 'año' : 'años'}`
 }

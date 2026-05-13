@@ -147,8 +147,15 @@ export async function getAvailableSlots(
 
         // 1. Check Vacation/Time Off
         const hasTimeOff = timeOff.some((to: any) => {
-          const toStart = to.startTime ? combineDateAndTime(dateStr, to.startTime) : dayStart
-          const toEnd = to.endTime ? combineDateAndTime(dateStr, to.endTime) : dayEnd
+          const isStartDay = to.startDate.toISOString().startsWith(dateStr)
+          const isEndDay = to.endDate.toISOString().startsWith(dateStr)
+          
+          // Determine effective blocking range for THIS day
+          // If it's the start day, use to.startTime. If it's a middle day/end day, it's blocked from dayStart.
+          const toStart = (isStartDay && to.startTime) ? combineDateAndTime(dateStr, to.startTime) : dayStart
+          // If it's the end day, use to.endTime. If it's a middle day/start day, it's blocked until dayEnd.
+          const toEnd = (isEndDay && to.endTime) ? combineDateAndTime(dateStr, to.endTime) : dayEnd
+          
           return slotStart < toEnd && slotEnd > toStart
         })
         if (hasTimeOff) return false
@@ -217,8 +224,13 @@ export async function getAvailableSlots(
 
       // 1. Time off check
       const hasTimeOff = staffTimeOff.some((to: any) => {
-        const toStart = to.startTime ? combineDateAndTime(dateStr, to.startTime) : dayStart
-        const toEnd = to.endTime ? combineDateAndTime(dateStr, to.endTime) : dayEnd
+        const isStartDay = to.startDate.toISOString().startsWith(dateStr)
+        const isEndDay = to.endDate.toISOString().startsWith(dateStr)
+
+        // Determine effective blocking range for THIS day
+        const toStart = (isStartDay && to.startTime) ? combineDateAndTime(dateStr, to.startTime) : dayStart
+        const toEnd = (isEndDay && to.endTime) ? combineDateAndTime(dateStr, to.endTime) : dayEnd
+
         return slotStart < toEnd && slotEnd > toStart
       })
       if (hasTimeOff) return false

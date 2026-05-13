@@ -26,11 +26,6 @@ export function ServicesList({ services, slug, shopId, businessType }: ServicesL
     setIsOpen(true)
   }
 
-  const handleCreate = () => {
-    setSelectedService(null)
-    setIsOpen(true)
-  }
-
   const handleSuccess = () => {
     setIsOpen(false)
     setSelectedService(null)
@@ -41,11 +36,6 @@ export function ServicesList({ services, slug, shopId, businessType }: ServicesL
 
   return (
     <>
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <Button onClick={handleCreate} className="w-full sm:w-auto cursor-pointer shadow-sm">
-          <Plus className="mr-2 h-4 w-4" /> {t.newService}
-        </Button>
-      </div>
 
       {services.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-20 text-center bg-card/10">
@@ -54,7 +44,7 @@ export function ServicesList({ services, slug, shopId, businessType }: ServicesL
           </div>
           <h3 className="mt-4 text-xl font-semibold text-foreground">No hay {t.servicePlural.toLowerCase()}</h3>
           <p className="mt-2 max-w-sm text-muted-foreground">Aún no has creado ningún {t.service.toLowerCase()}.</p>
-          <Button onClick={handleCreate} className="mt-6 cursor-pointer shadow-md">
+          <Button onClick={() => { setSelectedService(null); setIsOpen(true) }} className="mt-6 cursor-pointer shadow-md">
             <Plus className="mr-2 h-4 w-4" /> Agregar primer {t.service.toLowerCase()}
           </Button>
         </div>

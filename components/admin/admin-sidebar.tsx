@@ -53,36 +53,39 @@ export function AdminSidebar({
     <div className="flex min-h-screen bg-background">
       {/* Mobile header */}
       <header className="fixed inset-x-0 top-0 z-30 flex h-16 items-center justify-between border-b border-sidebar-border bg-sidebar/80 backdrop-blur-lg px-6 lg:hidden shadow-sm">
-        <div className="flex items-center gap-4">
+        <div className="flex flex-1 items-center justify-between gap-4">
           <Link href={`/${shopSlug}/admin`} className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
               <BusinessIcon className="h-4 w-4" />
             </div>
             <span className="font-bold text-sidebar-foreground tracking-tight">BookIA</span>
           </Link>
+          
+          <div className="flex items-center gap-1">
+            {shopId && (
+              <button
+                onClick={() => setIsPanelOpen(true)}
+                className="relative p-2.5 rounded-full hover:bg-muted/10 transition-colors cursor-pointer active:scale-95"
+              >
+                <Bell className="h-5 w-5 text-sidebar-foreground/70 transition-colors" />
+                {pendingCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 h-5 w-5 bg-primary text-[10px] font-bold text-primary-foreground rounded-full flex items-center justify-center border-2 border-sidebar shadow-sm animate-in zoom-in duration-300">
+                    {pendingCount}
+                  </span>
+                )}
+              </button>
+            )}
 
-          {shopId && (
-            <button
-              onClick={() => setIsPanelOpen(true)}
-              className="relative p-2.5 rounded-full hover:bg-muted/10 transition-colors cursor-pointer active:scale-95"
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMobileOpen(!mobileOpen)}
+              className="text-sidebar-foreground h-10 w-10 active:scale-95 transition-transform"
             >
-              <Bell className="h-5 w-5 text-sidebar-foreground/70 transition-colors" />
-              {pendingCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 h-5 w-5 bg-primary text-[10px] font-bold text-primary-foreground rounded-full flex items-center justify-center border-2 border-sidebar shadow-sm animate-in zoom-in duration-300">
-                  {pendingCount}
-                </span>
-              )}
-            </button>
-          )}
+              {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </Button>
+          </div>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="text-sidebar-foreground h-10 w-10 active:scale-95 transition-transform"
-        >
-          {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </Button>
       </header>
 
       {/* Mobile overlay */}
@@ -100,17 +103,19 @@ export function AdminSidebar({
           mobileOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
         )}
       >
-        <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+        <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-6 gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20 shrink-0">
               <BusinessIcon className="h-4.5 w-4.5" />
             </div>
-            <span className="text-xl font-bold text-sidebar-foreground tracking-tight">BookIA</span>
-            
+            <span className="text-xl font-bold text-sidebar-foreground tracking-tight truncate">BookIA</span>
+          </div>
+
+          <div className="flex items-center gap-1 shrink-0">
             {shopId && (
               <button
                 onClick={() => setIsPanelOpen(true)}
-                className="relative ml-2 p-2 rounded-full hover:bg-muted/10 transition-colors cursor-pointer active:scale-95 group"
+                className="relative p-2 rounded-full hover:bg-muted/10 transition-colors cursor-pointer active:scale-95 group"
               >
                 <Bell className="h-5 w-5 text-sidebar-foreground/70 transition-colors group-hover:text-sidebar-foreground" />
                 {pendingCount > 0 && (
@@ -120,16 +125,16 @@ export function AdminSidebar({
                 )}
               </button>
             )}
-          </div>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setMobileOpen(false)}
-            className="lg:hidden h-8 w-8 text-sidebar-foreground/50 hover:text-sidebar-foreground"
-          >
-            <X className="h-5 w-5" />
-          </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMobileOpen(false)}
+              className="lg:hidden h-8 w-8 text-sidebar-foreground/50 hover:text-sidebar-foreground"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
 
         <nav className="flex-1 px-4 py-6 overflow-y-auto">
@@ -200,6 +205,7 @@ export function AdminSidebar({
           open={isPanelOpen}
           onOpenChange={setIsPanelOpen}
           initialRequests={pendingRequests}
+          onRequestsChange={setPendingRequests}
         />
       )}
     </div>

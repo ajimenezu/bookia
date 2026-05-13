@@ -1,5 +1,5 @@
 import { AdminStats } from "./admin-stats"
-import { getAppointmentsInRange } from "@/lib/appointments"
+import { getAppointmentsInRange, calculateAppointmentPrice } from "@/lib/appointments"
 import { toCRDate } from "@/lib/date-utils"
 import { BusinessType } from "@/lib/dictionaries"
 
@@ -23,9 +23,8 @@ export async function AdminStatsContainer({ shopId, businessType }: { shopId: st
 
   const totalBookings = validAppointments.length
   const totalRevenue = validAppointments.reduce((sum: number, app: any) => {
-    // Check both legacy service and new multi-services Price logic
-    const appPrice = app.priceAtBooking || app.service?.price || 0
-    return sum + appPrice
+    // Use centralized price calculation logic (handles snapshots and multi-services)
+    return sum + calculateAppointmentPrice(app)
   }, 0)
 
   return <AdminStats totalRevenue={totalRevenue} totalBookings={totalBookings} businessType={businessType} />

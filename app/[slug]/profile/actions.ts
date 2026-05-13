@@ -69,7 +69,10 @@ export async function cancelAppointmentByCustomer(rawData: unknown) {
 
     await prisma.appointment.update({
       where: { id: appointmentId },
-      data: { status: AppointmentStatus.CANCELLED }
+      data: { 
+        status: AppointmentStatus.CANCELLED,
+        isNotified: false
+      }
     })
 
     revalidatePath(`/${shopSlug}/profile`)

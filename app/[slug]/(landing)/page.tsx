@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!shop) return {}
   return {
     title: shop.name,
-    description: (shop as any).tagline || `Reserva tu cita en ${shop.name}`,
+    description: shop.tagline || `Reserva tu cita en ${shop.name}`,
   }
 }
 
@@ -60,15 +60,15 @@ export default async function ShopPublicPage({ params }: PageProps) {
     name: shop.name,
     slug: shop.slug,
     businessType: shop.businessType,
-    logoUrl: (shop as any).logoUrl as string | null,
-    tagline: (shop as any).tagline as string | null,
-    description: (shop as any).description as string | null,
-    address: (shop as any).address as string | null,
-    latitude: (shop as any).latitude as number | null,
-    longitude: (shop as any).longitude as number | null,
-    whatsappPhone: (shop as any).whatsappPhone as string | null,
-    instagramUrl: (shop as any).instagramUrl as string | null,
-    facebookUrl: (shop as any).facebookUrl as string | null,
+    logoUrl: shop.logoUrl,
+    tagline: shop.tagline,
+    description: shop.description,
+    address: shop.address,
+    latitude: shop.latitude,
+    longitude: shop.longitude,
+    whatsappPhone: shop.whatsappPhone,
+    instagramUrl: shop.instagramUrl,
+    facebookUrl: shop.facebookUrl,
   }
 
   return (

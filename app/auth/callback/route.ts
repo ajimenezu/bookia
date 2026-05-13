@@ -29,15 +29,22 @@ export async function GET(request: Request) {
             name,
             phone,
           },
-          include: { memberships: { include: { shop: true } } }
+          include: { 
+            memberships: { 
+              include: { 
+                shop: {
+                  select: { id: true, slug: true }
+                } 
+              } 
+            } 
+          }
         })
 
         // Extract potential shop slug from 'next' parameter (e.g., "/slug" -> "slug")
         const shopSlugFromNext = next ? next.split("/").filter(Boolean)[0] : undefined
 
         // Determine destination route based on role/membership hierarchy
-        // We pass shopSlugFromNext to ensure it checks roles for that specific shop
-        let redirectPath = getRedirectPath(dbUser, shopSlugFromNext)
+        let redirectPath = await getRedirectPath(dbUser, shopSlugFromNext)
         
         // If 'next' was provided and points to something else (like a specific subpage), 
         // we might want to respect it, but prioritize admin redirect for admins.
@@ -45,12 +52,6 @@ export async function GET(request: Request) {
           redirectPath = next
         }
         
-        // If redirectPath is still "/", check if they are Super Admin to fallback gracefully
-        if (redirectPath === "/" && dbUser.memberships?.some(m => m.role === "SUPER_ADMIN")) {
-          const firstShop = await prisma.shop.findFirst()
-          if (firstShop) redirectPath = `/${firstShop.slug}/admin`
-        }
-
         return NextResponse.redirect(`${origin}${redirectPath}`)
       }
     }

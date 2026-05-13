@@ -22,11 +22,12 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { setOptions, importLibrary } from "@googlemaps/js-api-loader"
+import type { Shop, ShopSchedule } from "@prisma/client"
 
 interface ShopConfigContentProps {
   shopId: string
-  initialShop: any
-  initialSchedules: any[]
+  initialShop: Partial<Shop>
+  initialSchedules: ShopSchedule[]
 }
 
 const DAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]

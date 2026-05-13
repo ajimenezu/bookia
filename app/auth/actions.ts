@@ -153,10 +153,13 @@ export async function signUp(formData: FormData) {
 
   const { email, password, name, phone } = validated.data
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? ""
+
   const { data: { user }, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
+      emailRedirectTo: `${siteUrl}/auth/confirm?next=/`,
       data: {
         full_name: name,
         phone: phone,
@@ -205,14 +208,20 @@ export async function signUpToShop(slug: string, formData: FormData) {
     return { success: false, error: "Este correo ya está registrado. Por favor, inicia sesión." }
   }
 
-  // 1. Supabase SignUp
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? ""
+
+  // 1. Supabase SignUp — carry shop context into the confirmation email
   const { data: { user }, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
+      emailRedirectTo: `${siteUrl}/auth/confirm?next=/${slug}`,
       data: {
         full_name: name,
         phone: phone,
+        shop_slug: shop.slug,
+        shop_name: shop.name,
+        shop_logo_url: shop.logoUrl ?? null,
       }
     }
   })

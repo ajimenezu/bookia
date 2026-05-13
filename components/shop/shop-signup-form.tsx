@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { Mail, Lock, AlertCircle, ArrowRight, User, Phone, Eye, EyeOff, Check, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,7 +21,6 @@ interface ShopSignUpFormProps {
 export function ShopSignUpForm({ slug, shopName, businessType, logoUrl }: ShopSignUpFormProps) {
   const t = getTerminology(businessType)
   const BusinessIcon = getBusinessIcon(businessType)
-  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -63,11 +61,6 @@ export function ShopSignUpForm({ slug, shopName, businessType, logoUrl }: ShopSi
 
       if (result?.success) {
         setSuccess(true)
-        // If Supabase requires email verification, we might want to show a message instead of redirecting
-        // For now, let's assume we can redirect or show success
-        setTimeout(() => {
-          router.push(`/${slug}/login`)
-        }, 2000)
       }
     } catch (err) {
       setError("Error inesperado al crear la cuenta. Intenta de nuevo.")
@@ -82,12 +75,17 @@ export function ShopSignUpForm({ slug, shopName, businessType, logoUrl }: ShopSi
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
             <Mail className="h-6 w-6" />
           </div>
-          <CardTitle className="text-2xl mb-2">¡Cuenta creada!</CardTitle>
+          <CardTitle className="text-2xl mb-2">Revisa tu correo</CardTitle>
           <CardDescription className="text-base">
-            Tu cuenta ha sido creada exitosamente. 
+            Te enviamos un enlace de confirmación a tu correo.
             <br />
-            Redirigiendo al inicio de sesión...
+            Haz clic en el enlace para activar tu cuenta y volver a {shopName}.
           </CardDescription>
+          <div className="mt-6">
+            <Link href={`/${slug}/login`} className="text-sm text-primary hover:underline font-semibold">
+              Volver al inicio de sesión
+            </Link>
+          </div>
         </Card>
       </div>
     )

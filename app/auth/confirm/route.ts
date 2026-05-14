@@ -19,15 +19,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=expired-link", request.url))
   }
 
-  // Password recovery → force user through update-password screen.
-  // Preserve tenant context if the original link routed through /{slug}.
-  if (type === "recovery") {
-    const tenantSlugMatch = next.match(/^\/([^/]+)/)
-    const dest = tenantSlugMatch
-      ? `/${tenantSlugMatch[1]}/update-password`
-      : "/auth/update-password"
-    return NextResponse.redirect(new URL(dest, request.url))
+  // Resolve `next` against the request URL — handles both absolute URLs (from
+  // {{ .RedirectTo }} substitution in email templates) and bare paths.
+  // Same-origin enforcement prevents open-redirect.
+  const requestUrl = new URL(request.url)
+  let dest: URL
+  try {
+    dest = new URL(next, requestUrl)
+  } catch {
+    dest = new URL("/", requestUrl)
+  }
+  if (dest.origin !== requestUrl.origin) {
+    dest = new URL("/", requestUrl)
   }
 
-  return NextResponse.redirect(new URL(next, request.url))
+  return NextResponse.redirect(dest)
 }

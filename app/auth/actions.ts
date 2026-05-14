@@ -159,7 +159,7 @@ export async function signUp(formData: FormData) {
     email,
     password,
     options: {
-      emailRedirectTo: `${siteUrl}/auth/confirm?next=/`,
+      emailRedirectTo: `${siteUrl}/`,
       data: {
         full_name: name,
         phone: phone,
@@ -215,7 +215,7 @@ export async function signUpToShop(slug: string, formData: FormData) {
     email,
     password,
     options: {
-      emailRedirectTo: `${siteUrl}/auth/confirm?next=/${slug}`,
+      emailRedirectTo: `${siteUrl}/${slug}`,
       data: {
         full_name: name,
         phone: phone,

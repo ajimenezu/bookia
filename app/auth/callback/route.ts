@@ -43,8 +43,54 @@ export async function GET(request: Request) {
         // Extract potential shop slug from 'next' parameter (e.g., "/slug" -> "slug")
         const shopSlugFromNext = next ? next.split("/").filter(Boolean)[0] : undefined
 
+        let currentUserState = dbUser
+        if (shopSlugFromNext) {
+          const shop = await prisma.shop.findFirst({
+            where: { slug: shopSlugFromNext },
+            select: { id: true }
+          })
+
+          if (shop) {
+            // Check if user already has a membership for this shop
+            const hasMembership = dbUser.memberships.some(m => m.shop?.id === shop.id)
+            if (!hasMembership) {
+              await prisma.shopMember.upsert({
+                where: {
+                  userId_shopId: {
+                    userId: user.id,
+                    shopId: shop.id,
+                  }
+                },
+                update: {}, // Preserve existing role if created concurrently
+                create: {
+                  userId: user.id,
+                  shopId: shop.id,
+                  role: "CUSTOMER",
+                }
+              })
+
+              // Refetch user state to ensure getRedirectPath has the updated memberships
+              const refreshedUser = await prisma.user.findUnique({
+                where: { id: user.id },
+                include: { 
+                  memberships: { 
+                    include: { 
+                      shop: {
+                        select: { id: true, slug: true }
+                      } 
+                    } 
+                  } 
+                }
+              })
+              if (refreshedUser) {
+                currentUserState = refreshedUser
+              }
+            }
+          }
+        }
+
         // Determine destination route based on role/membership hierarchy
-        let redirectPath = await getRedirectPath(dbUser, shopSlugFromNext)
+        let redirectPath = await getRedirectPath(currentUserState, shopSlugFromNext)
         
         // If 'next' was provided and points to something else (like a specific subpage), 
         // we might want to respect it, but prioritize admin redirect for admins.

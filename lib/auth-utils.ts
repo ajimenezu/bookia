@@ -32,34 +32,47 @@ export const getAdminUser = cache(async () => {
 
   if (!user) return null
 
+  // Fallback: Fetch from DB to get memberships and ensure accurate role
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    include: { 
+      memberships: {
+        include: { shop: true }
+      }
+    }
+  })
+  
+  const memberships = dbUser?.memberships || []
+  const isSuperAdmin = memberships.some(m => m.role === "SUPER_ADMIN")
+
   // Try to get data from JWT Custom Claims (fastest)
   const globalRole = user.app_metadata?.role as string | undefined
-  // For Super Admin, we don't necessarily need a single shopId
   const shopId = user.app_metadata?.shop_id as string | undefined
 
-  // Fallback: If claims are missing or for complex membership checks, fetch from DB
-  if (!globalRole) {
-    const dbUser = await prisma.user.findUnique({
-      where: { id: user.id },
-      include: { 
-        memberships: {
-          include: { shop: true }
-        }
-      }
-    })
-    
-    const memberships = dbUser?.memberships || []
-    const isSuperAdmin = memberships.some(m => m.role === "SUPER_ADMIN")
-    
-    return { 
-      user, 
-      role: isSuperAdmin ? "SUPER_ADMIN" : "CUSTOMER",
-      memberships
-    }
+  return { 
+    user, 
+    role: globalRole || (isSuperAdmin ? "SUPER_ADMIN" : "CUSTOMER"),
+    shopId,
+    memberships
   }
-
-  return { user, role: globalRole, shopId }
 })
+
+/**
+ * Gets the specific role for a user in a given shop context.
+ */
+export function getShopRole(account: any, shopIdOrSlug: string): Role | "CUSTOMER" {
+  if (!account) return "CUSTOMER"
+  
+  // Super Admin has global privileges
+  if (account.role === "SUPER_ADMIN") return "SUPER_ADMIN"
+  
+  const memberships = account.memberships || []
+  const membership = memberships.find((m: any) => 
+    m.shopId === shopIdOrSlug || m.shop?.slug === shopIdOrSlug
+  )
+  
+  return (membership?.role as Role) || "CUSTOMER"
+}
 
 /**
  * Strict version of getAdminUser for admin-only routes.

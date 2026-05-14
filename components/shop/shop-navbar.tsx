@@ -85,38 +85,39 @@ export function ShopNavbar({ shop, user, role, showScheduleButton = true }: Shop
           {user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2.5 rounded-full px-1.5 py-1 transition-all hover:bg-muted/50 outline-hidden group border border-transparent hover:border-border cursor-pointer">
-                  <div className="h-9 w-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-black text-xs shadow-lg shadow-primary/20 transition-transform group-active:scale-90">
-                    {user.name?.charAt(0) || <User className="h-5 w-5" />}
-                  </div>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
-                </button>
+                  <button className="flex items-center gap-2 rounded-full p-1.5 transition-all hover:bg-muted/10 outline-hidden group border border-transparent hover:border-border/50 cursor-pointer">
+                    <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shadow-xs transition-transform group-active:scale-95">
+                      {user.name?.charAt(0) || <User className="h-4 w-4" />}
+                    </div>
+                    <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                  </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64 p-2 rounded-2xl shadow-2xl">
+              <DropdownMenuContent align="end" className="w-64 p-2 rounded-2xl shadow-2xl border-sidebar-border bg-sidebar">
                 <DropdownMenuLabel className="font-normal px-3 py-3">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-black text-foreground">{user.name}</p>
-                    <p className="text-[10px] font-bold text-muted-foreground truncate max-w-[200px]">{user.email}</p>
+                    <p className="text-sm font-bold text-foreground">{user.name}</p>
+                    <p className="text-[10px] font-medium text-muted-foreground truncate max-w-[200px]">{user.email}</p>
                   </div>
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator className="mx-1" />
+                <DropdownMenuSeparator className="bg-sidebar-border mx-1" />
                 <DropdownMenuItem asChild>
-                  <Link href={`/${shop.slug}/profile`} className="cursor-pointer rounded-lg py-2.5 font-bold text-sm">
+                  <Link href={`/${shop.slug}/profile`} className="cursor-pointer rounded-lg py-2.5 font-medium text-sm hover:bg-sidebar-accent">
                     <User className="mr-3 h-4 w-4 text-primary" />
                     <span>Mi perfil</span>
                   </Link>
                 </DropdownMenuItem>
                 {(role === "SUPER_ADMIN" || role === "OWNER" || role === "STAFF") && (
                   <DropdownMenuItem asChild>
-                    <Link href={`/${shop.slug}/admin`} className="cursor-pointer rounded-lg py-2.5 font-bold text-sm">
+                    <Link href={`/${shop.slug}/admin`} className="cursor-pointer rounded-lg py-2.5 font-medium text-sm hover:bg-sidebar-accent">
                       <LayoutDashboard className="mr-3 h-4 w-4 text-primary" />
                       <span>Panel administrativo</span>
                     </Link>
                   </DropdownMenuItem>
                 )}
+                <DropdownMenuSeparator className="bg-sidebar-border mx-1" />
                 <DropdownMenuItem 
                   className={cn(
-                    "text-destructive focus:text-destructive cursor-pointer rounded-lg py-2.5 font-bold text-sm",
+                    "text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer rounded-lg py-2.5 font-medium text-sm",
                     isPending && "opacity-50 pointer-events-none"
                   )}
                   onClick={() => {

@@ -41,6 +41,12 @@ const deleteNoteSchema = z.object({
   shopId: z.string().min(1),
 })
 
+const updateNoteSchema = z.object({
+  noteId: z.string().min(1),
+  content: z.string().min(1).max(2000),
+  shopId: z.string().min(1),
+})
+
 export async function createBooking(rawData: unknown) {
   const validated = bookingSchema.safeParse(rawData)
   if (!validated.success) {
@@ -212,7 +218,7 @@ export async function createBooking(rawData: unknown) {
     })
   }
 
-  return { success: true, appointmentId: appointment.id }
+  return { success: true, appointmentId: appointment.id } as const
 }
 
 export async function fetchAvailableSlots(
@@ -342,10 +348,10 @@ export async function updateAppointmentStatus(
       revalidatePath(`/${shop.slug}/admin`)
     }
 
-    return { success: true }
+    return { success: true } as const
   } catch (error) {
     console.error("Error updating appointment status:", error)
-    return { success: false, error: "Error al actualizar el estado de la cita" }
+    return { success: false, error: "Error al actualizar el estado de la cita" } as const
   }
 }
 
@@ -444,10 +450,10 @@ export async function updateBooking(rawData: unknown) {
       revalidatePath(`/${shop.slug}/admin`)
       revalidatePath(`/${shop.slug}/admin/citas`)
     }
-    return { success: true }
+    return { success: true } as const
   } catch (error) {
     console.error(error)
-    return { success: false, error: "Error al actualizar la cita" }
+    return { success: false, error: "Error al actualizar la cita" } as const
   }
 }
 
@@ -501,10 +507,10 @@ export async function addAppointmentNote(
     if (shop) {
       revalidatePath(`/${shop.slug}/admin/citas`)
     }
-    return { success: true }
+    return { success: true } as const
   } catch (error) {
     console.error(error)
-    return { success: false, error: "Error al crear la nota" }
+    return { success: false, error: "Error al crear la nota" } as const
   }
 }
 
@@ -542,9 +548,51 @@ export async function deleteAppointmentNote(
     if (shop) {
       revalidatePath(`/${shop.slug}/admin/citas`)
     }
-    return { success: true }
+    return { success: true } as const
   } catch (error) {
     console.error(error)
-    return { success: false, error: "Error al eliminar la nota" }
+    return { success: false, error: "Error al eliminar la nota" } as const
+  }
+}
+
+export async function updateAppointmentNote(
+  rawData: unknown
+) {
+  const validated = updateNoteSchema.safeParse(rawData)
+  if (!validated.success) {
+    return { success: false, error: "Datos de actualización de nota inválidos" }
+  }
+
+  const { noteId, content, shopId } = validated.data
+
+  // 1. SECURITY: Validate admin rights
+  const auth = await validateAdminSession(shopId)
+  if (!auth.success) return { success: false, error: auth.error }
+
+  // 2. Update Note
+  try {
+    // Security: ensure the note belongs to an appointment in this shop
+    const note = await prisma.appointmentNote.findUnique({
+      where: { id: noteId },
+      include: { appointment: true }
+    })
+
+    if (!note || note.appointment.shopId !== shopId) {
+      return { success: false, error: "Nota no encontrada o no autorizada" }
+    }
+
+    await prisma.appointmentNote.update({
+      where: { id: noteId },
+      data: { content: content.trim() }
+    })
+
+    const shop = await prisma.shop.findUnique({ where: { id: shopId }, select: { slug: true } })
+    if (shop) {
+      revalidatePath(`/${shop.slug}/admin/citas`)
+    }
+    return { success: true } as const
+  } catch (error) {
+    console.error(error)
+    return { success: false, error: "Error al actualizar la nota" } as const
   }
 }

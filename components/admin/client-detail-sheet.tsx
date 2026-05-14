@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { 
   User, 
   Mail, 
@@ -8,7 +8,6 @@ import {
   Calendar, 
   Clock, 
   Tag, 
-  ChevronRight, 
   Loader2, 
   History,
   TrendingUp,
@@ -21,16 +20,13 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet"
-import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
-import { getClientDetails } from "@/app/[slug]/admin/clientes/actions"
-import { formatTime } from "@/lib/date-utils"
+import { getClientDetails, getClientAppointments } from "@/app/[slug]/admin/clientes/actions"
 import { AppointmentStatus } from "@prisma/client"
-import { StatusBadge } from "./appointments/status-badge"
-import { cn } from "@/lib/utils"
 import { getTerminology } from "@/lib/dictionaries"
-import { calculateAppointmentPrice, getAppointmentServicesName } from "@/lib/appointments"
+import { calculateAppointmentPrice } from "@/lib/appointments"
+import { ClientAppointmentCard } from "./client-appointment-card"
 
 interface ClientDetailSheetProps {
   clientId: string | null
@@ -39,6 +35,8 @@ interface ClientDetailSheetProps {
   onOpenChange: (open: boolean) => void
   businessType: string
 }
+
+const APPOINTMENTS_PER_PAGE = 5
 
 export function ClientDetailSheet({ 
   clientId, 
@@ -49,16 +47,27 @@ export function ClientDetailSheet({
 }: ClientDetailSheetProps) {
   const [loading, setLoading] = useState(false)
   const [clientData, setClientData] = useState<any>(null)
+  const [appointments, setAppointments] = useState<any[]>([])
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const observerTarget = useRef<HTMLDivElement>(null)
   const t = getTerminology(businessType as any)
 
+  // Load initial client info and first 5 appointments
   useEffect(() => {
     async function loadData() {
       if (!clientId || !isOpen) return
       setLoading(true)
       try {
         const result = await getClientDetails(clientId, shopId)
-        if (result.success) {
+        if (result.success && result.data) {
           setClientData(result.data)
+          // The initial data already includes the first 5 appointments
+          const initialApps = (result.data as any).appointmentsAsCustomer || []
+          setAppointments(initialApps)
+          setPage(1)
+          setHasMore(initialApps.length === APPOINTMENTS_PER_PAGE)
         }
       } catch (error) {
         console.error(error)
@@ -69,12 +78,78 @@ export function ClientDetailSheet({
     loadData()
   }, [clientId, shopId, isOpen])
 
-  const appointments = clientData?.appointmentsAsCustomer || []
-  const completedVisits = appointments.filter((a: any) => a.status === AppointmentStatus.COMPLETED).length
-  const totalSpent = appointments.reduce((acc: number, app: any) => {
+  const loadMoreAppointments = useCallback(async () => {
+    if (loadingMore || !hasMore || !clientId) return
+    
+    setLoadingMore(true)
+    const nextPage = page + 1
+    try {
+      const result = await getClientAppointments(clientId, shopId, nextPage, APPOINTMENTS_PER_PAGE)
+      if (result.success && result.data) {
+        const newApps = result.data || []
+        if (newApps.length === 0) {
+          setHasMore(false)
+        } else {
+          setAppointments(prev => {
+            // Avoid duplicates just in case
+            const existingIds = new Set(prev.map(a => a.id))
+            const filteredNew = newApps.filter((a: any) => !existingIds.has(a.id))
+            return [...prev, ...filteredNew]
+          })
+          setPage(nextPage)
+          setHasMore(newApps.length === APPOINTMENTS_PER_PAGE)
+        }
+      }
+    } catch (error) {
+      console.error(error)
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [clientId, shopId, page, hasMore, loadingMore])
+
+  // Infinite scroll observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
+          loadMoreAppointments()
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current)
+    }
+
+    return () => observer.disconnect()
+  }, [hasMore, loading, loadingMore, loadMoreAppointments])
+
+  // Stats calculation
+  const completedVisits = clientData?.appointmentsAsCustomer?.filter((a: any) => a.status === AppointmentStatus.COMPLETED).length || 0
+  const totalSpent = clientData?.appointmentsAsCustomer?.reduce((acc: number, app: any) => {
     if (app.status !== AppointmentStatus.COMPLETED) return acc
     return acc + calculateAppointmentPrice(app)
-  }, 0)
+  }, 0) || 0
+
+  // Function to refresh a specific appointment's data (e.g. after adding a note)
+  const handleAppointmentUpdate = async () => {
+    // For now, we'll just re-fetch the current page range to keep it simple and consistent
+    // In a more complex app, we might only fetch the single updated appointment
+    if (!clientId) return
+    try {
+      const allFetchedApps = []
+      for (let p = 1; p <= page; p++) {
+        const result = await getClientAppointments(clientId, shopId, p, APPOINTMENTS_PER_PAGE)
+        if (result.success) {
+          allFetchedApps.push(...(result.data || []))
+        }
+      }
+      setAppointments(allFetchedApps)
+    } catch (error) {
+      console.error("Error refreshing appointments:", error)
+    }
+  }
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
@@ -152,60 +227,25 @@ export function ClientDetailSheet({
                     <History className="h-5 w-5" />
                     <h3 className="font-black uppercase tracking-widest text-xs">{t.appointmentHistory}</h3>
                   </div>
-                  <Badge variant="outline" className="rounded-lg font-black text-[10px]">
-                    ÚLTIMAS 5
-                  </Badge>
                 </div>
 
                 <div className="space-y-4">
                   {appointments.length > 0 ? (
-                    appointments.map((app: any) => (
-                      <div key={app.id} className="group glass-card rounded-2xl p-5 border border-border shadow-sm hover:border-primary/30 transition-all bg-card/40">
-                        <div className="flex items-start justify-between gap-4 mb-4">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-3.5 w-3.5 text-primary" />
-                              <p className="text-sm font-black">
-                                {new Date(app.startTime).toLocaleDateString('es-ES', { 
-                                  day: '2-digit', 
-                                  month: 'short', 
-                                  year: 'numeric' 
-                                })}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                              <p className="text-xs font-bold text-muted-foreground">
-                                {formatTime(app.startTime)}
-                              </p>
-                            </div>
-                          </div>
-                          <StatusBadge status={app.status} className="px-2 py-0.5 text-[10px]" />
-                        </div>
-
-                        <div className="space-y-3 pt-3 border-t border-border/20">
-                          <div className="flex items-center gap-3">
-                            <div className="p-1.5 rounded-lg bg-secondary text-secondary-foreground">
-                              <Tag className="h-3 w-3" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-bold truncate">
-                                {getAppointmentServicesName(app)}
-                              </p>
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center gap-3">
-                            <div className="p-1.5 rounded-lg bg-secondary text-secondary-foreground">
-                              <User className="h-3 w-3" />
-                            </div>
-                            <p className="text-xs font-medium text-muted-foreground">
-                              Atendido por: <span className="text-foreground font-bold">{app.staff?.name || "Sin asignar"}</span>
-                            </p>
-                          </div>
-                        </div>
+                    <>
+                      {appointments.map((app: any) => (
+                        <ClientAppointmentCard 
+                          key={app.id} 
+                          appointment={app} 
+                          shopId={shopId} 
+                          onUpdate={handleAppointmentUpdate}
+                        />
+                      ))}
+                      
+                      {/* Infinite Scroll Trigger */}
+                      <div ref={observerTarget} className="h-10 flex items-center justify-center">
+                        {loadingMore && <Loader2 className="h-6 w-6 animate-spin text-primary/50" />}
                       </div>
-                    ))
+                    </>
                   ) : (
                     <div className="text-center py-20 px-6 rounded-[2rem] border border-dashed border-border/60 bg-muted/5">
                       <History className="h-10 w-10 mx-auto mb-4 text-muted-foreground/30" />

@@ -1,5 +1,5 @@
 import { getShopBySlug } from "@/lib/shop"
-import { getAdminUser } from "@/lib/auth-utils"
+import { getAdminUser, getShopRole } from "@/lib/auth-utils"
 import prisma from "@/lib/prisma"
 import { ShopLanding } from "@/components/shop/shop-landing"
 import { notFound } from "next/navigation"
@@ -77,7 +77,7 @@ export default async function ShopPublicPage({ params }: PageProps) {
       services={services} 
       staff={staff} 
       user={user}
-      role={account?.role}
+      role={getShopRole(account, slug)}
     />
   )
 }

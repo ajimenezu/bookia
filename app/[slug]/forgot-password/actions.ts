@@ -22,7 +22,7 @@ export async function requestPasswordReset(slug: string, formData: FormData) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? ""
 
   await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${siteUrl}/auth/confirm?next=/${slug}/update-password`,
+    redirectTo: `${siteUrl}/${slug}/update-password`,
   })
 
   // Always succeed — do not leak whether the email exists.

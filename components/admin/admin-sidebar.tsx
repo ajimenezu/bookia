@@ -3,7 +3,15 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, CalendarDays, Users, Wrench, UserRound, Menu, X, LogOut, Bell, Settings } from "lucide-react"
+import { LayoutDashboard, CalendarDays, Users, Wrench, UserRound, Menu, X, LogOut, Bell, Settings, User, ExternalLink, ChevronDown } from "lucide-react"
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { signOut } from "@/app/auth/actions"
@@ -18,12 +26,17 @@ export function AdminSidebar({
   shopSlug,
   shopId,
   businessType,
+  user,
 }: {
   children: React.ReactNode,
   terminology: Terminology,
   shopSlug: string | null,
   shopId?: string,
   businessType?: BusinessType,
+  user?: {
+    name?: string | null
+    email?: string | null
+  } | null
 }) {
   const BusinessIcon = getBusinessIcon(businessType)
   const pathname = usePathname()
@@ -51,17 +64,17 @@ export function AdminSidebar({
 
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Mobile header */}
-      <header className="fixed inset-x-0 top-0 z-30 flex h-16 items-center justify-between border-b border-sidebar-border bg-sidebar/80 backdrop-blur-lg px-6 lg:hidden shadow-sm">
-        <div className="flex flex-1 items-center justify-between gap-4">
-          <Link href={`/${shopSlug}/admin`} className="flex items-center gap-2.5">
+      {/* Persistent Top Bar (Mobile Header + Desktop Top Bar) */}
+      <header className="fixed inset-x-0 top-0 z-10 flex h-16 items-center border-b border-sidebar-border bg-sidebar/80 backdrop-blur-lg px-6 shadow-sm lg:left-64">
+        <div className={cn("flex flex-1 items-center justify-between gap-4 transition-opacity duration-200", mobileOpen && "opacity-0 pointer-events-none lg:opacity-100 lg:pointer-events-auto")}>
+          <Link href={`/${shopSlug}/admin`} className="flex items-center gap-2.5 lg:hidden">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
               <BusinessIcon className="h-4 w-4" />
             </div>
             <span className="font-bold text-sidebar-foreground tracking-tight">BookIA</span>
           </Link>
           
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2.5 ml-auto">
             {shopId && (
               <button
                 onClick={() => setIsPanelOpen(true)}
@@ -76,11 +89,53 @@ export function AdminSidebar({
               </button>
             )}
 
+            {user && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-2 rounded-full p-1.5 transition-all hover:bg-muted/10 outline-hidden group cursor-pointer">
+                    <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shadow-xs transition-transform group-active:scale-95">
+                      {user.name?.charAt(0) || <User className="h-4 w-4" />}
+                    </div>
+                    <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition-transform group-data-[state=open]:rotate-180 hidden sm:block" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64 p-2 rounded-2xl shadow-2xl border-sidebar-border bg-sidebar">
+                  <DropdownMenuLabel className="font-normal px-3 py-3">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-bold text-foreground">{user.name}</p>
+                      <p className="text-[10px] font-medium text-muted-foreground truncate max-w-[200px]">{user.email}</p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-sidebar-border mx-1" />
+                  <DropdownMenuItem asChild>
+                    <Link href={`/${shopSlug}/profile`} className="cursor-pointer rounded-lg py-2.5 font-medium text-sm hover:bg-sidebar-accent">
+                      <User className="mr-3 h-4 w-4 text-primary" />
+                      <span>Mi perfil</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href={`/${shopSlug}`} className="cursor-pointer rounded-lg py-2.5 font-medium text-sm hover:bg-sidebar-accent">
+                      <ExternalLink className="mr-3 h-4 w-4 text-primary" />
+                      <span>Ver tienda</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-sidebar-border mx-1" />
+                  <DropdownMenuItem 
+                    className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer rounded-lg py-2.5 font-medium text-sm"
+                    onClick={async () => await signOut(shopSlug ? `/${shopSlug}` : "/login")}
+                  >
+                    <LogOut className="mr-3 h-4 w-4" />
+                    <span>Cerrar sesión</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="text-sidebar-foreground h-10 w-10 active:scale-95 transition-transform"
+              className="text-sidebar-foreground h-10 w-10 active:scale-95 transition-transform lg:hidden"
             >
               {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
@@ -91,7 +146,7 @@ export function AdminSidebar({
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-20 bg-foreground/30 backdrop-blur-[2px] transition-all duration-300 lg:hidden animate-in fade-in"
+          className="fixed inset-0 z-40 bg-foreground/30 backdrop-blur-[2px] transition-all duration-300 lg:hidden animate-in fade-in"
           onClick={() => setMobileOpen(false)}
         />
       )}
@@ -99,7 +154,7 @@ export function AdminSidebar({
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-30 flex w-72 flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 ease-in-out lg:translate-x-0 lg:w-64",
+          "fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 ease-in-out lg:translate-x-0 lg:w-64",
           mobileOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
         )}
       >
@@ -111,26 +166,12 @@ export function AdminSidebar({
             <span className="text-xl font-bold text-sidebar-foreground tracking-tight truncate">BookIA</span>
           </div>
 
-          <div className="flex items-center gap-1 shrink-0">
-            {shopId && (
-              <button
-                onClick={() => setIsPanelOpen(true)}
-                className="relative p-2 rounded-full hover:bg-muted/10 transition-colors cursor-pointer active:scale-95 group"
-              >
-                <Bell className="h-5 w-5 text-sidebar-foreground/70 transition-colors group-hover:text-sidebar-foreground" />
-                {pendingCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-5 w-5 bg-primary text-[10px] font-bold text-primary-foreground rounded-full flex items-center justify-center border-2 border-sidebar shadow-sm animate-in zoom-in duration-300">
-                    {pendingCount}
-                  </span>
-                )}
-              </button>
-            )}
-
+          <div className="flex items-center gap-2.5 shrink-0">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setMobileOpen(false)}
-              className="lg:hidden h-8 w-8 text-sidebar-foreground/50 hover:text-sidebar-foreground"
+              className="lg:hidden h-10 w-10 text-sidebar-foreground/50 hover:text-sidebar-foreground"
             >
               <X className="h-5 w-5" />
             </Button>
@@ -162,38 +203,27 @@ export function AdminSidebar({
           </ul>
         </nav>
 
-        <div className="mt-auto border-t border-sidebar-border p-5 space-y-3">
-          {shopSlug && (
-            <Link
-              href={`/${shopSlug}`}
-              className="flex items-center justify-center gap-2 rounded-xl bg-sidebar-accent/50 border border-sidebar-border/50 px-4 py-3 text-sm font-semibold text-sidebar-foreground transition-all hover:bg-sidebar-accent cursor-pointer active:scale-[0.98]"
-            >
-              Ver página pública
-            </Link>
-          )}
+        <div className="mt-auto border-t border-sidebar-border p-5">
           {shopSlug && (
             <Link
               href={`/${shopSlug}/admin/configuracion`}
               onClick={() => setMobileOpen(false)}
-              className="flex items-center gap-3.5 rounded-xl px-4 py-2.5 text-sm font-medium text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-all cursor-pointer"
+              className={cn(
+                "flex items-center gap-3.5 rounded-xl px-4 py-3 text-sm font-medium transition-all active:scale-[0.98]",
+                pathname === `/${shopSlug}/admin/configuracion`
+                  ? "bg-primary text-primary-foreground shadow-md shadow-primary/10"
+                  : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+              )}
             >
               <Settings className="h-5 w-5 opacity-70" />
               Configuración
             </Link>
           )}
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3.5 rounded-xl px-4 py-2.5 text-sm font-medium text-sidebar-foreground/50 hover:bg-destructive/10 hover:text-destructive cursor-pointer transition-colors"
-            onClick={async () => await signOut(shopSlug ? `/${shopSlug}` : "/login")}
-          >
-            <LogOut className="h-5 w-5 opacity-70" />
-            Cerrar sesión
-          </Button>
         </div>
       </aside>
 
       {/* Main content */}
-      <div className="flex flex-1 flex-col pt-16 lg:pl-64 lg:pt-0 overflow-x-hidden">
+      <div className="flex flex-1 flex-col pt-16 lg:pl-64 overflow-x-hidden">
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
           {children}
         </main>

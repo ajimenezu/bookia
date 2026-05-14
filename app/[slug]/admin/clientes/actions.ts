@@ -153,7 +153,7 @@ export async function createUser(formData: FormData) {
     return { success: true }
   } catch (error: any) {
     console.error("CREATE_USER_ERROR:", error)
-    return { success: false, error: error.message || "Error al crear el usuario" }
+    return { success: false, error: error.message || "Error al crear el usuario" } as const
   }
 }
 
@@ -171,9 +171,9 @@ export async function getShopServices(shopIdRaw: string) {
       select: { id: true, name: true, duration: true },
       orderBy: { name: "asc" }
     })
-    return { success: true, data: services }
+    return { success: true, data: services } as const
   } catch (error: any) {
-    return { success: false, error: error.message }
+    return { success: false, error: error.message } as const
   }
 }
 
@@ -196,9 +196,13 @@ export async function getClientDetails(clientIdRaw: string, shopIdRaw: string) {
         appointmentsAsCustomer: {
           where: { shopId }, // Always scoped to shopId as per user request
           include: {
-            staff: { select: { name: true } },
-            services: { select: { name: true, price: true } },
-            service: { select: { name: true, price: true } } // Legacy support
+            staff: { select: { id: true, name: true } },
+            services: { select: { id: true, name: true, price: true } },
+            service: { select: { id: true, name: true, price: true } }, // Legacy support
+            notes: {
+              include: { author: { select: { name: true, email: true } } },
+              orderBy: { createdAt: "desc" }
+            }
           },
           orderBy: { startTime: "desc" },
           take: 5
@@ -206,12 +210,52 @@ export async function getClientDetails(clientIdRaw: string, shopIdRaw: string) {
       }
     })
 
-    if (!client) return { success: false, error: "Cliente no encontrado" }
+    if (!client) return { success: false, error: "Cliente no encontrado" } as const
 
-    return { success: true, data: client }
+    return { success: true, data: client } as const
   } catch (error) {
     console.error("GET_CLIENT_DETAILS_ERROR:", error)
-    return { success: false, error: "Error al obtener detalles del cliente" }
+    return { success: false, error: "Error al obtener detalles del cliente" } as const
+  }
+}
+
+const getClientAppointmentsSchema = z.object({
+  clientId: z.string().min(1, "El ID del cliente es obligatorio"),
+  shopId: z.string().min(1, "El ID de la tienda es obligatorio"),
+  page: z.number().int().min(1).default(1),
+  limit: z.number().int().min(1).max(50).default(5)
+})
+
+export async function getClientAppointments(clientIdRaw: string, shopIdRaw: string, pageRaw: number = 1, limitRaw: number = 5) {
+  try {
+    const validated = getClientAppointmentsSchema.safeParse({ clientId: clientIdRaw, shopId: shopIdRaw, page: pageRaw, limit: limitRaw })
+    if (!validated.success) throw new Error("Parámetros inválidos")
+    const { clientId, shopId, page, limit } = validated.data
+
+    await requireAdmin(shopId)
+
+    const skip = (page - 1) * limit
+
+    const appointments = await prisma.appointment.findMany({
+      where: { customerId: clientId, shopId },
+      include: {
+        staff: { select: { id: true, name: true } },
+        services: { select: { id: true, name: true, price: true } },
+        service: { select: { id: true, name: true, price: true } },
+        notes: {
+          include: { author: { select: { name: true, email: true } } },
+          orderBy: { createdAt: "desc" }
+        }
+      },
+      orderBy: { startTime: "desc" },
+      skip,
+      take: limit
+    })
+
+    return { success: true, data: appointments } as const
+  } catch (error) {
+    console.error("GET_CLIENT_APPOINTMENTS_ERROR:", error)
+    return { success: false, error: "Error al obtener citas del cliente" } as const
   }
 }
 
@@ -273,10 +317,10 @@ export async function getClients(shopIdRaw: string, pageRaw: number = 1, limitRa
       }
     })
 
-    return { success: true, data: clients }
+    return { success: true, data: clients } as const
   } catch (error: any) {
     console.error("GET_CLIENTS_ERROR:", error)
-    return { success: false, error: error.message || "Error al obtener clientes" }
+    return { success: false, error: error.message || "Error al obtener clientes" } as const
   }
 }
 

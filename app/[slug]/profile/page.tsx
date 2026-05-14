@@ -1,4 +1,4 @@
-import { getAdminUser } from "@/lib/auth-utils"
+import { getAdminUser, getShopRole } from "@/lib/auth-utils"
 import prisma from "@/lib/prisma"
 import { notFound, redirect } from "next/navigation"
 import { ShopNavbar } from "@/components/shop/shop-navbar"
@@ -86,7 +86,7 @@ export default async function ProfilePage({ params }: PageProps) {
       <ShopNavbar 
         shop={shop as any} 
         user={{ name: userData.name, email: userData.email }} 
-        role={account.role}
+        role={getShopRole(account, slug)}
         showScheduleButton={true} 
       />
 

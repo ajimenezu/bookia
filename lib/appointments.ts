@@ -70,6 +70,10 @@ export async function getAppointmentsInRange(
       service: true,
       staff: true,
       customer: true,
+      notes: {
+        include: { author: { select: { name: true, email: true } } },
+        orderBy: { createdAt: "desc" }
+      }
     },
     orderBy: { startTime: "asc" },
   })

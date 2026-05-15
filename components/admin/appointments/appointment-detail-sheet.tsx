@@ -18,7 +18,8 @@ import {
   Undo2,
   X,
   Trash2,
-  MessageSquare
+  MessageSquare,
+  Plus
 } from "lucide-react"
 import {
   Sheet,
@@ -35,7 +36,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { StatusBadge } from "./status-badge"
 import { formatTime, toCRDate, formatTime24h, convertTo12h } from "@/lib/date-utils"
 import { calculateAppointmentPrice, getAppointmentServicesName } from "@/lib/appointments"
-import { updateAppointmentStatus, updateBooking, fetchAvailableSlots, addAppointmentNote, deleteAppointmentNote } from "@/app/schedule/actions"
+import { updateAppointmentStatus, updateBooking, fetchAvailableSlots, addAppointmentNote, updateAppointmentNote, deleteAppointmentNote } from "@/app/schedule/actions"
 import { AppointmentStatus } from "@prisma/client"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -102,7 +103,21 @@ export function AppointmentDetailSheet({
   const [customerPhone, setCustomerPhone] = useState("")
   const [notes, setNotes] = useState("")
   const [isSavingNotes, setIsSavingNotes] = useState(false)
-  const [noteToDeleteId, setNoteToDeleteId] = useState<string | null>(null)
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
+  const [editContent, setEditContent] = useState("")
+  const [isUpdatingNote, setIsUpdatingNote] = useState(false)
+  
+  // Optimistic UI state
+  const [localNotes, setLocalNotes] = useState<any[]>([])
+
+  // Sync local notes when appointment changes
+  useEffect(() => {
+    if (appointment?.notes) {
+      setLocalNotes(appointment.notes)
+    } else {
+      setLocalNotes([])
+    }
+  }, [appointment])
 
   // Initialize form state when entering edit mode or when appointment changes
   useEffect(() => {
@@ -191,42 +206,104 @@ export function AppointmentDetailSheet({
 
   const handleAddNote = async () => {
     if (!notes.trim()) return
+    
+    const content = notes.trim()
+    const tempId = `temp-${Date.now()}`
+    const optimisticNote = {
+      id: tempId,
+      content,
+      createdAt: new Date().toISOString(),
+      author: { name: "Tú", email: "" },
+      isOptimistic: true
+    }
+
+    // Optimistic Update
+    setLocalNotes(prev => [optimisticNote, ...prev])
+    setNotes("")
     setIsSavingNotes(true)
+
     try {
       const result = await addAppointmentNote({ 
         appointmentId: appointment.id, 
-        content: notes, 
+        content, 
         shopId 
       })
       if (result.success) {
-        toast.success("Nota agregada")
-        setNotes("")
+        toast.success("Nota agregada correctamente")
         router.refresh()
       } else {
+        // Rollback
+        setLocalNotes(prev => prev.filter(n => n.id !== tempId))
+        setNotes(content)
         toast.error(result.error || "Error al agregar nota")
       }
     } catch (error) {
+      setLocalNotes(prev => prev.filter(n => n.id !== tempId))
+      setNotes(content)
       toast.error("Error de conexión")
     } finally {
       setIsSavingNotes(false)
     }
   }
 
-  const handleDeleteNote = async () => {
-    if (!noteToDeleteId) return
+  const handleUpdateNote = async (noteId: string) => {
+    if (!editContent.trim()) return
+    
+    const originalContent = localNotes.find(n => n.id === noteId)?.content
+    const newContent = editContent.trim()
+
+    // Optimistic Update
+    setLocalNotes(prev => prev.map(n => n.id === noteId ? { ...n, content: newContent } : n))
+    setEditingNoteId(null)
+    setIsUpdatingNote(true)
+
     try {
-      const result = await deleteAppointmentNote({ noteId: noteToDeleteId, shopId })
+      const result = await updateAppointmentNote({
+        noteId,
+        content: newContent,
+        shopId
+      })
+      if (result.success) {
+        toast.success("Nota actualizada")
+        router.refresh()
+      } else {
+        // Rollback
+        setLocalNotes(prev => prev.map(n => n.id === noteId ? { ...n, content: originalContent } : n))
+        toast.error(result.error || "Error al actualizar nota")
+      }
+    } catch (error) {
+      setLocalNotes(prev => prev.map(n => n.id === noteId ? { ...n, content: originalContent } : n))
+      toast.error("Error de conexión")
+    } finally {
+      setIsUpdatingNote(false)
+    }
+  }
+
+  const handleDeleteNote = async (noteId: string) => {
+    const originalNotes = [...localNotes]
+    
+    // Optimistic Update
+    setLocalNotes(prev => prev.filter(n => n.id !== noteId))
+
+    try {
+      const result = await deleteAppointmentNote({ noteId, shopId })
       if (result.success) {
         toast.success("Nota eliminada")
         router.refresh()
       } else {
+        // Rollback
+        setLocalNotes(originalNotes)
         toast.error(result.error || "Error al eliminar nota")
       }
     } catch (error) {
+      setLocalNotes(originalNotes)
       toast.error("Error de conexión")
-    } finally {
-      setNoteToDeleteId(null)
     }
+  }
+
+  const startEdit = (note: any) => {
+    setEditingNoteId(note.id)
+    setEditContent(note.content)
   }
 
   const handleSaveEdit = async () => {
@@ -439,82 +516,135 @@ export function AppointmentDetailSheet({
 
                 {/* Notes Section */}
                 <Separator className="opacity-50" />
-                <section className="space-y-6">
-                  <div className="flex items-center gap-2 text-primary">
-                    <MessageSquare className="h-4 w-4" />
-                    <h3 className="font-bold">Historial de Notas</h3>
-                  </div>
-                  
-                  {/* New Note Form (Top) */}
-                  <div className="space-y-3 bg-primary/5 rounded-2xl p-4 border border-primary/10">
-                    <textarea
-                      className="w-full min-h-[80px] rounded-xl border border-border bg-background p-4 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
-                      placeholder="Escribe una nueva nota..."
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                    />
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="rounded-lg h-8 px-3 text-muted-foreground font-bold"
-                        onClick={() => setNotes("")}
-                        disabled={!notes.trim() || isSavingNotes}
-                      >
-                        Cancelar
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="rounded-lg h-8 px-4 font-bold"
-                        onClick={handleAddNote}
-                        disabled={!notes.trim() || isSavingNotes}
-                      >
-                        {isSavingNotes ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : <Save className="h-3 w-3 mr-1.5" />}
-                        Guardar Nota
-                      </Button>
+                  <section className="space-y-6">
+                    <div className="flex items-center gap-2 text-primary">
+                      <MessageSquare className="h-5 w-5" />
+                      <h3 className="font-bold uppercase tracking-widest text-xs">Notas de la {t.appointment}</h3>
                     </div>
-                  </div>
+                    
+                    {/* Add Note Form (Top) */}
+                    <div className="space-y-4">
+                      <p className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                        <Plus className="h-3.5 w-3.5 text-primary" /> Agregar Nueva Nota
+                      </p>
+                      <textarea
+                        className="w-full min-h-[100px] rounded-2xl border border-border bg-background p-4 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none shadow-sm"
+                        placeholder="Escribe algo importante sobre esta cita..."
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                      />
+                      <div className="flex justify-end">
+                        <Button
+                          size="sm"
+                          className="rounded-xl h-10 px-6 font-bold text-xs uppercase tracking-wider shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95"
+                          onClick={handleAddNote}
+                          disabled={!notes.trim() || isSavingNotes}
+                        >
+                          {isSavingNotes ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                          Guardar Nota
+                        </Button>
+                      </div>
+                    </div>
 
-                  {/* Notes List (Bottom) */}
-                  <div className="space-y-4">
-                    {appointment.notes && appointment.notes.length > 0 ? (
-                      appointment.notes.map((note: { id: string; content: string; createdAt: string; author?: { name: string | null; email: string | null } }) => (
-                        <div key={note.id} className="group relative rounded-2xl border border-border bg-card/30 p-4 shadow-sm hover:border-primary/20 transition-all">
-                          <div className="flex items-start justify-between gap-4 mb-2">
-                            <div className="flex items-center gap-2">
-                              <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-black text-primary">
-                                {note.author?.name?.charAt(0) || "U"}
-                              </div>
-                              <div>
-                                <p className="text-xs font-bold text-foreground">
-                                  {note.author?.name || note.author?.email?.split('@')[0] || "Usuario"}
-                                </p>
-                                <p className="text-[10px] text-muted-foreground">
-                                  {formatDistanceToNow(new Date(note.createdAt), { addSuffix: true, locale: es })}
-                                </p>
-                              </div>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 rounded-lg opacity-0 group-hover:opacity-100 text-destructive hover:bg-destructive/10 transition-all"
-                              onClick={() => setNoteToDeleteId(note.id)}
+                    <Separator className="bg-border/30" />
+
+                    {/* Notes List (Bottom) */}
+                    <div className="space-y-4">
+                      <p className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                        <MessageSquare className="h-3.5 w-3.5 text-primary" /> Historial de Notas
+                      </p>
+                      
+                      {localNotes.length > 0 ? (
+                        <div className="space-y-4">
+                          {localNotes.map((note: any) => (
+                            <div 
+                              key={note.id} 
+                              className={cn(
+                                "bg-background/80 backdrop-blur-sm rounded-2xl p-4 border border-border/60 shadow-sm group/note transition-all",
+                                note.isOptimistic && "opacity-60 grayscale-[0.5]"
+                              )}
                             >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                          <p className="text-sm text-card-foreground leading-relaxed whitespace-pre-wrap">
-                            {note.content}
+                              <div className="flex items-start justify-between gap-4 mb-3">
+                                <div className="flex items-center gap-3">
+                                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-black text-primary">
+                                    {note.author?.name?.charAt(0) || "U"}
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-bold text-foreground">
+                                      {note.author?.name || "Usuario"}
+                                    </p>
+                                    <p className="text-[10px] text-muted-foreground font-medium">
+                                      {formatDistanceToNow(new Date(note.createdAt), { addSuffix: true, locale: es })}
+                                    </p>
+                                  </div>
+                                </div>
+                                {!note.isOptimistic && (
+                                  <div className="flex items-center gap-1 opacity-0 group-hover/note:opacity-100 transition-opacity">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                      onClick={() => startEdit(note)}
+                                    >
+                                      <Edit3 className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                      onClick={() => handleDeleteNote(note.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {editingNoteId === note.id ? (
+                                <div className="space-y-3 mt-2">
+                                  <textarea
+                                    className="w-full min-h-[80px] rounded-xl border border-border bg-background p-3 text-base focus:ring-1 focus:ring-primary outline-none resize-none shadow-inner"
+                                    value={editContent}
+                                    onChange={(e) => setEditContent(e.target.value)}
+                                  />
+                                  <div className="flex justify-end gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-9 px-4 text-xs font-bold rounded-lg"
+                                      onClick={() => setEditingNoteId(null)}
+                                    >
+                                      <X className="h-4 w-4 mr-2" /> Cancelar
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      className="h-9 px-4 text-xs font-bold rounded-lg"
+                                      onClick={() => handleUpdateNote(note.id)}
+                                      disabled={isUpdatingNote || !editContent.trim()}
+                                    >
+                                      {isUpdatingNote ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                                      Actualizar
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <p className="text-base text-card-foreground leading-relaxed whitespace-pre-wrap font-medium">
+                                  {note.content}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-10 bg-background/20 rounded-2xl border border-dashed border-border/40">
+                          <MessageSquare className="h-8 w-8 mx-auto mb-3 text-muted-foreground/20" />
+                          <p className="text-sm text-muted-foreground font-medium italic">
+                            No hay notas registradas para esta cita.
                           </p>
                         </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-8 px-4 rounded-2xl border border-dashed border-border/60">
-                        <p className="text-xs text-muted-foreground italic">No hay notas registradas para esta cita.</p>
-                      </div>
-                    )}
-                  </div>
-                </section>
+                      )}
+                    </div>
+                  </section>
 
               </>
             ) : (
@@ -739,25 +869,6 @@ export function AppointmentDetailSheet({
         </SheetFooter>
       </SheetContent>
 
-      <AlertDialog open={!!noteToDeleteId} onOpenChange={(open) => !open && setNoteToDeleteId(null)}>
-        <AlertDialogContent className="rounded-3xl border-border bg-card/95 backdrop-blur-xl">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-xl font-bold tracking-tight">¿Eliminar esta nota?</AlertDialogTitle>
-            <AlertDialogDescription className="text-muted-foreground">
-              Esta acción no se puede deshacer. La nota se eliminará permanentemente de los registros de esta cita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2 sm:gap-0">
-            <AlertDialogCancel className="rounded-xl border-border font-bold">Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteNote}
-              className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90 font-bold shadow-lg shadow-destructive/20"
-            >
-              Eliminar Nota
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </Sheet>
   )
 }

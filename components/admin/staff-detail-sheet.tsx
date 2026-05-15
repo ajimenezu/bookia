@@ -24,6 +24,16 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
@@ -70,6 +80,7 @@ export function StaffDetailSheet({
   const [shopServices, setShopServices] = useState<{id: string; name: string; duration: number}[]>([])
   const [isSavePending, startSaveTransition] = useTransition()
   const [isStatusPending, startStatusTransition] = useTransition()
+  const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false)
 
   useEffect(() => {
     async function loadData() {
@@ -165,53 +176,22 @@ export function StaffDetailSheet({
     }}>
       <SheetContent className="w-full sm:max-w-xl p-0 flex flex-col h-[100dvh] border-l border-border bg-background">
         <SheetHeader className="px-6 py-6 sm:px-10 border-b border-border bg-card/50 backdrop-blur-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className={cn(
-                "h-16 w-16 rounded-2xl flex items-center justify-center text-2xl font-black shadow-lg transition-all",
-                isActive ? "bg-primary text-primary-foreground shadow-primary/20" : "bg-muted text-muted-foreground grayscale"
-              )}>
-                {staffData?.name?.charAt(0) || <User className="h-8 w-8" />}
-              </div>
-              <div>
-                <SheetTitle className="text-2xl font-black tracking-tight text-foreground flex items-center gap-2">
-                  {staffData?.name || "Cargando..."}
-                  {!isActive && <Badge variant="secondary" className="text-[10px] uppercase font-black tracking-widest bg-muted text-muted-foreground">Inactivo</Badge>}
-                </SheetTitle>
-                <SheetDescription className="font-medium text-muted-foreground flex items-center gap-1.5">
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  {targetRole === 'OWNER' ? 'Propietario / Gerente' : targetRole === 'SUPER_ADMIN' ? 'Administrador' : 'Personal del Negocio'}
-                </SheetDescription>
-              </div>
+          <div className="flex items-center gap-4">
+            <div className={cn(
+              "h-16 w-16 rounded-2xl flex items-center justify-center text-2xl font-black shadow-lg transition-all",
+              isActive ? "bg-primary text-primary-foreground shadow-primary/20" : "bg-muted text-muted-foreground grayscale"
+            )}>
+              {staffData?.name?.charAt(0) || <User className="h-8 w-8" />}
             </div>
-            
-            <div className="flex gap-2">
-              {canDeactivate && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className={cn(
-                    "rounded-xl px-4 h-10 gap-2 transition-all font-black text-[10px] uppercase tracking-widest",
-                    isActive ? "text-destructive border-destructive/20 hover:bg-destructive/5" : "text-success border-success/20 hover:bg-success/5"
-                  )}
-                  onClick={handleToggleStatus}
-                  disabled={isStatusPending}
-                >
-                  {isStatusPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Power className="h-4 w-4" />}
-                  {isActive ? "Desactivar" : "Activar"}
-                </Button>
-              )}
-              {canEdit && !isEditing && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="rounded-xl px-4 h-10 gap-2 text-primary border-primary/20 hover:bg-primary/5 font-black text-[10px] uppercase tracking-widest"
-                  onClick={() => setIsEditing(true)}
-                >
-                  <Pencil className="h-4 w-4" />
-                  Editar
-                </Button>
-              )}
+            <div>
+              <SheetTitle className="text-2xl font-black tracking-tight text-foreground flex items-center gap-2">
+                {staffData?.name || "Cargando..."}
+                {!isActive && <Badge variant="secondary" className="text-[10px] uppercase font-black tracking-widest bg-muted text-muted-foreground">Inactivo</Badge>}
+              </SheetTitle>
+              <SheetDescription className="font-medium text-muted-foreground flex items-center gap-1.5">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                {targetRole === 'OWNER' ? 'Propietario / Gerente' : targetRole === 'SUPER_ADMIN' ? 'Administrador' : 'Personal del Negocio'}
+              </SheetDescription>
             </div>
           </div>
         </SheetHeader>
@@ -228,7 +208,7 @@ export function StaffDetailSheet({
                 <section className="space-y-6">
                   <div className="flex items-center justify-between">
                     <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Información de Contacto</h3>
-                    {isEditing && (
+                    {isEditing ? (
                       <div className="flex gap-2">
                         <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)} className="h-7 text-[10px] font-black uppercase tracking-widest gap-1">
                           <X className="h-3 w-3" /> Cancelar
@@ -241,6 +221,41 @@ export function StaffDetailSheet({
                         >
                           {isSavePending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />} Guardar
                         </Button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        {canDeactivate && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className={cn(
+                              "h-8 rounded-lg font-bold border border-border/50 transition-all gap-1.5",
+                              isActive ? "text-destructive border-destructive/10 hover:bg-destructive/10" : "text-success border-success/10 hover:bg-success/10"
+                            )}
+                            onClick={() => {
+                              if (isActive) {
+                                setShowDeactivateConfirm(true)
+                              } else {
+                                handleToggleStatus()
+                              }
+                            }}
+                            disabled={isStatusPending}
+                          >
+                            {isStatusPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Power className="h-3.5 w-3.5" />}
+                            {isActive ? "Desactivar" : "Activar"}
+                          </Button>
+                        )}
+                        {canEdit && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 rounded-lg font-bold border border-primary/10 text-primary hover:bg-primary/10 transition-all gap-1.5"
+                            onClick={() => setIsEditing(true)}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                            Editar
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -410,8 +425,28 @@ export function StaffDetailSheet({
                   </div>
                 </section>
               </div>
-          </ScrollArea>
+        </ScrollArea>
         ) : null}
+
+        <AlertDialog open={showDeactivateConfirm} onOpenChange={setShowDeactivateConfirm}>
+          <AlertDialogContent className="rounded-[2rem] border-border bg-background/95 backdrop-blur-xl shadow-2xl">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-xl font-black tracking-tight">¿Desactivar personal?</AlertDialogTitle>
+              <AlertDialogDescription className="text-muted-foreground font-medium">
+                Esta acción ocultará a <span className="text-foreground font-bold">{staffData?.name}</span> del flujo de reserva y no podrá gestionar sus citas hasta que sea activado nuevamente.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="gap-3 sm:gap-0 mt-4">
+              <AlertDialogCancel className="rounded-xl border-border font-bold hover:bg-muted/50 transition-all">Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleToggleStatus}
+                className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90 font-bold shadow-lg shadow-destructive/20 transition-all"
+              >
+                Desactivar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </SheetContent>
     </Sheet>
   )

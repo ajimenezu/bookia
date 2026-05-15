@@ -17,10 +17,21 @@ export default async function AdminLayout({ children, params }: LayoutProps) {
   if (!shop) notFound()
 
   // Validates the authenticated user has access to this specific shop
-  const { businessType } = await requireAdmin(shop.id, `/${slug}/login`)
+  const { businessType, user } = await requireAdmin(shop.id, `/${slug}/login`)
   const t = getTerminology(businessType)
 
   return (
-    <AdminSidebar terminology={t} shopSlug={slug} shopId={shop.id} businessType={businessType}>{children}</AdminSidebar>
+    <AdminSidebar 
+      terminology={t} 
+      shopSlug={slug} 
+      shopId={shop.id} 
+      businessType={businessType}
+      user={{
+        name: user.user_metadata?.full_name || user.email,
+        email: user.email
+      }}
+    >
+      {children}
+    </AdminSidebar>
   )
 }

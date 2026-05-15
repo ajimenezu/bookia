@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma"
 import { BookingFlow } from "@/components/booking/booking-flow"
-import { getAdminUser } from "@/lib/auth-utils"
+import { getAdminUser, getShopRole } from "@/lib/auth-utils"
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 import { ShopNavbar } from "@/components/shop/shop-navbar"
@@ -101,7 +101,12 @@ export default async function ShopSchedulePage({ params, searchParams }: PagePro
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <ShopNavbar shop={shop} user={user} showScheduleButton={false} />
+      <ShopNavbar 
+        shop={shop} 
+        user={user} 
+        role={getShopRole(account, slug)} 
+        showScheduleButton={false} 
+      />
 
       <main className="flex-1 pb-20">
         <div className="mx-auto max-w-5xl px-4 pt-6">

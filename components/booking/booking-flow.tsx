@@ -96,6 +96,7 @@ export function BookingFlow({
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
   const [clientName, setClientName] = useState(initialClientName || "")
   const [clientPhone, setClientPhone] = useState(initialClientPhone || "")
+  const [clientEmail, setClientEmail] = useState("")
   const [clientType, setClientType] = useState<"registered" | "unregistered">(isAdmin ? "registered" : "unregistered")
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
   const [clientSearch, setClientSearch] = useState("")
@@ -228,6 +229,7 @@ export function BookingFlow({
         time: selectedTime,
         customerName: clientName,
         customerPhone: clientPhone,
+        customerEmail: clientEmail || undefined,
         rescheduleId,
         ...(isAdmin ? { isAdminBooking: true, customerId: clientType === 'registered' ? selectedClientId || undefined : undefined } : {})
       })
@@ -249,6 +251,7 @@ export function BookingFlow({
     setSelectedTime(null)
     setClientName(initialClientName || "")
     setClientPhone(initialClientPhone || "")
+    setClientEmail("")
     setTouched({ name: false, phone: false })
     setShowConfirmation(false)
     setBookingError(null)
@@ -416,6 +419,8 @@ export function BookingFlow({
             selectedClientId={selectedClientId}
             clientName={clientName}
             clientPhone={clientPhone}
+            clientEmail={clientEmail}
+            setClientEmail={setClientEmail}
             touched={touched}
             setTouched={setTouched}
             bookingError={bookingError}

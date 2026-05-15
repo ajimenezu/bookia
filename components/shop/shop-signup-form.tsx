@@ -24,6 +24,7 @@ export function ShopSignUpForm({ slug, shopName, businessType, logoUrl }: ShopSi
   const BusinessIcon = getBusinessIcon(businessType)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [errorCode, setErrorCode] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -56,6 +57,7 @@ export function ShopSignUpForm({ slug, shopName, businessType, logoUrl }: ShopSi
     event.preventDefault()
     setLoading(true)
     setError(null)
+    setErrorCode(null)
 
     const formData = new FormData(event.currentTarget)
     const password = formData.get("password") as string
@@ -68,10 +70,11 @@ export function ShopSignUpForm({ slug, shopName, businessType, logoUrl }: ShopSi
     }
 
     try {
-      const result = await signUpToShop(slug, formData)
-      
+      const result = await signUpToShop(slug, formData) as { success?: boolean; error?: string; errorCode?: string }
+
       if (result?.error) {
         setError(result.error)
+        setErrorCode(result.errorCode ?? null)
         setLoading(false)
         return
       }
@@ -266,7 +269,33 @@ export function ShopSignUpForm({ slug, shopName, businessType, logoUrl }: ShopSi
                 </div>
               </div>
 
-              {error && (
+              {error && errorCode === "EMAIL_ALREADY_REGISTERED" && (
+                <div className="rounded-lg bg-destructive/10 p-3 text-sm font-medium text-destructive animate-in fade-in zoom-in duration-200">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                    <div className="space-y-2">
+                      <p>{error}</p>
+                      <div className="flex flex-wrap gap-3 text-xs">
+                        <Link
+                          href={`/${slug}/login`}
+                          className="underline font-semibold hover:no-underline"
+                        >
+                          Iniciar sesión
+                        </Link>
+                        <span className="text-destructive/50">·</span>
+                        <Link
+                          href={`/${slug}/forgot-password`}
+                          className="underline font-semibold hover:no-underline"
+                        >
+                          Olvidé mi contraseña
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {error && errorCode !== "EMAIL_ALREADY_REGISTERED" && (
                 <div className="flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-sm font-medium text-destructive animate-in fade-in zoom-in duration-200">
                   <AlertCircle className="h-4 w-4 shrink-0" />
                   {error}

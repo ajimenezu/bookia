@@ -113,7 +113,7 @@ export function CreateUserModal({ currentUserRole, isSuperAdmin, shopId, mode = 
     try {
       const result = await createUser(formData)
       if (result.success) {
-        toast.success("Usuario creado exitosamente")
+        toast.success(`Invitación enviada a ${email}`)
         setOpen(false)
         resetForm()
       } else {

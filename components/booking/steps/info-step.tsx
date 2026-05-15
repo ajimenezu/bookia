@@ -55,6 +55,8 @@ interface InfoStepProps {
   selectedClientId: string | null
   clientName: string
   clientPhone: string
+  clientEmail: string
+  setClientEmail: Dispatch<SetStateAction<string>>
   touched: { name: boolean; phone: boolean }
   setTouched: Dispatch<SetStateAction<{ name: boolean; phone: boolean }>>
   bookingError: string | null
@@ -91,6 +93,8 @@ export function InfoStep({
   selectedClientId,
   clientName,
   clientPhone,
+  clientEmail,
+  setClientEmail,
   touched,
   setTouched,
   bookingError,
@@ -282,6 +286,25 @@ export function InfoStep({
                   )}
                 </div>
               </>
+            )}
+
+            {(!isAdmin || clientType === 'unregistered') && (
+              <div className="space-y-1">
+                <Label htmlFor={`email-${shopId}`} className="text-sm text-foreground">
+                  Correo electrónico <span className="text-muted-foreground font-normal">(opcional)</span>
+                </Label>
+                <Input
+                  id={`email-${shopId}`}
+                  type="email"
+                  placeholder="tu@email.com"
+                  value={clientEmail}
+                  onChange={(e) => setClientEmail(e.target.value)}
+                  className="bg-card"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Te enviaremos la confirmación de tu {t.appointment.toLowerCase()} por correo.
+                </p>
+              </div>
             )}
 
             {bookingError && (

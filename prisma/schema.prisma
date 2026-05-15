@@ -147,6 +147,7 @@ model Appointment {
   updatedAt      DateTime          @updatedAt
   customerName   String?
   customerPhone  String?
+  customerEmail  String?
   priceAtBooking Float?
   customer       User?             @relation("CustomerAppointments", fields: [customerId], references: [id])
   service        Service?          @relation("LegacyService", fields: [serviceId], references: [id])

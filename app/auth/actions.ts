@@ -203,9 +203,20 @@ export async function signUpToShop(slug: string, formData: FormData) {
   if (!shop) return { success: false, error: "La tienda no existe" }
 
   // PRE-SIGNUP CHECK: If user exists in Prisma, they must exist in Supabase.
-  const existingPrismaUser = await prisma.user.findUnique({ where: { email } })
+  // Detect whether they're already a member of THIS shop to tailor the message.
+  const existingPrismaUser = await prisma.user.findUnique({
+    where: { email },
+    include: { memberships: { where: { shopId: shop.id }, select: { id: true } } }
+  })
   if (existingPrismaUser) {
-    return { success: false, error: "Este correo ya está registrado. Por favor, inicia sesión." }
+    const isMemberOfThisShop = existingPrismaUser.memberships.length > 0
+    return {
+      success: false,
+      errorCode: "EMAIL_ALREADY_REGISTERED" as const,
+      error: isMemberOfThisShop
+        ? `Ya tienes una cuenta en ${shop.name}.`
+        : "Ya tienes una cuenta en Bookia con este correo.",
+    }
   }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? ""

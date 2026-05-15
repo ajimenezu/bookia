@@ -16,7 +16,6 @@ const userSchema = z.object({
   email: z.string().email("Email inválido"),
   phone: z.string().min(8, "Teléfono inválido").optional().or(z.literal("")),
   role: z.enum(["SUPER_ADMIN", "OWNER", "STAFF", "CUSTOMER"]),
-  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres").optional().or(z.literal("")),
   shopId: z.string().min(1, "El ID de la tienda es obligatorio"),
   serviceIds: z.string()
     .optional()
@@ -36,7 +35,6 @@ export async function createUser(formData: FormData) {
     email: formData.get("email"),
     phone: formData.get("phone"),
     role: formData.get("role"),
-    password: formData.get("password"),
     shopId: formData.get("shopId"),
     serviceIds: formData.get("serviceIds"),
   }
@@ -46,8 +44,7 @@ export async function createUser(formData: FormData) {
     return { success: false, error: validated.error.errors[0].message }
   }
 
-  const { name, email, phone, role, password: rawPassword, shopId: targetShopId, serviceIds } = validated.data
-  const password = rawPassword || "Bookia123!"
+  const { name, email, phone, role, shopId: targetShopId, serviceIds } = validated.data
 
   // Validate: STAFF/OWNER must have service selection (even if empty = "Ninguno")
   if ((role === "STAFF" || role === "OWNER") && formData.get("serviceIds") === null) {
@@ -56,7 +53,7 @@ export async function createUser(formData: FormData) {
 
   try {
     // SECURITY FIX: Mandatory targetShopId validation
-    const { role: currentUserRole, isSuperAdmin } = await requireAdmin(targetShopId)
+    const { role: currentUserRole, isSuperAdmin, user: inviter } = await requireAdmin(targetShopId)
 
     if (currentUserRole === "STAFF") {
       if (role !== "CUSTOMER") throw new Error("Personal solo puede crear clientes")
@@ -68,31 +65,47 @@ export async function createUser(formData: FormData) {
 
     if (role === "SUPER_ADMIN" && !isSuperAdmin) throw new Error("Solo los Super Admins pueden crear otros Super Admins")
 
-    const supabaseAdmin = createServiceRoleClient()
+    // Fetch the target shop so we can include its branding in the invite email
+    const shop = await prisma.shop.findUnique({
+      where: { id: targetShopId },
+      select: { id: true, slug: true, name: true, logoUrl: true }
+    })
+    if (!shop) throw new Error("Tienda no encontrada")
 
-    // 1. Check/Create in Supabase Auth using Service Role
-    let { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { name, role }
+    const supabaseAdmin = createServiceRoleClient()
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? ""
+
+    // 1. Invite the user via email — they set their own password by clicking the link.
+    //    No temporary credentials are ever generated or stored.
+    let authUser: any
+    const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+      data: {
+        full_name: name,
+        phone,
+        role,
+        shop_slug: shop.slug,
+        shop_name: shop.name,
+        shop_logo_url: shop.logoUrl ?? null,
+        invited_by: (inviter as any).name ?? (inviter as any).email,
+      },
+      redirectTo: `${siteUrl}/${shop.slug}/update-password`,
     })
 
-    // If user already exists in Auth, we might want to just link them if they are not in our DB
-    if (authError && authError.message.includes("already registered")) {
-      const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
-      const existingUser = existingUsers?.users.find((u: any) => u.email === email)
-      if (existingUser) {
-        authData = { user: existingUser } as any
-      } else {
-        throw new Error("El usuario ya existe en Auth pero no se pudo recuperar")
-      }
-    } else if (authError) {
-      throw new Error(authError.message)
+    if (inviteError) {
+      // User already exists in Auth — link them to this shop without re-inviting.
+      const msg = inviteError.message.toLowerCase()
+      const alreadyExists = msg.includes("already") || msg.includes("registered") || msg.includes("exist")
+      if (!alreadyExists) throw new Error(inviteError.message)
+
+      const { data: list } = await supabaseAdmin.auth.admin.listUsers()
+      const existing = list?.users.find((u: any) => u.email === email)
+      if (!existing) throw new Error("El usuario ya existe en Auth pero no se pudo recuperar")
+      authUser = existing
+    } else {
+      authUser = inviteData.user
     }
 
-    const authUser = authData?.user
-    if (!authUser) throw new Error("Error al crear el usuario en Auth")
+    if (!authUser) throw new Error("No se pudo crear o recuperar el usuario en Auth")
 
     // 2. Create or Update in Prisma using the Auth UUID
     const user = await prisma.user.upsert({
@@ -101,14 +114,12 @@ export async function createUser(formData: FormData) {
         id: authUser.id,
         name,
         phone,
-        needsPasswordChange: true 
       },
       create: {
         id: authUser.id,
         email,
         name,
         phone,
-        needsPasswordChange: true
       }
     })
 

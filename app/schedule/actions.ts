@@ -4,6 +4,8 @@ import prisma from "@/lib/prisma"
 import { getAvailableSlots, checkStaffConflict } from "@/lib/availability"
 import { createClient } from "@/lib/supabase/server"
 import { combineDateAndTime } from "@/lib/date-utils"
+import { sendBookingConfirmation } from "@/lib/email/send-booking-confirmation"
+import { sendBookingNotificationStaff } from "@/lib/email/send-booking-notification-staff"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import { AppointmentStatus } from "@prisma/client"
@@ -16,6 +18,7 @@ const bookingSchema = z.object({
   time: z.string().regex(/^\d{2}:\d{2}$/),
   customerName: z.string().min(2),
   customerPhone: z.string().optional(),
+  customerEmail: z.string().email("Email inválido").optional().or(z.literal("")),
   customerId: z.string().optional(),
   isAdminBooking: z.boolean().optional(),
   rescheduleId: z.string().optional(),
@@ -47,7 +50,7 @@ export async function createBooking(rawData: unknown) {
     return { success: false, error: "Datos de reserva inválidos" }
   }
 
-  const { shopId, serviceIds, staffId, date, time, customerName, customerPhone, customerId: inputCustomerId, isAdminBooking, rescheduleId } = validated.data
+  const { shopId, serviceIds, staffId, date, time, customerName, customerPhone, customerEmail: inputCustomerEmail, customerId: inputCustomerId, isAdminBooking, rescheduleId } = validated.data
 
   // 1. Get services to calculate end time and capture total price
   // SECURITY FIX: Mandatory shopId filter to prevent cross-tenant service selection
@@ -167,7 +170,20 @@ export async function createBooking(rawData: unknown) {
     }
   }
 
-  // 5. Create or Update the appointment
+  // 5. Resolve customer email — priority: form input > authUser.email > matched User.email
+  let resolvedEmail: string | null = (inputCustomerEmail || "").trim() || null
+  if (!resolvedEmail && authUser?.email) {
+    resolvedEmail = authUser.email
+  }
+  if (!resolvedEmail && customerId) {
+    const dbCustomer = await prisma.user.findUnique({
+      where: { id: customerId },
+      select: { email: true }
+    })
+    if (dbCustomer?.email) resolvedEmail = dbCustomer.email
+  }
+
+  // 6. Create or Update the appointment
   const appointmentData = {
     shopId,
     serviceId: serviceIds[0], // Keep for backward compatibility
@@ -182,6 +198,7 @@ export async function createBooking(rawData: unknown) {
     priceAtBooking: totalPrice,
     customerName,
     customerPhone,
+    customerEmail: resolvedEmail,
     status: "CONFIRMED" as AppointmentStatus,
     isNotified: false, // Always reset to false on creation or reschedule
     serviceDetails: services.map(s => ({ id: s.id, name: s.name, price: s.price }))
@@ -193,7 +210,7 @@ export async function createBooking(rawData: unknown) {
     const existing = await prisma.appointment.findUnique({
       where: { id: rescheduleId, shopId }
     })
-    
+
     if (!existing) throw new Error("Cita original no encontrada")
     if (!isAdminBooking && existing.customerId !== customerId) {
       throw new Error("No tienes permiso para reagendar esta cita")
@@ -212,7 +229,137 @@ export async function createBooking(rawData: unknown) {
     })
   }
 
+  // 7. Fire-and-forget confirmation email. Failures are logged but never block the booking.
+  if (resolvedEmail) {
+    void sendBookingConfirmationSafe({
+      to: resolvedEmail,
+      shopId,
+      customerName,
+      startTime,
+      endTime,
+      services: services.map(s => ({ name: s.name, duration: s.duration, price: s.price })),
+      staffId: resolvedStaffId,
+      totalPrice,
+    })
+  }
+
+  // 8. Notify staff/owners only when the booking comes from a customer (not admin-created).
+  if (!isAdminBooking) {
+    void sendBookingNotificationStaffSafe({
+      shopId,
+      customerName,
+      customerPhone: customerPhone ?? null,
+      customerEmail: resolvedEmail,
+      startTime,
+      endTime,
+      services: services.map(s => ({ name: s.name, duration: s.duration, price: s.price })),
+      staffId: resolvedStaffId,
+      totalPrice,
+    })
+  }
+
   return { success: true, appointmentId: appointment.id }
+}
+
+async function sendBookingConfirmationSafe(args: {
+  to: string
+  shopId: string
+  customerName: string
+  startTime: Date
+  endTime: Date
+  services: Array<{ name: string; duration: number; price: number }>
+  staffId: string | null
+  totalPrice: number
+}) {
+  try {
+    const [shop, staff] = await Promise.all([
+      prisma.shop.findUnique({
+        where: { id: args.shopId },
+        select: { name: true, slug: true, logoUrl: true, address: true, whatsappPhone: true, businessType: true }
+      }),
+      args.staffId
+        ? prisma.user.findUnique({ where: { id: args.staffId }, select: { name: true } })
+        : Promise.resolve(null),
+    ])
+    if (!shop) return
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? ""
+    await sendBookingConfirmation({
+      to: args.to,
+      siteUrl,
+      shop,
+      customer: { name: args.customerName },
+      appointment: {
+        startTime: args.startTime,
+        endTime: args.endTime,
+        services: args.services,
+        staffName: staff?.name ?? null,
+        totalPrice: args.totalPrice,
+      },
+    })
+  } catch (err) {
+    console.error("BOOKING_EMAIL_ERROR:", err)
+  }
+}
+
+async function sendBookingNotificationStaffSafe(args: {
+  shopId: string
+  customerName: string
+  customerPhone: string | null
+  customerEmail: string | null
+  startTime: Date
+  endTime: Date
+  services: Array<{ name: string; duration: number; price: number }>
+  staffId: string | null
+  totalPrice: number
+}) {
+  try {
+    const [shop, assignedStaff, ownerships] = await Promise.all([
+      prisma.shop.findUnique({
+        where: { id: args.shopId },
+        select: { name: true, slug: true, logoUrl: true, businessType: true }
+      }),
+      args.staffId
+        ? prisma.user.findUnique({
+            where: { id: args.staffId },
+            select: { name: true, email: true }
+          })
+        : Promise.resolve(null),
+      prisma.shopMember.findMany({
+        where: { shopId: args.shopId, role: "OWNER" },
+        select: { user: { select: { email: true } } }
+      }),
+    ])
+    if (!shop) return
+
+    const recipients: string[] = []
+    if (assignedStaff?.email) recipients.push(assignedStaff.email)
+    for (const o of ownerships) {
+      if (o.user?.email) recipients.push(o.user.email)
+    }
+
+    if (recipients.length === 0) return
+
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? ""
+    await sendBookingNotificationStaff({
+      recipients,
+      siteUrl,
+      shop,
+      customer: {
+        name: args.customerName,
+        phone: args.customerPhone,
+        email: args.customerEmail,
+      },
+      appointment: {
+        startTime: args.startTime,
+        endTime: args.endTime,
+        services: args.services,
+        staffName: assignedStaff?.name ?? null,
+        totalPrice: args.totalPrice,
+      },
+    })
+  } catch (err) {
+    console.error("STAFF_NOTIFICATION_EMAIL_ERROR:", err)
+  }
 }
 
 export async function fetchAvailableSlots(

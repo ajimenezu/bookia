@@ -5,6 +5,7 @@ import prisma from "@/lib/prisma"
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { AppointmentStatus } from "@prisma/client"
+import { triggerAppointmentNotifications } from "@/lib/email/trigger-notifications"
 
 const cancelSchema = z.object({
   appointmentId: z.string().min(1),
@@ -74,6 +75,8 @@ export async function cancelAppointmentByCustomer(rawData: unknown) {
         isNotified: false
       }
     })
+
+    void triggerAppointmentNotifications(appointmentId, "CANCELLED", true)
 
     revalidatePath(`/${shopSlug}/profile`)
     

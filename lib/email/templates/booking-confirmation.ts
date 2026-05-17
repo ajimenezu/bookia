@@ -18,6 +18,7 @@ export interface BookingConfirmationTemplateData {
   }
   siteUrl: string
   theme: EmailTheme
+  actionType?: "CREATED" | "UPDATED" | "CANCELLED"
 }
 
 const dateFmt = new Intl.DateTimeFormat("es-CR", {
@@ -61,7 +62,13 @@ export function renderBookingConfirmation(d: BookingConfirmationTemplateData): {
   const totalDuration = appointment.services.reduce((acc, s) => acc + s.duration, 0)
   const shopUrl = `${siteUrl}/${shop.slug}`
 
-  const subject = `Tu cita en ${shop.name} — ${dateStr}, ${startStr}`
+  const actionType = d.actionType || "CREATED"
+  
+  let subjectPrefix = ""
+  if (actionType === "UPDATED") subjectPrefix = "Actualización: "
+  if (actionType === "CANCELLED") subjectPrefix = "Cancelación: "
+
+  const subject = `${subjectPrefix}Tu cita en ${shop.name} — ${dateStr}, ${startStr}`
 
   const servicesRowsHtml = appointment.services
     .map(
@@ -104,7 +111,13 @@ export function renderBookingConfirmation(d: BookingConfirmationTemplateData): {
             <td style="padding:32px">
               <p style="margin:0 0 8px;font-size:16px;color:#111827">Hola ${escapeHtml(customer.name)},</p>
               <p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.5">
-                Tu cita ha sido confirmada. Aquí están los detalles:
+                ${
+                  actionType === "CREATED"
+                    ? "Tu cita ha sido confirmada. Aquí están los detalles:"
+                    : actionType === "UPDATED"
+                    ? "Tu cita ha sido actualizada. Aquí están los detalles:"
+                    : "Tu cita ha sido cancelada. A continuación, los detalles que tenías agendados:"
+                }
               </p>
 
               <div style="background:#f9fafb;border-radius:8px;padding:16px 20px;margin-bottom:20px">
@@ -166,7 +179,11 @@ export function renderBookingConfirmation(d: BookingConfirmationTemplateData): {
   const text = [
     `Hola ${customer.name},`,
     ``,
-    `Tu cita en ${shop.name} ha sido confirmada.`,
+    actionType === "CREATED"
+      ? `Tu cita en ${shop.name} ha sido confirmada.`
+      : actionType === "UPDATED"
+      ? `Tu cita en ${shop.name} ha sido actualizada.`
+      : `Tu cita en ${shop.name} ha sido cancelada.`,
     ``,
     `Fecha: ${dateStr}`,
     `Hora: ${startStr} – ${endStr} (${totalDuration} min)`,

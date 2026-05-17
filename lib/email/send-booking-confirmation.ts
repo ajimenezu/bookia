@@ -23,6 +23,7 @@ export interface SendBookingConfirmationParams {
     staffName: string | null
     totalPrice: number
   }
+  actionType?: "CREATED" | "UPDATED" | "CANCELLED"
 }
 
 export async function sendBookingConfirmation(params: SendBookingConfirmationParams) {

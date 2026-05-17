@@ -20,6 +20,7 @@ export interface BookingNotificationStaffTemplateData {
   }
   siteUrl: string
   theme: EmailTheme
+  actionType?: "CREATED" | "UPDATED" | "CANCELLED"
 }
 
 const dateFmt = new Intl.DateTimeFormat("es-CR", {
@@ -63,7 +64,13 @@ export function renderBookingNotificationStaff(d: BookingNotificationStaffTempla
   const totalDuration = appointment.services.reduce((acc, s) => acc + s.duration, 0)
   const adminUrl = `${siteUrl}/${shop.slug}/admin/citas`
 
-  const subject = `Nueva cita en ${shop.name} — ${dateStr}, ${startStr}`
+  const actionType = d.actionType || "CREATED"
+  
+  let subjectPrefix = "Nueva cita"
+  if (actionType === "UPDATED") subjectPrefix = "Cita Actualizada"
+  if (actionType === "CANCELLED") subjectPrefix = "Cita Cancelada"
+
+  const subject = `${subjectPrefix} en ${shop.name} — ${dateStr}, ${startStr}`
 
   const servicesRowsHtml = appointment.services
     .map(
@@ -100,8 +107,16 @@ export function renderBookingNotificationStaff(d: BookingNotificationStaffTempla
             </td>
           </tr>
           <tr>
-            <td style="padding:24px 32px 16px;border-bottom:1px solid #e5e7eb;background:#fef3c7">
-              <div style="font-size:11px;color:#92400e;text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:4px">Nueva reserva</div>
+            <td style="padding:24px 32px 16px;border-bottom:1px solid #e5e7eb;background:${actionType === 'CANCELLED' ? '#fee2e2' : actionType === 'UPDATED' ? '#e0f2fe' : '#fef3c7'}">
+              <div style="font-size:11px;color:${actionType === 'CANCELLED' ? '#991b1b' : actionType === 'UPDATED' ? '#0369a1' : '#92400e'};text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:4px">
+                ${
+                  actionType === "CREATED"
+                    ? "Nueva reserva"
+                    : actionType === "UPDATED"
+                    ? "Reserva actualizada"
+                    : "Reserva cancelada"
+                }
+              </div>
               <div style="display:flex;align-items:center;gap:12px">
                 ${
                   shop.logoUrl
@@ -163,7 +178,11 @@ export function renderBookingNotificationStaff(d: BookingNotificationStaffTempla
 </html>`
 
   const text = [
-    `Nueva reserva en ${shop.name}`,
+    actionType === "CREATED"
+      ? `Nueva reserva en ${shop.name}`
+      : actionType === "UPDATED"
+      ? `Reserva actualizada en ${shop.name}`
+      : `Reserva cancelada en ${shop.name}`,
     ``,
     `Cliente: ${customer.name}`,
     customer.phone ? `Teléfono: ${customer.phone}` : null,

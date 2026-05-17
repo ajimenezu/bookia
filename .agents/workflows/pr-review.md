@@ -22,4 +22,7 @@ description: Pre-commit PR audit covering Zod validation, code reusability, and 
 - **Centralized Logic**: Appointment price calculations MUST use `@/lib/appointments.ts` (`calculateAppointmentPrice`) to handle snapshots and historical service arrays consistently.
 - **Action**: Extract repeated chunks into reusable components.
 
+## 4. Prisma Data Layer
+- **FAIL IF**: Using `set` inside a relation creation payload during a `create` operation. Prisma only allows `set` during `update`. Use `connect` or `create` for new records.
+
 **Result Scale**: PASSED | PENDING (Needs Refactoring) | FAILED (Security Risk)

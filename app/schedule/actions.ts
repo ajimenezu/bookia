@@ -4,8 +4,7 @@ import prisma from "@/lib/prisma"
 import { getAvailableSlots, checkStaffConflict } from "@/lib/availability"
 import { createClient } from "@/lib/supabase/server"
 import { combineDateAndTime } from "@/lib/date-utils"
-import { sendBookingConfirmation } from "@/lib/email/send-booking-confirmation"
-import { sendBookingNotificationStaff } from "@/lib/email/send-booking-notification-staff"
+import { triggerAppointmentNotifications } from "@/lib/email/trigger-notifications"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import { AppointmentStatus } from "@prisma/client"
@@ -190,13 +189,9 @@ export async function createBooking(rawData: unknown) {
   }
 
   // 6. Create or Update the appointment
-  const appointmentData = {
+  const appointmentDataCore = {
     shopId,
     serviceId: serviceIds[0], // Keep for backward compatibility
-    services: {
-      set: [], // Clear existing relations if updating
-      connect: serviceIds.map(id => ({ id }))
-    },
     staffId: resolvedStaffId,
     customerId,
     startTime,
@@ -224,148 +219,31 @@ export async function createBooking(rawData: unknown) {
 
     appointment = await prisma.appointment.update({
       where: { id: rescheduleId },
-      data: appointmentData
+      data: {
+        ...appointmentDataCore,
+        services: {
+          set: [], // Clear existing relations if updating
+          connect: serviceIds.map(id => ({ id }))
+        }
+      }
     })
   } else {
     appointment = await prisma.appointment.create({
       data: {
-        ...appointmentData,
+        ...appointmentDataCore,
+        services: {
+          connect: serviceIds.map(id => ({ id }))
+        },
         isNotified: isAdminBooking ?? false, // For brand new admin bookings, mark as notified
       }
     })
   }
 
-  // 7. Fire-and-forget confirmation email. Failures are logged but never block the booking.
-  if (resolvedEmail) {
-    void sendBookingConfirmationSafe({
-      to: resolvedEmail,
-      shopId,
-      customerName,
-      startTime,
-      endTime,
-      services: services.map(s => ({ name: s.name, duration: s.duration, price: s.price })),
-      staffId: resolvedStaffId,
-      totalPrice,
-    })
-  }
-
-  // 8. Notify staff/owners only when the booking comes from a customer (not admin-created).
-  if (!isAdminBooking) {
-    void sendBookingNotificationStaffSafe({
-      shopId,
-      customerName,
-      customerPhone: customerPhone ?? null,
-      customerEmail: resolvedEmail,
-      startTime,
-      endTime,
-      services: services.map(s => ({ name: s.name, duration: s.duration, price: s.price })),
-      staffId: resolvedStaffId,
-      totalPrice,
-    })
-  }
+  // 7. Trigger centralized notifications
+  const actionType = rescheduleId ? "UPDATED" : "CREATED"
+  void triggerAppointmentNotifications(appointment.id, actionType, !isAdminBooking)
 
   return { success: true, appointmentId: appointment.id } as const
-}
-
-async function sendBookingConfirmationSafe(args: {
-  to: string
-  shopId: string
-  customerName: string
-  startTime: Date
-  endTime: Date
-  services: Array<{ name: string; duration: number; price: number }>
-  staffId: string | null
-  totalPrice: number
-}) {
-  try {
-    const [shop, staff] = await Promise.all([
-      prisma.shop.findUnique({
-        where: { id: args.shopId },
-        select: { name: true, slug: true, logoUrl: true, address: true, whatsappPhone: true, businessType: true }
-      }),
-      args.staffId
-        ? prisma.user.findUnique({ where: { id: args.staffId }, select: { name: true } })
-        : Promise.resolve(null),
-    ])
-    if (!shop) return
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? ""
-    await sendBookingConfirmation({
-      to: args.to,
-      siteUrl,
-      shop,
-      customer: { name: args.customerName },
-      appointment: {
-        startTime: args.startTime,
-        endTime: args.endTime,
-        services: args.services,
-        staffName: staff?.name ?? null,
-        totalPrice: args.totalPrice,
-      },
-    })
-  } catch (err) {
-    console.error("BOOKING_EMAIL_ERROR:", err)
-  }
-}
-
-async function sendBookingNotificationStaffSafe(args: {
-  shopId: string
-  customerName: string
-  customerPhone: string | null
-  customerEmail: string | null
-  startTime: Date
-  endTime: Date
-  services: Array<{ name: string; duration: number; price: number }>
-  staffId: string | null
-  totalPrice: number
-}) {
-  try {
-    const [shop, assignedStaff, ownerships] = await Promise.all([
-      prisma.shop.findUnique({
-        where: { id: args.shopId },
-        select: { name: true, slug: true, logoUrl: true, businessType: true }
-      }),
-      args.staffId
-        ? prisma.user.findUnique({
-            where: { id: args.staffId },
-            select: { name: true, email: true }
-          })
-        : Promise.resolve(null),
-      prisma.shopMember.findMany({
-        where: { shopId: args.shopId, role: "OWNER" },
-        select: { user: { select: { email: true } } }
-      }),
-    ])
-    if (!shop) return
-
-    const recipients: string[] = []
-    if (assignedStaff?.email) recipients.push(assignedStaff.email)
-    for (const o of ownerships) {
-      if (o.user?.email) recipients.push(o.user.email)
-    }
-
-    if (recipients.length === 0) return
-
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? ""
-    await sendBookingNotificationStaff({
-      recipients,
-      siteUrl,
-      shop,
-      customer: {
-        name: args.customerName,
-        phone: args.customerPhone,
-        email: args.customerEmail,
-      },
-      appointment: {
-        startTime: args.startTime,
-        endTime: args.endTime,
-        services: args.services,
-        staffName: assignedStaff?.name ?? null,
-        totalPrice: args.totalPrice,
-      },
-    })
-  } catch (err) {
-    console.error("STAFF_NOTIFICATION_EMAIL_ERROR:", err)
-  }
 }
 
 export async function fetchAvailableSlots(
@@ -488,6 +366,10 @@ export async function updateAppointmentStatus(
       data: { status }
     })
 
+    if (status === "CANCELLED") {
+      void triggerAppointmentNotifications(appointmentId, "CANCELLED", false)
+    }
+
     // 3. Revalidate relevant paths
     const shop = await prisma.shop.findUnique({ where: { id: shopId }, select: { slug: true } })
     if (shop) {
@@ -591,6 +473,8 @@ export async function updateBooking(rawData: unknown) {
         serviceDetails: finalServiceDetails
       }
     })
+
+    void triggerAppointmentNotifications(appointmentId, "UPDATED", false)
 
     const shop = await prisma.shop.findUnique({ where: { id: shopId }, select: { slug: true } })
     if (shop) {

@@ -29,4 +29,9 @@ description: Comprehensive checklist for developing new features, including UI g
 - **Pagination**: Implement server-side pagination (10 per page) with infinite scroll for administrative lists (e.g., Client list).
 - **IDs**: Use unique UUID/CUID for elements to ensure multi-tenant auto-fill isolation.
 
+## 4. Notifications
+- **Centralized Trigger**: Use `triggerAppointmentNotifications(appointmentId, actionType, notifyStaff)` from `@/lib/email/trigger-notifications` for all appointment-related notifications.
+- **Action Types**: Supported actions are `"CREATED"`, `"UPDATED"`, and `"CANCELLED"`.
+- **Do Not Repeat**: Never manually fetch staff, ownership, or customer emails to send notifications directly in the action handlers. Use the centralized trigger to ensure consistency.
+
 *(Refs: `admin_guidelines.md`, `ui_standards.md`)*

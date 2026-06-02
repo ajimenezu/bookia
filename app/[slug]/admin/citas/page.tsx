@@ -34,7 +34,7 @@ export default async function CitasPage({ params, searchParams }: PageProps) {
   const { rangeLabel } = getWeekRange(weekOffset)
 
   const [services, staffData, clientsData] = await Promise.all([
-    prisma.service.findMany({ where: { shopId }, orderBy: { price: "asc" } }),
+    prisma.service.findMany({ where: { shopId }, orderBy: { price: "asc" }, include: { categories: true } }),
     prisma.shopMember.findMany({
       where: { shopId, role: { in: ["STAFF", "OWNER"] }, isActive: true },
       include: {
@@ -56,7 +56,7 @@ export default async function CitasPage({ params, searchParams }: PageProps) {
     })
   ])
 
-  const mappedServices = services.map(s => ({ id: s.id, name: s.name, price: s.price, duration: s.duration, description: s.description }))
+  const mappedServices = services.map(s => ({ id: s.id, name: s.name, price: s.price, duration: s.duration, description: s.description, categories: s.categories.map(c => c.name) }))
   const mappedStaff = staffData.map(m => ({ id: m.user.id, name: m.user.name || "Sin nombre", serviceIds: m.user.staffServices?.map(s => s.id) || [] }))
   const mappedClients = clientsData.map(m => ({ id: m.user.id, name: m.user.name || "Sin nombre", phone: m.user.phone }))
 

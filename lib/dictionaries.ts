@@ -101,21 +101,21 @@ export const DICTIONARIES: Record<BusinessType, Terminology> = {
     clientPlural: "Pacientes",
     service: "Consulta",
     servicePlural: "Consultas",
-    appointment: "Turno",
-    appointmentPlural: "Turnos",
+    appointment: "Cita",
+    appointmentPlural: "Citas",
     newStaff: "Nuevo Especialista",
     newClient: "Nuevo Paciente",
     newService: "Nueva Consulta",
-    newAppointment: "Nuevo Turno",
+    newAppointment: "Nueva Cita",
     dashboardDesc: "Resumen de tu clínica hoy",
     businessName: "Clínica",
     serviceGender: "f",
     staffGender: "m",
     clientGender: "m",
-    appointmentGender: "m",
-    bookVerb: "Pedir",
+    appointmentGender: "f",
+    bookVerb: "Agendar",
     bookingVerb: "Agendando",
-    appointmentHistory: "Historial de Turnos"
+    appointmentHistory: "Historial de Citas"
   }
 }
 

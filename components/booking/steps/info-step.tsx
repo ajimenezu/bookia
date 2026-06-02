@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
+import { convertTo12h } from "@/lib/date-utils"
 
 interface ClientData {
   id: string
@@ -153,7 +154,7 @@ export function InfoStep({
                 </div>
                 <div className="space-y-1">
                   <p className="text-[10px] uppercase font-black text-muted-foreground/50 tracking-widest">Hora</p>
-                  <p className="font-black text-primary text-xl tracking-tighter">{selectedTime}</p>
+                  <p className="font-black text-primary text-xl tracking-tighter">{selectedTime ? convertTo12h(selectedTime) : ""}</p>
                 </div>
               </div>
 

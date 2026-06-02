@@ -26,14 +26,14 @@ const dateFmt = new Intl.DateTimeFormat("es-CR", {
   day: "numeric",
   month: "long",
   year: "numeric",
-  timeZone: "America/Costa_Rica",
+  timeZone: "UTC",
 })
 
 const timeFmt = new Intl.DateTimeFormat("es-CR", {
   hour: "2-digit",
   minute: "2-digit",
   hour12: true,
-  timeZone: "America/Costa_Rica",
+  timeZone: "UTC",
 })
 
 const moneyFmt = new Intl.NumberFormat("es-CR", {

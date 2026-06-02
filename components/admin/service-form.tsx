@@ -1,7 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { Clock, BadgeCent, Type, AlignLeft, Trash2, Loader2, Scissors } from "lucide-react"
+import { Clock, BadgeCent, Type, AlignLeft, Trash2, Loader2, Scissors, Users, Tag, ChevronsUpDown, X, Check, Plus } from "lucide-react"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,24 +12,29 @@ import { Textarea } from "@/components/ui/textarea"
 import { ServiceCard } from "@/components/admin/service-card"
 import { createService, updateService, deleteService } from "@/app/[slug]/admin/servicios/actions"
 import { toast } from "sonner"
-import { BusinessType } from "@/lib/dictionaries"
+import { BusinessType, getTerminology } from "@/lib/dictionaries"
 import { getBusinessIcon } from "@/lib/business-icons"
 
 interface ServiceFormProps {
   slug: string
   shopId?: string
   businessType?: BusinessType
+  staffList: { id: string; name: string }[]
+  categoriesList?: { id: string; name: string }[]
   initialData?: {
     id: string
     name: string
     description: string | null
     price: number
     duration: number
+    staffMembers?: { id: string }[]
+    categories?: { id: string; name: string }[]
   }
   onSuccess?: () => void
 }
 
-export function ServiceForm({ slug, shopId, businessType = "BARBERIA", initialData, onSuccess }: ServiceFormProps) {
+export function ServiceForm({ slug, shopId, businessType = "BARBERIA", staffList, categoriesList = [], initialData, onSuccess }: ServiceFormProps) {
+  const t = getTerminology(businessType)
   const [loading, setLoading] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const initialDuration = initialData?.duration || 30
@@ -41,16 +49,42 @@ export function ServiceForm({ slug, shopId, businessType = "BARBERIA", initialDa
     minutes: initialMinutes.toString()
   })
 
+  const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>(
+    initialData?.staffMembers?.map(s => s.id) || []
+  )
+
+  const [openCategories, setOpenCategories] = useState(false)
+  const [categorySearch, setCategorySearch] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(
+    initialData?.categories?.[0]?.name || null
+  )
+
+  const filteredCategories = categoriesList
+    .map(c => c.name)
+    .filter(name => selectedCategory !== name)
+
+  const getCategoryExamples = () => {
+    switch (businessType) {
+      case "BARBERIA": return "Ej. Cortes, Barba, Tratamientos"
+      case "SALON_BELLEZA": return "Ej. Cabello, Uñas, Maquillaje"
+      case "CLINICA": return "Ej. Fisioterapia, Cardiología, Odontología"
+      case "SPA": return "Ej. Masajes, Faciales, Relajación"
+      default: return "Ej. General, Especial, Premium"
+    }
+  }
+
   const isEditing = !!initialData
 
-  const isValid = previewData.name.trim() !== "" && previewData.price !== "" && (previewData.hours !== "" || previewData.minutes !== "")
+  const isValid = previewData.name.trim() !== "" && previewData.price !== "" && (previewData.hours !== "" || previewData.minutes !== "") && selectedStaffIds.length > 0 && selectedCategory !== null
   
   const hasChanges = isEditing 
     ? previewData.name !== (initialData?.name || "") ||
       previewData.description !== (initialData?.description || "") ||
       previewData.price !== (initialData?.price?.toString() || "") ||
       previewData.hours !== initialHours.toString() ||
-      previewData.minutes !== initialMinutes.toString()
+      previewData.minutes !== initialMinutes.toString() ||
+      JSON.stringify(selectedStaffIds.sort()) !== JSON.stringify((initialData?.staffMembers?.map(s => s.id) || []).sort()) ||
+      selectedCategory !== (initialData?.categories?.[0]?.name || null)
     : isValid
 
   // Selection of icon based on business type for the preview header
@@ -71,6 +105,14 @@ export function ServiceForm({ slug, shopId, businessType = "BARBERIA", initialDa
     // Combine hours and minutes into total duration
     const totalMinutes = (Number(previewData.hours) * 60) + Number(previewData.minutes)
     formData.set("duration", totalMinutes.toString())
+    
+    // Append selected staff
+    selectedStaffIds.forEach(id => formData.append("staffIds", id))
+
+    // Append selected category
+    if (selectedCategory) {
+      formData.append("category", selectedCategory)
+    }
 
     try {
       if (isEditing) {
@@ -109,7 +151,7 @@ export function ServiceForm({ slug, shopId, businessType = "BARBERIA", initialDa
       <form onSubmit={handleSubmit} className="grid gap-8">
         <div className="grid gap-2.5">
           <Label htmlFor="name" className="flex items-center gap-2 font-medium text-sm text-foreground/80">
-            <Type className="h-4 w-4 text-primary" /> Nombre del Servicio
+            <Type className="h-4 w-4 text-primary" /> Nombre
           </Label>
           <Input 
             id="name" 
@@ -201,6 +243,159 @@ export function ServiceForm({ slug, shopId, businessType = "BARBERIA", initialDa
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="grid gap-3">
+          <Label className="flex items-center gap-2 font-medium text-sm text-foreground/80">
+            <Tag className="h-4 w-4 text-primary" /> Categoría
+          </Label>
+          <p className="text-xs text-muted-foreground mb-1">
+            Cada {t.service.toLowerCase()} debe pertenecer a una sola categoría general. {getCategoryExamples()}
+          </p>
+          
+          <Popover open={openCategories} onOpenChange={setOpenCategories}>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                role="combobox"
+                aria-expanded={openCategories}
+                className="w-full justify-between h-auto min-h-11 bg-background border-border hover:bg-background px-3"
+                disabled={loading || deleting}
+              >
+                <div className="flex flex-wrap gap-1.5 py-1">
+                  {!selectedCategory && (
+                    <span className="text-muted-foreground font-normal">Seleccionar o crear categoría...</span>
+                  )}
+                  {selectedCategory && (
+                    <Badge variant="secondary" className="px-1.5 flex items-center gap-1 rounded-md text-sm font-medium">
+                      {selectedCategory}
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        className="rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-muted-foreground/20 p-0.5 cursor-pointer"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            setSelectedCategory(null)
+                          }
+                        }}
+                        onMouseDown={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                        }}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          setSelectedCategory(null)
+                        }}
+                      >
+                        <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                      </div>
+                    </Badge>
+                  )}
+                </div>
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+              <Command>
+                <CommandInput 
+                  placeholder="Buscar o crear categoría..." 
+                  value={categorySearch}
+                  onValueChange={setCategorySearch}
+                />
+                <CommandList>
+                  <CommandEmpty className="py-2 px-4">
+                    {categorySearch.trim() !== "" ? (
+                      <button
+                        type="button"
+                        className="w-full text-left px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground rounded-sm cursor-pointer"
+                        onClick={() => {
+                          setSelectedCategory(categorySearch.trim())
+                          setCategorySearch("")
+                          setOpenCategories(false)
+                        }}
+                      >
+                        <Plus className="inline mr-2 h-4 w-4" /> Crear "{categorySearch.trim()}"
+                      </button>
+                    ) : (
+                      "Sin resultados."
+                    )}
+                  </CommandEmpty>
+                  <CommandGroup>
+                    {filteredCategories.map((category) => (
+                      <CommandItem
+                        key={category}
+                        value={category}
+                        onSelect={(currentValue) => {
+                          setSelectedCategory(category) // Use the exact case from existing
+                          setCategorySearch("")
+                          setOpenCategories(false)
+                        }}
+                      >
+                        <Check
+                          className={`mr-2 h-4 w-4 ${selectedCategory === category ? "opacity-100" : "opacity-0"}`}
+                        />
+                        {category}
+                      </CommandItem>
+                    ))}
+                    {categorySearch.trim() !== "" && !filteredCategories.some(c => c.toLowerCase() === categorySearch.trim().toLowerCase()) && selectedCategory?.toLowerCase() !== categorySearch.trim().toLowerCase() && (
+                       <CommandItem
+                         key={`create-${categorySearch}`}
+                         value={categorySearch}
+                         onSelect={(currentValue) => {
+                           setSelectedCategory(categorySearch.trim())
+                           setCategorySearch("")
+                           setOpenCategories(false)
+                         }}
+                         className="text-primary font-medium"
+                       >
+                         <Plus className="mr-2 h-4 w-4" /> Crear "{categorySearch.trim()}"
+                       </CommandItem>
+                    )}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
+        {!selectedCategory && (
+          <p className="text-xs text-destructive font-medium -mt-1">Debes seleccionar una categoría.</p>
+        )}
+
+        <div className="grid gap-3">
+          <Label className="flex items-center gap-2 font-medium text-sm text-foreground/80">
+            <Users className="h-4 w-4 text-primary" /> {t.staffPlural}
+          </Label>
+          <div className="flex flex-wrap gap-2">
+            {staffList.map((staff) => {
+              const isSelected = selectedStaffIds.includes(staff.id)
+              return (
+                <button
+                  key={staff.id}
+                  type="button"
+                  onClick={() => {
+                    if (isSelected) {
+                      setSelectedStaffIds(selectedStaffIds.filter(id => id !== staff.id))
+                    } else {
+                      setSelectedStaffIds([...selectedStaffIds, staff.id])
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                    isSelected 
+                      ? "bg-primary text-primary-foreground shadow-sm" 
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  }`}
+                  disabled={loading || deleting}
+                >
+                  {staff.name}
+                </button>
+              )
+            })}
+          </div>
+          {selectedStaffIds.length === 0 && (
+            <p className="text-xs text-destructive mt-1 font-medium">Debes seleccionar al menos un {t.staff.toLowerCase()}.</p>
+          )}
         </div>
 
         <div className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-center sm:justify-between border-t border-border/60">

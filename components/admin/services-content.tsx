@@ -6,16 +6,23 @@ interface ServicesContentProps {
   shopId: string
   slug: string
   businessType: BusinessType
+  staffList: { id: string; name: string }[]
 }
 
-export async function ServicesContent({ shopId, slug, businessType }: ServicesContentProps) {
-  const services = await prisma.service.findMany({
-    where: { shopId },
-    orderBy: { createdAt: "desc" },
-    include: { shop: true }
-  }) as any[]
+export async function ServicesContent({ shopId, slug, businessType, staffList }: ServicesContentProps) {
+  const [services, categories] = await Promise.all([
+    prisma.service.findMany({
+      where: { shopId },
+      orderBy: { createdAt: "desc" },
+      include: { shop: true, staffMembers: true, categories: true }
+    }),
+    prisma.serviceCategory.findMany({
+      where: { shopId },
+      orderBy: { name: "asc" }
+    })
+  ])
 
   return (
-    <ServicesList services={services} slug={slug} shopId={shopId} businessType={businessType} />
+    <ServicesList services={services} categories={categories} slug={slug} shopId={shopId} businessType={businessType} staffList={staffList} />
   )
 }

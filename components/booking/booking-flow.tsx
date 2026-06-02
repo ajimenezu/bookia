@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useTransition, useEffect, useCallback } from "react"
+import { useState, useTransition, useEffect, useCallback, useMemo } from "react"
 
 import { CheckCircle2, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { fetchAvailableSlots, createBooking } from "@/app/schedule/actions"
 import { BusinessType, getTerminology } from "@/lib/dictionaries"
 import { getBusinessIcon } from "@/lib/business-icons"
@@ -24,6 +25,7 @@ interface ServiceData {
   price: number
   duration: number
   description: string | null
+  categories?: string[]
 }
 
 interface StaffData {
@@ -60,6 +62,7 @@ interface BookingFlowProps {
   rescheduleId?: string
   initialSelectedServices?: string[]
   initialSelectedStaffId?: string | null
+  isLoggedIn?: boolean
 }
 
 type Step = "service" | "barber" | "date" | "time" | "info"
@@ -81,10 +84,12 @@ export function BookingFlow({
   initialServiceId,
   rescheduleId,
   initialSelectedServices,
-  initialSelectedStaffId
+  initialSelectedStaffId,
+  isLoggedIn = false
 }: BookingFlowProps) {
   const t = getTerminology(businessType)
   const BusinessIcon = getBusinessIcon(businessType)
+  const router = useRouter()
   const [selectedServices, setSelectedServices] = useState<string[]>(
     initialSelectedServices || (initialServiceId ? [initialServiceId] : [])
   )
@@ -109,6 +114,31 @@ export function BookingFlow({
   const [loadingStaff, setLoadingStaff] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [bookingError, setBookingError] = useState<string | null>(null)
+
+  // Filter staff to only those offering at least one of the selected services
+  // Staff with serviceIds.length === 0 ("Ninguno") are excluded
+  const filteredStaff = useMemo(() => {
+    return selectedServices.length > 0
+      ? staff.filter(s => (s.serviceIds || []).length > 0 && selectedServices.some(sid => (s.serviceIds || []).includes(sid)))
+      : staff.filter(s => (s.serviceIds || []).length > 0)
+  }, [selectedServices, staff])
+
+  const allStaff = useMemo(() => {
+    return filteredStaff.length > 1
+      ? [{ id: "auto", name: "Asignación automática", serviceIds: [] }, ...filteredStaff]
+      : filteredStaff
+  }, [filteredStaff])
+
+  // Auto-assign staff if only one is available for the selected services
+  useEffect(() => {
+    if (isServiceStepDone) {
+      if (filteredStaff.length === 1 && selectedBarber !== filteredStaff[0].id) {
+        setSelectedBarber(filteredStaff[0].id)
+      } else if (selectedBarber && selectedBarber !== "auto" && !filteredStaff.some(s => s.id === selectedBarber)) {
+        setSelectedBarber(null)
+      }
+    }
+  }, [isServiceStepDone, filteredStaff, selectedBarber])
 
   const currentStep: Step = !isServiceStepDone
     ? "service"
@@ -258,17 +288,15 @@ export function BookingFlow({
     setAvailableSlots([])
     setAssignedAutoStaff(null)
     clearBookingState()
+
+    if (!isAdmin) {
+      if (isLoggedIn) {
+        router.push(`/${shopSlug}/profile`)
+      } else {
+        router.push(`/${shopSlug}`)
+      }
+    }
   }
-
-  // Filter staff to only those offering at least one of the selected services
-  // Staff with serviceIds.length === 0 ("Ninguno") are excluded
-  const filteredStaff = selectedServices.length > 0
-    ? staff.filter(s => (s.serviceIds || []).length > 0 && selectedServices.some(sid => (s.serviceIds || []).includes(sid)))
-    : staff.filter(s => (s.serviceIds || []).length > 0)
-
-  const allStaff = filteredStaff.length > 1
-    ? [{ id: "auto", name: "Asignación automática", serviceIds: [] }, ...filteredStaff]
-    : filteredStaff
 
   const selectedServicesDetails = services.filter((s) => selectedServices.includes(s.id))
   const totalPrice = selectedServicesDetails.reduce((sum, s) => sum + s.price, 0)
@@ -364,7 +392,7 @@ export function BookingFlow({
             selectedDate={selectedDate}
             handleDateSelect={handleDateSelect}
             shopSchedules={shopSchedules}
-            staff={staff}
+            staff={filteredStaff}
             setIsServiceStepDone={setIsServiceStepDone}
             setSelectedBarber={setSelectedBarber}
             setSelectedDate={setSelectedDate}

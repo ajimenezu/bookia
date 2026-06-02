@@ -208,7 +208,7 @@ export function ApprovalSidePanel({
                       <div className="text-sm bg-muted/30 rounded-lg p-2 border border-border/50">
                         <p className="font-semibold text-xs flex items-center gap-1.5">
                           <Calendar className="h-3 w-3 text-primary" />
-                          {new Date(to.startDate).toLocaleDateString()} al {new Date(to.endDate).toLocaleDateString()}
+                          {new Date(to.startDate).toLocaleDateString([], { timeZone: 'UTC' })} al {new Date(to.endDate).toLocaleDateString([], { timeZone: 'UTC' })}
                         </p>
                         {to.note && (
                           <p className="text-[11px] text-muted-foreground mt-1 italic flex items-center gap-1">
@@ -287,12 +287,12 @@ export function ApprovalSidePanel({
                       <div className="text-sm bg-muted/30 rounded-lg p-2 border border-border/50">
                         <p className="flex items-center justify-between">
                           <span className="text-muted-foreground">Fecha:</span>
-                          <span className="font-semibold">{new Date(app.startTime).toLocaleDateString()}</span>
+                          <span className="font-semibold">{new Date(app.startTime).toLocaleDateString([], { timeZone: 'UTC' })}</span>
                         </p>
                         <p className="flex items-center justify-between mt-1">
                           <span className="text-muted-foreground">Hora:</span>
                           <span className="font-semibold">
-                            {new Date(app.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {new Date(app.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })}
                           </span>
                         </p>
                       </div>

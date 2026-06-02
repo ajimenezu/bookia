@@ -11,6 +11,8 @@ const serviceSchema = z.object({
   price: z.number().nonnegative("El precio debe ser un número positivo"),
   duration: z.number().int().positive("La duración debe ser un número positivo"),
   shopId: z.string().min(1, "El ID de la tienda es obligatorio"),
+  staffIds: z.array(z.string()).min(1, "Debe seleccionar al menos un miembro del equipo para este servicio"),
+  category: z.string().min(1, "Debe seleccionar una categoría para este servicio")
 })
 
 async function validateServiceOwnership(serviceId: string, membershipShopId: string, isSuperAdmin: boolean) {
@@ -41,6 +43,8 @@ export async function createService(formData: FormData) {
       price: parseFloat(formData.get("price") as string),
       duration: parseInt(formData.get("duration") as string, 10),
       shopId: targetShopId,
+      staffIds: formData.getAll("staffIds"),
+      category: formData.get("category"),
     }
 
     const validated = serviceSchema.safeParse(rawData)
@@ -56,6 +60,15 @@ export async function createService(formData: FormData) {
         price: validated.data.price,
         duration: validated.data.duration,
         shopId: targetShopId,
+        staffMembers: {
+          connect: validated.data.staffIds.map(id => ({ id }))
+        },
+        categories: {
+          connectOrCreate: {
+            where: { shopId_name: { shopId: targetShopId, name: validated.data.category.trim() } },
+            create: { name: validated.data.category.trim(), shopId: targetShopId }
+          }
+        }
       },
     })
 
@@ -81,6 +94,8 @@ export async function updateService(formData: FormData) {
       price: parseFloat(formData.get("price") as string),
       duration: parseInt(formData.get("duration") as string, 10),
       shopId: service.shopId,
+      staffIds: formData.getAll("staffIds"),
+      category: formData.get("category"),
     }
 
     const validated = serviceSchema.safeParse(rawData)
@@ -95,6 +110,16 @@ export async function updateService(formData: FormData) {
         description: validated.data.description,
         price: validated.data.price,
         duration: validated.data.duration,
+        staffMembers: {
+          set: validated.data.staffIds.map(id => ({ id }))
+        },
+        categories: {
+          set: [],
+          connectOrCreate: {
+            where: { shopId_name: { shopId: targetShopId, name: validated.data.category.trim() } },
+            create: { name: validated.data.category.trim(), shopId: targetShopId }
+          }
+        }
       },
     })
 

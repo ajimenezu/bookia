@@ -1,6 +1,6 @@
 "use client"
 
-import { Dispatch, SetStateAction } from "react"
+import { Dispatch, SetStateAction, useState } from "react"
 
 import { CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -13,6 +13,7 @@ interface ServiceData {
   price: number
   duration: number
   description: string | null
+  categories?: string[]
 }
 
 interface ServiceStepProps {
@@ -46,25 +47,76 @@ export function ServiceStep({
   handleAuthRedirect,
   whatsappPhone
 }: ServiceStepProps) {
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const allCategories = Array.from(new Set(services.flatMap(s => s.categories || []))).sort()
+  const filteredServices = selectedCategory 
+    ? services.filter(s => s.categories?.includes(selectedCategory))
+    : services
+
+  const firstSelectedService = services.find(s => selectedServices.includes(s.id))
+  const activeCategory = firstSelectedService?.categories?.[0] || null
+
   return (
     <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 px-4 sm:px-6 w-full min-w-0">
       <h2 className="mb-6 text-xl font-black text-foreground tracking-tight">Selecciona tus {t.servicePlural.toLowerCase()}</h2>
+      
+      {allCategories.length > 0 && (
+        <div className="mb-6 flex overflow-x-auto pb-4 pt-2 px-2 -mx-2 gap-3 no-scrollbar snap-x">
+          <button
+            onClick={() => setSelectedCategory(null)}
+            className={cn(
+              "snap-start shrink-0 px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all",
+              selectedCategory === null
+                ? "bg-primary text-primary-foreground shadow-md shadow-primary/20 scale-105"
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
+            )}
+          >
+            Todas
+          </button>
+          {allCategories.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={cn(
+                "snap-start shrink-0 px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all",
+                selectedCategory === cat
+                  ? "bg-primary text-primary-foreground shadow-md shadow-primary/20 scale-105"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              )}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="flex flex-col gap-4 w-full min-w-0">
-        {services.map((svc) => {
+        {filteredServices.length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground font-medium">No se encontraron {t.servicePlural.toLowerCase()} en esta categoría.</p>
+          </div>
+        )}
+        {filteredServices.map((svc) => {
           const isSelected = selectedServices.includes(svc.id)
+          const isBlocked = activeCategory && !isSelected && (!svc.categories || !svc.categories.includes(activeCategory))
+          
           return (
             <button
               key={svc.id}
               onClick={() => {
+                if (isBlocked) return
                 setSelectedServices(prev =>
                   isSelected ? prev.filter(id => id !== svc.id) : [...prev, svc.id]
                 )
               }}
+              disabled={isBlocked as boolean}
               className={cn(
-                "flex items-center gap-3 sm:gap-4 rounded-2xl border p-4 sm:p-5 text-left transition-all cursor-pointer relative shadow-sm active:scale-[0.98] w-full min-w-0",
+                "flex items-center gap-3 sm:gap-4 rounded-2xl border p-4 sm:p-5 text-left transition-all relative shadow-sm w-full min-w-0",
                 isSelected
-                  ? "border-primary bg-primary/5 shadow-md shadow-primary/5"
-                  : "border-border bg-card hover:border-primary/30"
+                  ? "border-primary bg-primary/5 shadow-md shadow-primary/5 cursor-pointer active:scale-[0.98]"
+                  : isBlocked
+                  ? "border-border/50 bg-muted/30 opacity-50 pointer-events-none"
+                  : "border-border bg-card hover:border-primary/30 cursor-pointer active:scale-[0.98]"
               )}
             >
               <div className={cn(
@@ -94,13 +146,13 @@ export function ServiceStep({
               </div>
               <div className="text-right">
                 <span className="text-xl font-black text-primary tracking-tighter">{formatPrice(svc.price)}</span>
+                {isBlocked && (
+                  <p className="text-[10px] text-muted-foreground mt-1 text-right max-w-[80px]">Categoría distinta</p>
+                )}
               </div>
             </button>
           )
         })}
-        {services.length === 0 && (
-          <p className="py-8 text-center text-muted-foreground">No hay {t.servicePlural.toLowerCase()} disponibles</p>
-        )}
       </div>
       {whatsappPhone && (
         <a

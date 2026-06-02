@@ -32,7 +32,10 @@ export default async function ShopPublicPage({ params }: PageProps) {
   const shop = await prisma.shop.findFirst({
     where: { slug },
     include: {
-      services: { orderBy: { price: "asc" } },
+      services: { 
+        orderBy: { price: "asc" },
+        include: { categories: true }
+      },
       memberships: {
         where: { role: { in: ["STAFF", "OWNER"] } },
         include: { user: { select: { id: true, name: true } } },
@@ -48,6 +51,7 @@ export default async function ShopPublicPage({ params }: PageProps) {
     price: s.price,
     duration: s.duration,
     description: s.description,
+    categories: s.categories.map(c => c.name),
   }))
 
   const staff = shop.memberships.map((m) => ({

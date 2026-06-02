@@ -11,9 +11,11 @@ interface CreateServiceButtonProps {
   shopId: string
   slug: string
   businessType: BusinessType
+  staffList: { id: string; name: string }[]
+  categoriesList: { id: string; name: string }[]
 }
 
-export function CreateServiceButton({ shopId, slug, businessType }: CreateServiceButtonProps) {
+export function CreateServiceButton({ shopId, slug, businessType, staffList, categoriesList }: CreateServiceButtonProps) {
   const [isOpen, setIsOpen] = useState(false)
   const t = getTerminology(businessType)
 
@@ -39,6 +41,8 @@ export function CreateServiceButton({ shopId, slug, businessType }: CreateServic
               slug={slug} 
               shopId={shopId}
               businessType={businessType}
+              staffList={staffList}
+              categoriesList={categoriesList}
               onSuccess={() => setIsOpen(false)} 
             />
           </div>

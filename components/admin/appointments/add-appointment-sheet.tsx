@@ -13,6 +13,7 @@ interface ServiceData {
   price: number
   duration: number
   description: string | null
+  categories?: string[]
 }
 
 interface StaffData {

@@ -118,6 +118,7 @@ export function AppointmentCard({ appointment, currentShopSlug }: { appointment:
       weekday: "long",
       day: "numeric",
       month: "long",
+      timeZone: "UTC"
     }).format(new Date(date))
   }
 
@@ -126,6 +127,7 @@ export function AppointmentCard({ appointment, currentShopSlug }: { appointment:
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
+      timeZone: "UTC"
     }).format(new Date(date))
   }
 

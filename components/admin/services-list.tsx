@@ -12,12 +12,14 @@ import { getTerminology } from "@/lib/dictionaries"
 
 interface ServicesListProps {
   services: any[]
+  categories?: any[]
   slug: string
   shopId: string
   businessType: BusinessType
+  staffList: { id: string; name: string }[]
 }
 
-export function ServicesList({ services, slug, shopId, businessType }: ServicesListProps) {
+export function ServicesList({ services, categories = [], slug, shopId, businessType, staffList }: ServicesListProps) {
   const [selectedService, setSelectedService] = useState<any | null>(null)
   const [isOpen, setIsOpen] = useState(false)
 
@@ -83,6 +85,8 @@ export function ServicesList({ services, slug, shopId, businessType }: ServicesL
               slug={slug} 
               shopId={shopId}
               businessType={businessType}
+              staffList={staffList}
+              categoriesList={categories}
               initialData={selectedService} 
               onSuccess={handleSuccess} 
             />

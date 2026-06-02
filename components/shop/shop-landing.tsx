@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import {
   MapPin,
@@ -16,7 +17,7 @@ import { getTerminology } from "@/lib/dictionaries"
 import type { BusinessType } from "@/lib/dictionaries"
 import { ShopNavbar } from "./shop-navbar"
 import { getBusinessIcon } from "@/lib/business-icons"
-import { shortenAddress } from "@/lib/utils"
+import { shortenAddress, cn } from "@/lib/utils"
 
 interface ServiceData {
   id: string
@@ -24,6 +25,7 @@ interface ServiceData {
   price: number
   duration: number
   description: string | null
+  categories?: string[]
 }
 
 interface StaffData {
@@ -74,8 +76,14 @@ function formatDuration(minutes: number) {
 }
 
 export function ShopLanding({ shop, services, staff, user, role }: ShopLandingProps) {
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const t = getTerminology(shop.businessType)
   const BusinessIcon = getBusinessIcon(shop.businessType)
+
+  const allCategories = Array.from(new Set(services.flatMap(s => s.categories || []))).sort()
+  const filteredServices = selectedCategory 
+    ? services.filter(s => s.categories?.includes(selectedCategory))
+    : services
 
   const whatsappHref = shop.whatsappPhone
     ? `https://wa.me/${shop.whatsappPhone.replace(/\D/g, "")}`
@@ -103,7 +111,16 @@ export function ShopLanding({ shop, services, staff, user, role }: ShopLandingPr
 
             {/* Name & Tagline */}
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-6 duration-1000">
-              <h1 className="text-5xl font-black tracking-tighter md:text-8xl bg-gradient-to-b from-foreground to-foreground/70 bg-clip-text text-transparent leading-tight pb-2">
+              <h1 
+                className={cn(
+                  "font-black tracking-tighter leading-tight pb-2 text-balance",
+                  shop.name.length <= 15 
+                    ? "text-5xl md:text-8xl bg-gradient-to-b from-foreground to-foreground/70 bg-clip-text text-transparent" 
+                    : shop.name.length <= 30
+                      ? "text-4xl md:text-6xl text-foreground"
+                      : "text-3xl md:text-5xl text-foreground"
+                )}
+              >
                 {shop.name}
               </h1>
               {shop.tagline && (
@@ -205,8 +222,44 @@ export function ShopLanding({ shop, services, staff, user, role }: ShopLandingPr
           </p>
         </div>
 
+        {allCategories.length > 0 && (
+          <div className="mb-10 flex overflow-x-auto pb-4 pt-2 px-2 -mx-2 gap-3 no-scrollbar snap-x">
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className={cn(
+                "snap-start shrink-0 px-5 py-2.5 rounded-full text-sm font-black uppercase tracking-widest transition-all",
+                selectedCategory === null
+                  ? "bg-primary text-primary-foreground shadow-md shadow-primary/20 scale-105"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              )}
+            >
+              Todas
+            </button>
+            {allCategories.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={cn(
+                  "snap-start shrink-0 px-5 py-2.5 rounded-full text-sm font-black uppercase tracking-widest transition-all",
+                  selectedCategory === cat
+                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/20 scale-105"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                )}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {filteredServices.length === 0 && (
+          <div className="text-center py-10">
+            <p className="text-muted-foreground font-medium">No se encontraron {t.servicePlural.toLowerCase()} en esta categoría.</p>
+          </div>
+        )}
+
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {services.map((svc) => (
+          {filteredServices.map((svc) => (
             <Link
               key={svc.id}
               href={`/${shop.slug}/schedule?service=${svc.id}`}

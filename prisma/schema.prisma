@@ -26,6 +26,7 @@ model Shop {
   whatsappPhone  String?
   appointments   Appointment[]
   services       Service[]
+  serviceCategories ServiceCategory[]
   memberships    ShopMember[]
   schedules      ShopSchedule[]
   staffSchedules StaffSchedule[]
@@ -132,6 +133,19 @@ model Service {
   shop              Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
   multiAppointments Appointment[] @relation("AppointmentServices")
   staffMembers      User[]        @relation("StaffServices")
+  categories        ServiceCategory[] @relation("ServiceCategories")
+}
+
+model ServiceCategory {
+  id        String    @id @default(cuid())
+  name      String
+  shopId    String
+  shop      Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  services  Service[] @relation("ServiceCategories")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([shopId, name])
 }
 
 model Appointment {

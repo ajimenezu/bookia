@@ -20,7 +20,11 @@ export async function DashboardDataWrapper({
   const { todayAppointments, monthCount } = await getAppointmentsData(shopId)
   
   const [services, staffData, clientsData] = await Promise.all([
-    prisma.service.findMany({ where: { shopId }, orderBy: { price: "asc" } }),
+    prisma.service.findMany({ 
+      where: { shopId }, 
+      orderBy: { price: "asc" },
+      include: { categories: true }
+    }),
     prisma.shopMember.findMany({
       where: { shopId, role: { in: ["STAFF", "OWNER"] } },
       include: { 
@@ -47,6 +51,7 @@ export async function DashboardDataWrapper({
     name: s.name,
     price: s.price,
     duration: s.duration,
+    categories: s.categories.map(c => c.name),
   }))
 
   const mappedStaff = staffData.map(m => ({

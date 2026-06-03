@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma"
+import { getTerminology, BusinessType } from "@/lib/dictionaries"
 import { sendBookingConfirmation } from "./send-booking-confirmation"
 import { sendBookingNotificationStaff } from "./send-booking-notification-staff"
 
@@ -39,7 +40,8 @@ export async function triggerAppointmentNotifications(
       : appointment.services.map(s => ({ name: s.name, price: s.price, duration: s.duration }))
 
     // 3. Resolve Customer Details
-    const customerName = appointment.customerName || appointment.customer?.name || "Cliente"
+    const terminology = getTerminology(shop.businessType as BusinessType)
+    const customerName = appointment.customerName || appointment.customer?.name || terminology.client
     const customerEmail = appointment.customerEmail || appointment.customer?.email
     const customerPhone = appointment.customerPhone || appointment.customer?.phone || null
 

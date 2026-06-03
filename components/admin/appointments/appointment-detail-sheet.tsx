@@ -8,7 +8,6 @@ import {
   User,
   Tag,
   Phone,
-  CreditCard,
   Edit3,
   CheckCircle2,
   XCircle,
@@ -35,7 +34,6 @@ import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { StatusBadge } from "./status-badge"
 import { formatTime, toCRDate, formatTime24h, convertTo12h } from "@/lib/date-utils"
-import { calculateAppointmentPrice, getAppointmentServicesName } from "@/lib/appointments"
 import { updateAppointmentStatus, updateBooking, fetchAvailableSlots, addAppointmentNote, updateAppointmentNote, deleteAppointmentNote } from "@/app/schedule/actions"
 import { AppointmentStatus } from "@prisma/client"
 import { toast } from "sonner"
@@ -49,16 +47,6 @@ import { es } from "date-fns/locale"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { BusinessType, getTerminology } from "@/lib/dictionaries"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 
 interface AppointmentDetailSheetProps {
   appointment: any
@@ -66,7 +54,7 @@ interface AppointmentDetailSheetProps {
   onOpenChange: (open: boolean) => void
   shopId: string
   businessType: BusinessType
-  services: { id: string; name: string; price: number; duration: number }[]
+  services: { id: string; name: string; price: number; duration: number; categories?: string[] }[]
   staff: { id: string; name: string }[]
 }
 
@@ -179,6 +167,12 @@ export function AppointmentDetailSheet({
       customerPhone !== initialPhone
     )
   }, [appointment, mode, selectedServices, selectedStaff, selectedDate, selectedTime, customerName, customerPhone])
+
+  const firstSelectedService = useMemo(() => {
+    return services.find(s => selectedServices.includes(s.id))
+  }, [services, selectedServices])
+  
+  const activeCategory = firstSelectedService?.categories?.[0] || null
 
   const handleStatusUpdate = async (newStatus: AppointmentStatus) => {
     setIsUpdating(true)
@@ -342,16 +336,7 @@ export function AppointmentDetailSheet({
     }
   }
 
-  const totalPrice = useMemo(() => {
-    if (!appointment) return 0
-    if (mode === "preview") {
-      return calculateAppointmentPrice(appointment)
-    } else {
-      return services
-        .filter(s => selectedServices.includes(s.id))
-        .reduce((acc, s) => acc + s.price, 0)
-    }
-  }, [appointment, mode, selectedServices, services])
+
 
   if (!appointment) return null
 
@@ -688,16 +673,23 @@ export function AppointmentDetailSheet({
                     <Tag className="h-4 w-4 text-primary" /> {t.servicePlural} Seleccionados
                   </Label>
                   <div className="grid gap-2 sm:grid-cols-2">
-                    {services.map((s) => (
+                    {services.map((s) => {
+                      const isSelected = selectedServices.includes(s.id)
+                      const isBlocked = activeCategory && !isSelected && (!s.categories || !s.categories.includes(activeCategory))
+
+                      return (
                       <div
                         key={s.id}
                         className={cn(
-                          "flex items-center space-x-3 rounded-xl border p-3 transition-all cursor-pointer",
-                          selectedServices.includes(s.id)
+                          "flex items-center space-x-3 rounded-xl border p-3 transition-all cursor-pointer relative",
+                          isSelected
                             ? "bg-primary/10 border-primary ring-1 ring-primary/20"
+                            : isBlocked
+                            ? "border-border/50 bg-muted/30 opacity-50 pointer-events-none"
                             : "bg-card border-border hover:bg-muted/50"
                         )}
                         onClick={() => {
+                          if (isBlocked) return;
                           setSelectedServices(prev =>
                             prev.includes(s.id)
                               ? prev.filter(id => id !== s.id)
@@ -706,7 +698,7 @@ export function AppointmentDetailSheet({
                         }}
                       >
                         <Checkbox
-                          checked={selectedServices.includes(s.id)}
+                          checked={isSelected}
                           onCheckedChange={() => { }} // Handled by div click
                           className="h-5 w-5 rounded-md"
                         />
@@ -714,8 +706,13 @@ export function AppointmentDetailSheet({
                           <p className="text-sm font-bold truncate">{s.name}</p>
                           <p className="text-[10px] text-muted-foreground font-medium">₡{s.price.toLocaleString()} • {s.duration}min</p>
                         </div>
+                        {isBlocked && (
+                          <p className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] text-muted-foreground bg-muted px-2 py-0.5 rounded uppercase font-bold tracking-widest">
+                            Distinta Cat.
+                          </p>
+                        )}
                       </div>
-                    ))}
+                    )})}
                   </div>
                 </section>
 

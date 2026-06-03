@@ -410,7 +410,7 @@ export function StaffDetailSheet({
                                 <User className="h-3 w-3" />
                               </div>
                               <p className="text-xs font-medium text-muted-foreground">
-                                Cliente: <span className="text-foreground font-bold">{app.customer?.name || "Cliente sin nombre"}</span>
+                                {t.client}: <span className="text-foreground font-bold">{app.customer?.name || `${t.client} sin nombre`}</span>
                               </p>
                             </div>
                           </div>

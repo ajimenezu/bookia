@@ -19,7 +19,11 @@ export async function AppointmentsContent({ shopId, businessType, weekOffset, vi
   // Parallel fetch for better performance
   const [appointments, services, staffData] = await Promise.all([
     getAppointmentsInRange(monday, sunday, shopId, undefined, "CANCELLED"),
-    prisma.service.findMany({ where: { shopId }, orderBy: { price: "asc" } }),
+    prisma.service.findMany({ 
+      where: { shopId }, 
+      orderBy: { price: "asc" },
+      include: { categories: true }
+    }),
     prisma.shopMember.findMany({
       where: { shopId, role: { in: ["STAFF", "OWNER"] } },
       include: { user: { select: { id: true, name: true } } }
@@ -31,6 +35,7 @@ export async function AppointmentsContent({ shopId, businessType, weekOffset, vi
     name: s.name,
     price: s.price,
     duration: s.duration,
+    categories: s.categories.map(c => c.name),
   }))
 
   const mappedStaff = staffData.map(m => ({

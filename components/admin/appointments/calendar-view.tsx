@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { StatusBadge } from "./status-badge"
+
 import { formatTime } from "@/lib/date-utils"
 import { AppointmentActions } from "./appointment-actions"
 import { AppointmentDetailSheet } from "./appointment-detail-sheet"

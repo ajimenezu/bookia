@@ -9,7 +9,6 @@ import {
   Facebook,
   Clock,
   ChevronDown,
-  Scissors,
   Sparkles,
   Star
 } from "lucide-react"
@@ -309,7 +308,7 @@ export function ShopLanding({ shop, services, staff, user, role }: ShopLandingPr
           <div className="mx-auto max-w-5xl px-6">
             <div className="mb-12 text-center space-y-3">
               <h2 className="text-3xl font-black md:text-5xl tracking-tight">
-                {t.staffGender === "f" ? "Nuestra" : "Nuestro"} {t.staff.toLowerCase()}
+                Nuestro Equipo
               </h2>
               <p className="mx-auto max-w-lg text-lg font-medium text-muted-foreground/60 leading-relaxed">
                 Expertos dedicados a brindarte el mejor servicio.
@@ -336,14 +335,6 @@ export function ShopLanding({ shop, services, staff, user, role }: ShopLandingPr
                     <p className="text-lg font-black text-card-foreground">
                       {member.name}
                     </p>
-                    <div className="flex justify-center gap-1">
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <Star
-                          key={s}
-                          className="h-3.5 w-3.5 fill-primary text-primary"
-                        />
-                      ))}
-                    </div>
                   </div>
                 </div>
               ))}

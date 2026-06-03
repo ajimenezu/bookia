@@ -1,5 +1,7 @@
 "use client"
 
+import { getTerminology } from "@/lib/dictionaries"
+
 import { useState, useEffect } from "react"
 import { Plus, UserPlus, Loader2, Wrench, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -21,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
+
 import { createUser, getShopServices } from "@/app/[slug]/admin/clientes/actions"
 import { toast } from "sonner"
 import { Role } from "@prisma/client"
@@ -34,9 +36,11 @@ interface CreateUserModalProps {
   isSuperAdmin: boolean
   shopId?: string
   mode?: 'CLIENT' | 'STAFF'
+  businessType?: string
 }
 
-export function CreateUserModal({ currentUserRole, isSuperAdmin, shopId, mode = 'CLIENT' }: CreateUserModalProps) {
+export function CreateUserModal({ currentUserRole, isSuperAdmin, shopId, mode = 'CLIENT', businessType = 'BARBERIA' }: CreateUserModalProps) {
+  const t = getTerminology(businessType as any)
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [services, setServices] = useState<ServiceOption[]>([])
@@ -57,7 +61,7 @@ export function CreateUserModal({ currentUserRole, isSuperAdmin, shopId, mode = 
   }, [open, mode, shopId])
 
   const getAvailableRoles = () => {
-    if (mode === 'CLIENT') return [{ value: "CUSTOMER", label: "Cliente" }]
+    if (mode === 'CLIENT') return [{ value: "CUSTOMER", label: t.client }]
     if (isSuperAdmin) return [
       { value: "STAFF", label: "Personal" },
       { value: "OWNER", label: "Dueño / Gerente" },
@@ -145,7 +149,7 @@ export function CreateUserModal({ currentUserRole, isSuperAdmin, shopId, mode = 
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <UserPlus className="h-5 w-5 text-primary" />
-              {mode === 'STAFF' ? 'Crear Nuevo Personal' : 'Crear Nuevo Cliente'}
+              {mode === 'STAFF' ? 'Crear Nuevo Personal' : `Crear Nuevo ${t.client}`}
             </DialogTitle>
             <DialogDescription>
               Los campos marcados con * son obligatorios.

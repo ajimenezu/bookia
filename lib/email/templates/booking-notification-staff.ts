@@ -1,10 +1,12 @@
 import type { EmailTheme } from "../theme"
+import { getTerminology, BusinessType } from "@/lib/dictionaries"
 
 export interface BookingNotificationStaffTemplateData {
   shop: {
     name: string
     slug: string
     logoUrl: string | null
+    businessType: string
   }
   customer: {
     name: string
@@ -58,6 +60,7 @@ export function renderBookingNotificationStaff(d: BookingNotificationStaffTempla
   text: string
 } {
   const { shop, customer, appointment, siteUrl, theme } = d
+  const terminology = getTerminology(shop.businessType as BusinessType)
   const dateStr = dateFmt.format(appointment.startTime)
   const startStr = timeFmt.format(appointment.startTime)
   const endStr = timeFmt.format(appointment.endTime)
@@ -130,7 +133,7 @@ export function renderBookingNotificationStaff(d: BookingNotificationStaffTempla
           <tr>
             <td style="padding:32px">
               <div style="background:#f9fafb;border-radius:8px;padding:16px 20px;margin-bottom:20px">
-                <div style="font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Cliente</div>
+                <div style="font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">${escapeHtml(terminology.client)}</div>
                 <div style="font-size:16px;color:#111827;font-weight:600">${escapeHtml(customer.name)}</div>
                 ${phoneLine}
                 ${emailLine}
@@ -184,7 +187,7 @@ export function renderBookingNotificationStaff(d: BookingNotificationStaffTempla
       ? `Reserva actualizada en ${shop.name}`
       : `Reserva cancelada en ${shop.name}`,
     ``,
-    `Cliente: ${customer.name}`,
+    `${terminology.client}: ${customer.name}`,
     customer.phone ? `Teléfono: ${customer.phone}` : null,
     customer.email ? `Email: ${customer.email}` : null,
     ``,

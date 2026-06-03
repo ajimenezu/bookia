@@ -8,6 +8,7 @@ import {
   LogOut,
   User,
   LayoutDashboard,
+  CalendarPlus,
 } from "lucide-react"
 import { 
   DropdownMenu, 
@@ -44,7 +45,7 @@ export function ShopNavbar({ shop, user, role, showScheduleButton = true }: Shop
   const BusinessIcon = getBusinessIcon(shop.businessType)
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-lg">
-      <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
+      <div className="mx-auto flex min-h-[4rem] py-2 max-w-5xl items-center justify-between px-4 sm:px-6 gap-3 sm:gap-4">
         <Link href={`/${shop.slug}`} className="flex items-center gap-2.5 hover:opacity-90 transition-all active:scale-95">
           {shop.logoUrl ? (
             <Image
@@ -52,23 +53,26 @@ export function ShopNavbar({ shop, user, role, showScheduleButton = true }: Shop
               alt={shop.name}
               width={38}
               height={38}
-              className="rounded-xl object-cover shadow-sm bg-muted"
+              className="rounded-xl object-cover shadow-sm bg-muted shrink-0"
             />
           ) : (
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
               <BusinessIcon className="h-5 w-5" />
             </div>
           )}
-          <span className="text-xl font-black text-foreground tracking-tight">{shop.name}</span>
+          <span className="text-sm sm:text-lg md:text-xl font-black text-foreground tracking-tight line-clamp-2 leading-tight">
+            {shop.name}
+          </span>
         </Link>
-        <div className="flex items-center gap-3 sm:gap-6">
+        <div className="flex items-center gap-2 sm:gap-6 shrink-0">
           {!user && (
             <Link
               href={`/${shop.slug}/login`}
               id="nav-login-btn"
-              className="px-3 py-2 text-sm font-bold text-muted-foreground transition-colors hover:text-primary uppercase tracking-widest text-[10px]"
+              className="px-2 sm:px-3 py-2 text-[10px] sm:text-sm font-bold text-muted-foreground transition-colors hover:text-primary uppercase tracking-widest flex items-center justify-center"
+              title="Iniciar sesión"
             >
-              Iniciar sesión
+              <span>Iniciar sesión</span>
             </Link>
           )}
 
@@ -76,9 +80,11 @@ export function ShopNavbar({ shop, user, role, showScheduleButton = true }: Shop
             <Link
               href={`/${shop.slug}/schedule`}
               id="nav-book-btn"
-              className="rounded-xl bg-primary px-5 py-2.5 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95 flex items-center justify-center"
+              className="rounded-xl bg-primary p-2.5 sm:px-5 sm:py-2.5 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95 flex items-center justify-center"
+              title={t.bookVerb}
             >
-              {t.bookVerb}
+              <span className="hidden sm:inline">{t.bookVerb}</span>
+              <CalendarPlus className="h-4 w-4 sm:hidden" />
             </Link>
           )}
 

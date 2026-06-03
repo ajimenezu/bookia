@@ -98,7 +98,7 @@ export async function getAppointmentsData(shopId: string) {
   const monthEnd = new Date(crNow.getFullYear(), crNow.getMonth() + 1, 0, 23, 59, 59, 999)
 
   const [todayAppointments, monthCount] = await Promise.all([
-    getAppointmentsInRange(todayStart, todayEnd, shopId),
+    getAppointmentsInRange(todayStart, todayEnd, shopId, undefined, "CANCELLED"),
     prisma.appointment.count({
       where: {
         shopId,

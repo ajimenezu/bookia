@@ -23,10 +23,11 @@ description: Comprehensive checklist for developing new features, including UI g
 - **Icons & Fonts**: `lucide-react` (strokeWidth=1.5). Font: `Geist` (`font-sans`), `font-mono` for IDs.
 
 ## 3. Layout & Skeletons
-- **Responsiveness**: Mobile-first (`flex-col` -> `md:flex-row`).
+- **Responsiveness**: Mobile-first (`flex-col` -> `md:flex-row`). Use fluid typography or `text-wrap` for large text blocks to prevent layout breaking on small screens.
 - **Loading State**: `loading.tsx` MUST perfectly match `page.tsx` skeleton layout.
 - **UI Stability**: To prevent layout "jumping" when `Suspense` resolves, keep high-level layout elements (like headers and "Create" buttons) at the page level (Server Component) rather than inside the suspended Client Component.
-- **Pagination**: Implement server-side pagination (10 per page) with infinite scroll for administrative lists (e.g., Client list).
+- **Pagination**: Implement server-side pagination (10 per page) with infinite scroll for administrative lists (e.g., Client list). Limit inline history lists to 5 items max.
+- **Scrollability**: Ensure panels/sheets with dynamic content utilize `overflow-y-auto` to prevent clipping.
 - **IDs**: Use unique UUID/CUID for elements to ensure multi-tenant auto-fill isolation.
 
 ## 4. Notifications

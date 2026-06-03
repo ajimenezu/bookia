@@ -12,6 +12,6 @@ export function getResendClient(): Resend {
   return cached
 }
 
-// Single sending domain configured in Resend (send.excalitech.net).
+// Single sending domain configured in Resend (send.mibookia.com).
 // Override per-environment with EMAIL_FROM_DOMAIN if needed.
-export const EMAIL_FROM_DOMAIN = process.env.EMAIL_FROM_DOMAIN ?? "send.excalitech.net"
+export const EMAIL_FROM_DOMAIN = process.env.EMAIL_FROM_DOMAIN ?? "send.mibookia.com"

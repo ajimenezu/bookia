@@ -93,7 +93,7 @@ export async function StaffContent({ shopId, role, currentUserId, isSuperAdmin, 
           if (time >= weekStart.getTime() && time <= weekEnd.getTime()) weekAppointments++
         }
 
-        let specialty = "Cliente"
+        let specialty = t.client
         if (member.role === Role.OWNER) specialty = "Propietario / Gerente"
         else if (member.role === Role.STAFF) specialty = "Personal"
         else if (member.role === Role.SUPER_ADMIN) specialty = "Administrador"

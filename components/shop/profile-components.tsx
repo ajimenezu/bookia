@@ -22,6 +22,17 @@ import { cancelAppointmentByCustomer } from "@/app/[slug]/profile/actions"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { EditProfileModal } from "./edit-profile-modal"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface UserData {
   name: string | null
@@ -99,8 +110,6 @@ export function AppointmentCard({ appointment, currentShopSlug }: { appointment:
                      (appointment.status === AppointmentStatus.PENDING || appointment.status === AppointmentStatus.CONFIRMED)
   
   const handleCancel = async () => {
-    if (!confirm("¿Estás seguro de que deseas cancelar esta cita?")) return
-    
     setIsCancelling(true)
     const result = await cancelAppointmentByCustomer({ appointmentId: appointment.id, shopSlug: currentShopSlug })
     setIsCancelling(false)
@@ -177,14 +186,41 @@ export function AppointmentCard({ appointment, currentShopSlug }: { appointment:
         
         <div className="flex flex-wrap items-center gap-2 ml-auto">
           {isUpcoming && (
-            <button
-              onClick={handleCancel}
-              disabled={isCancelling}
-              className="flex h-10 items-center justify-center gap-2 rounded-xl border border-destructive/20 bg-destructive/5 px-4 text-xs font-black uppercase tracking-widest text-destructive transition-all hover:bg-destructive hover:text-destructive-foreground disabled:opacity-50"
-            >
-              <Trash2 className="h-4 w-4" />
-              Cancelar
-            </button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button
+                  disabled={isCancelling}
+                  className="flex h-10 items-center justify-center gap-2 rounded-xl border border-destructive/20 bg-destructive/5 px-4 text-xs font-black uppercase tracking-widest text-destructive transition-all hover:bg-destructive hover:text-destructive-foreground disabled:opacity-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {isCancelling ? "Cancelando..." : "Cancelar"}
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="rounded-[2.5rem] p-8 sm:p-12 border-border shadow-2xl bg-card overflow-hidden w-[90%] max-w-md">
+                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-destructive/40 via-destructive to-destructive/40" />
+                <AlertDialogHeader className="items-center text-center space-y-4">
+                  <div className="relative">
+                     <div className="absolute inset-0 bg-destructive/20 blur-2xl rounded-full scale-150 animate-pulse" />
+                     <div className="relative flex h-20 w-20 items-center justify-center rounded-3xl bg-destructive/15 border border-destructive/20 shadow-inner">
+                        <AlertCircle className="h-10 w-10 text-destructive" />
+                     </div>
+                  </div>
+                  <AlertDialogTitle className="text-2xl font-black tracking-tight mt-4">¿Cancelar Cita?</AlertDialogTitle>
+                  <AlertDialogDescription className="text-base font-medium">
+                    Estás a punto de cancelar tu cita para <strong className="text-foreground">{appointment.serviceName}</strong>. Esta acción no se puede deshacer.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter className="mt-8 flex flex-col sm:flex-row gap-3 w-full">
+                  <AlertDialogCancel className="h-12 rounded-xl font-bold uppercase tracking-widest text-xs border-border/60 sm:w-1/2 mt-0">Volver</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleCancel}
+                    className="h-12 rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90 font-black uppercase tracking-widest text-xs sm:w-1/2 shadow-lg shadow-destructive/20 m-0"
+                  >
+                    Sí, cancelar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
           
           <Link

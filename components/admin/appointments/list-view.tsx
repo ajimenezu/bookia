@@ -1,9 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { User } from "lucide-react"
-import { StatusBadge } from "./status-badge"
-import { formatTime, formatDate } from "@/lib/date-utils"
+import { formatTime } from "@/lib/date-utils"
 import { AppointmentActions } from "./appointment-actions"
 import { AppointmentDetailSheet } from "./appointment-detail-sheet"
 import { BusinessType, getTerminology } from "@/lib/dictionaries"

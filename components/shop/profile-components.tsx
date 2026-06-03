@@ -8,7 +8,6 @@ import {
   Calendar, 
   Clock, 
   MapPin, 
-  ChevronRight, 
   AlertCircle,
   CheckCircle2,
   XCircle,

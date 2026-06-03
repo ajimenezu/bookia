@@ -8,6 +8,7 @@ import { z } from "zod"
 import { Role } from "@prisma/client"
 import { formatLastVisit } from "@/lib/date-utils"
 import { calculateAppointmentPrice } from "@/lib/appointments"
+import { getTerminology } from "@/lib/dictionaries"
 
 
 
@@ -199,7 +200,8 @@ export async function getClientDetails(clientIdRaw: string, shopIdRaw: string) {
     if (!validated.success) throw new Error("Parámetros inválidos")
     const { clientId, shopId } = validated.data
 
-    const { isSuperAdmin } = await requireAdmin(shopId)
+    const { businessType } = await requireAdmin(shopId)
+    const t = getTerminology(businessType as any)
 
     const client = await prisma.user.findUnique({
       where: { id: clientId },
@@ -221,7 +223,7 @@ export async function getClientDetails(clientIdRaw: string, shopIdRaw: string) {
       }
     })
 
-    if (!client) return { success: false, error: "Cliente no encontrado" } as const
+    if (!client) return { success: false, error: `${t.client} no encontrado` } as const
 
     return { success: true, data: client } as const
   } catch (error) {
@@ -283,7 +285,8 @@ export async function getClients(shopIdRaw: string, pageRaw: number = 1, limitRa
     if (!validated.success) throw new Error("Parámetros inválidos")
     
     const { shopId, page, limit, q } = validated.data
-    await requireAdmin(shopId)
+    const { businessType } = await requireAdmin(shopId)
+    const t = getTerminology(businessType as any)
     
     const skip = (page - 1) * limit
 
@@ -320,7 +323,7 @@ export async function getClients(shopIdRaw: string, pageRaw: number = 1, limitRa
       const lastVisitDate = completedApps[0]?.startTime
       return {
         id: user.id,
-        name: user.name || user.email || "Cliente sin nombre",
+        name: user.name || user.email || `${t.client} sin nombre`,
         phone: user.phone || "Sin teléfono",
         visits: totalVisits,
         totalSpent: new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'CRC' }).format(totalSpentValue).replace("CRC", "₡"),

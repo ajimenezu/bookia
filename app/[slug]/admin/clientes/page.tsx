@@ -32,14 +32,13 @@ export default async function ClientesPage({ params, searchParams }: PageProps) 
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <ClientSearch placeholder="Buscar por nombre, email o teléfono..." />
-          <CreateUserModal currentUserRole={role} isSuperAdmin={isSuperAdmin} shopId={shopId} />
+          <CreateUserModal currentUserRole={role} isSuperAdmin={isSuperAdmin} shopId={shopId} businessType={businessType} />
         </div>
       </div>
 
       <Suspense key={q || 'all'} fallback={<ClientesSkeleton />}>
         <ClientesContent
           shopId={shopId}
-          isSuperAdmin={isSuperAdmin}
           businessType={businessType}
           q={q}
         />

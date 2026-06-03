@@ -247,13 +247,13 @@ export function ShopSignUpForm({ slug, shopName, businessType, logoUrl }: ShopSi
                     value={passwords.confirm}
                     onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
                     className={`pl-10 pr-20 bg-background/50 border-border transition-colors ${
-                      hasTypedConfirm ? (isMatch ? "border-green-500/50" : "border-destructive/50") : ""
+                      hasTypedConfirm ? (isMatch ? "border-success/50" : "border-destructive/50") : ""
                     }`}
                   />
                   <div className="absolute right-3 top-3 flex items-center gap-2">
                     {hasTypedConfirm && (
                       isMatch ? (
-                        <Check className="h-4 w-4 text-green-500 animate-in zoom-in duration-200" />
+                        <Check className="h-4 w-4 text-success animate-in zoom-in duration-200" />
                       ) : (
                         <X className="h-4 w-4 text-destructive animate-in zoom-in duration-200" />
                       )

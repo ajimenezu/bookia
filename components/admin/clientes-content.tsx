@@ -7,12 +7,11 @@ import { formatLastVisit } from "@/lib/date-utils"
 
 interface ClientesContentProps {
   shopId: string
-  isSuperAdmin: boolean
   businessType: BusinessType
   q?: string
 }
 
-export async function ClientesContent({ shopId, isSuperAdmin, businessType, q }: ClientesContentProps) {
+export async function ClientesContent({ shopId, businessType, q }: ClientesContentProps) {
   const t = getTerminology(businessType)
 
   const whereClause: Prisma.UserWhereInput = {
@@ -63,7 +62,7 @@ export async function ClientesContent({ shopId, isSuperAdmin, businessType, q }:
     const lastVisitDate = completedApps[0]?.startTime
     return {
       id: user.id,
-      name: user.name || user.email || "Cliente sin nombre",
+      name: user.name || user.email || `${t.client} sin nombre`,
       phone: user.phone || "Sin teléfono",
       visits: totalVisits,
       totalSpent: new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'CRC' }).format(totalSpentValue).replace("CRC", "₡"),

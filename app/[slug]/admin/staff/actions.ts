@@ -214,7 +214,7 @@ export async function markAppointmentAsNotified(appointmentIdRaw: string, shopId
   if (!validated.success) throw new Error("Parámetros inválidos")
   const { appointmentId, shopId } = validated.data
 
-  const { user } = await requireAdmin(shopId)
+  await requireAdmin(shopId)
 
   // Security: Ensure user is either an admin/owner or the assigned staff
   const appointment = await prisma.appointment.findUnique({
@@ -339,7 +339,7 @@ export async function getStaffDetails(staffIdRaw: string, shopIdRaw: string) {
     if (!validated.success) return { success: false, error: "Parámetros inválidos" }
     
     const { staffId, shopId } = validated.data
-    const { isSuperAdmin } = await requireAdmin(shopId)
+    await requireAdmin(shopId)
 
     const staff = await prisma.user.findUnique({
       where: { id: staffId },

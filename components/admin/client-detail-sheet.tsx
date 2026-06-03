@@ -5,9 +5,6 @@ import {
   User, 
   Mail, 
   Phone, 
-  Calendar, 
-  Clock, 
-  Tag, 
   Loader2, 
   History,
   TrendingUp,
@@ -164,7 +161,7 @@ export function ClientDetailSheet({
                 {clientData?.name || "Cargando..."}
               </SheetTitle>
               <SheetDescription className="font-medium text-muted-foreground">
-                Perfil del Cliente y Historial
+                Perfil del {t.client} e Historial
               </SheetDescription>
             </div>
           </div>

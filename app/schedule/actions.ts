@@ -424,9 +424,6 @@ export async function updateBooking(rawData: unknown) {
     return { success: false, error: "Cita no encontrada" }
   }
 
-  const existingServiceIds = existingAppointment.services.map(s => s.id).sort()
-  const newServiceIds = [...serviceIds].sort()
-  const hasServicesChanged = JSON.stringify(existingServiceIds) !== JSON.stringify(newServiceIds)
 
   const totalDuration = services.reduce((acc, s) => acc + s.duration, 0)
   const startTime = combineDateAndTime(date, time)

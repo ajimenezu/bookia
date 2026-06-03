@@ -1,5 +1,5 @@
 import { requireAdmin } from "@/lib/auth-utils"
-import { getTerminology } from "@/lib/dictionaries"
+
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
 import { DashboardDataWrapper } from "@/components/admin/dashboard-data-wrapper"

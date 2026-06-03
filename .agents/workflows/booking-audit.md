@@ -19,5 +19,10 @@ description: Audit checklist for appointment availability and scheduling logic.
 ## 3. "Staff Auto" Assignment
 - **Check**: If `staffId === "auto"`, verifies AT LEAST ONE staff member is available.
 - **Check**: Filters only members with `STAFF` or `OWNER` roles.
+- **Check**: Validates that staff is explicitly assigned to the requested service(s).
+- **Check**: Skips staff selection UI entirely if only 1 eligible staff member exists.
+
+## 4. Service Constraints
+- **Check**: Booking flow strictly enforces category constraints (cannot mix categories).
 
 *(Ref: `booking_engine.md`)*

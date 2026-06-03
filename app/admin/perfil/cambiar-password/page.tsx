@@ -102,7 +102,7 @@ export default function ChangePasswordPage() {
               )}
 
               {success && (
-                <div className="flex items-center gap-2 rounded-lg bg-green-500/10 p-3 text-sm font-medium text-green-600 animate-in fade-in zoom-in duration-200">
+                <div className="flex items-center gap-2 rounded-lg bg-success/10 p-3 text-sm font-medium text-success animate-in fade-in zoom-in duration-200">
                   <CheckCircle2 className="h-4 w-4" />
                   Contraseña actualizada con éxito. Redirigiendo...
                 </div>

@@ -28,7 +28,7 @@ export default async function StaffPage({ params }: PageProps) {
           <p className="mt-1 text-muted-foreground italic text-sm">Gestiona el equipo y personal de tu negocio</p>
         </div>
         {(role === "OWNER" || isSuperAdmin) && (
-          <CreateUserModal currentUserRole={role as any} isSuperAdmin={isSuperAdmin} shopId={shopId} mode="STAFF" />
+          <CreateUserModal currentUserRole={role as any} isSuperAdmin={isSuperAdmin} shopId={shopId} mode="STAFF" businessType={businessType} />
         )}
       </div>
 

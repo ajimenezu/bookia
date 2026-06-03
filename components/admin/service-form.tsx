@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Clock, BadgeCent, Type, AlignLeft, Trash2, Loader2, Scissors, Users, Tag, ChevronsUpDown, X, Check, Plus } from "lucide-react"
+import { Clock, BadgeCent, Type, AlignLeft, Trash2, Loader2, Users, Tag, ChevronsUpDown, X, Check, Plus } from "lucide-react"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Badge } from "@/components/ui/badge"
@@ -327,7 +327,7 @@ export function ServiceForm({ slug, shopId, businessType = "BARBERIA", staffList
                       <CommandItem
                         key={category}
                         value={category}
-                        onSelect={(currentValue) => {
+                        onSelect={() => {
                           setSelectedCategory(category) // Use the exact case from existing
                           setCategorySearch("")
                           setOpenCategories(false)
@@ -343,7 +343,7 @@ export function ServiceForm({ slug, shopId, businessType = "BARBERIA", staffList
                        <CommandItem
                          key={`create-${categorySearch}`}
                          value={categorySearch}
-                         onSelect={(currentValue) => {
+                         onSelect={() => {
                            setSelectedCategory(categorySearch.trim())
                            setCategorySearch("")
                            setOpenCategories(false)

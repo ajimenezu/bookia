@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation"
 import { fetchAvailableSlots, createBooking } from "@/app/schedule/actions"
 import { BusinessType, getTerminology } from "@/lib/dictionaries"
 import { getBusinessIcon } from "@/lib/business-icons"
+import { convertTo12h } from "@/lib/date-utils"
 
 // Step Components
 import { ServiceStep } from "./steps/service-step"
@@ -486,7 +487,7 @@ export function BookingFlow({
             <div className="flex justify-between items-center text-sm">
               <span className="text-muted-foreground font-bold uppercase tracking-widest text-[10px]">Fecha y Hora</span>
               <span className="font-black text-primary text-lg">
-                {selectedDate?.toLocaleDateString("es-ES", { day: "numeric", month: "short" })} @ {selectedTime}
+                {selectedDate ? `${selectedDate.getDate()} de ${selectedDate.toLocaleDateString("es-ES", { month: "long" }).replace(/^[a-z]/, c => c.toUpperCase())}` : ""}, {selectedTime ? convertTo12h(selectedTime).toLowerCase() : ""}
               </span>
             </div>
           </div>

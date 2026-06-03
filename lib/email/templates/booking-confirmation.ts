@@ -63,7 +63,7 @@ export function renderBookingConfirmation(d: BookingConfirmationTemplateData): {
   const shopUrl = `${siteUrl}/${shop.slug}`
 
   const actionType = d.actionType || "CREATED"
-  
+
   let subjectPrefix = ""
   if (actionType === "UPDATED") subjectPrefix = "Actualización: "
   if (actionType === "CANCELLED") subjectPrefix = "Cancelación: "
@@ -99,11 +99,10 @@ export function renderBookingConfirmation(d: BookingConfirmationTemplateData): {
           </tr>
           <tr>
             <td style="padding:32px 32px 16px;text-align:center;border-bottom:1px solid #e5e7eb">
-              ${
-                shop.logoUrl
-                  ? `<img src="${escapeHtml(shop.logoUrl)}" alt="${escapeHtml(shop.name)}" style="height:56px;border-radius:8px;margin-bottom:12px" />`
-                  : ""
-              }
+              ${shop.logoUrl
+      ? `<img src="${escapeHtml(shop.logoUrl)}" alt="${escapeHtml(shop.name)}" style="height:56px;border-radius:8px;margin-bottom:12px" />`
+      : ""
+    }
               <h1 style="margin:0;font-size:20px;color:#111827">${escapeHtml(shop.name)}</h1>
             </td>
           </tr>
@@ -111,24 +110,22 @@ export function renderBookingConfirmation(d: BookingConfirmationTemplateData): {
             <td style="padding:32px">
               <p style="margin:0 0 8px;font-size:16px;color:#111827">Hola ${escapeHtml(customer.name)},</p>
               <p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.5">
-                ${
-                  actionType === "CREATED"
-                    ? "Tu cita ha sido confirmada. Aquí están los detalles:"
-                    : actionType === "UPDATED"
-                    ? "Tu cita ha sido actualizada. Aquí están los detalles:"
-                    : "Tu cita ha sido cancelada. A continuación, los detalles que tenías agendados:"
-                }
+                ${actionType === "CREATED"
+      ? "Tu cita ha sido confirmada. Aquí están los detalles:"
+      : actionType === "UPDATED"
+        ? "Tu cita ha sido actualizada. Aquí están los detalles:"
+        : "Tu cita ha sido cancelada. A continuación, los detalles que tenías agendados:"
+    }
               </p>
 
               <div style="background:#f9fafb;border-radius:8px;padding:16px 20px;margin-bottom:20px">
                 <div style="font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Fecha</div>
                 <div style="font-size:16px;color:#111827;font-weight:600;text-transform:capitalize">${escapeHtml(dateStr)}</div>
                 <div style="font-size:15px;color:#374151;margin-top:6px">${escapeHtml(startStr)} – ${escapeHtml(endStr)} (${totalDuration} min)</div>
-                ${
-                  appointment.staffName
-                    ? `<div style="font-size:14px;color:#6b7280;margin-top:8px">Con: <strong style="color:#374151">${escapeHtml(appointment.staffName)}</strong></div>`
-                    : ""
-                }
+                ${appointment.staffName
+      ? `<div style="font-size:14px;color:#6b7280;margin-top:8px">Con: <strong style="color:#374151">${escapeHtml(appointment.staffName)}</strong></div>`
+      : ""
+    }
               </div>
 
               <div style="margin-bottom:20px">
@@ -137,21 +134,19 @@ export function renderBookingConfirmation(d: BookingConfirmationTemplateData): {
                   ${servicesRowsHtml}
                   <tr>
                     <td style="padding:12px 0 0;border-top:1px solid #e5e7eb;color:#111827;font-weight:600">Total</td>
-                    <td style="padding:12px 0 0;border-top:1px solid #e5e7eb;color:#111827;font-weight:600;text-align:right">$${moneyFmt.format(appointment.totalPrice)}</td>
+                    <td style="padding:12px 0 0;border-top:1px solid #e5e7eb;color:#111827;font-weight:600;text-align:right">₡${moneyFmt.format(appointment.totalPrice)}</td>
                   </tr>
                 </table>
               </div>
 
-              ${
-                shop.address
-                  ? `<div style="font-size:14px;color:#374151;margin-bottom:8px"><strong>Ubicación:</strong> ${escapeHtml(shop.address)}</div>`
-                  : ""
-              }
-              ${
-                shop.whatsappPhone
-                  ? `<div style="font-size:14px;color:#374151;margin-bottom:24px"><strong>WhatsApp:</strong> ${escapeHtml(shop.whatsappPhone)}</div>`
-                  : ""
-              }
+              ${shop.address
+      ? `<div style="font-size:14px;color:#374151;margin-bottom:8px"><strong>Ubicación:</strong> <a href="https://maps.google.com/?q=${encodeURIComponent(shop.address)}" target="_blank" style="color:${theme.primary};text-decoration:underline;">${escapeHtml(shop.address)}</a></div>`
+      : ""
+    }
+              ${shop.whatsappPhone
+      ? `<div style="font-size:14px;color:#374151;margin-bottom:24px"><strong>WhatsApp:</strong> <a href="https://wa.me/${shop.whatsappPhone.replace(/\D/g, "")}" target="_blank" style="color:${theme.primary};text-decoration:underline;">${escapeHtml(shop.whatsappPhone)}</a></div>`
+      : ""
+    }
 
               <div style="text-align:center;margin-top:24px">
                 <a href="${escapeHtml(shopUrl)}" style="display:inline-block;background:${theme.primary};color:${theme.primaryFg};padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px">
@@ -182,8 +177,8 @@ export function renderBookingConfirmation(d: BookingConfirmationTemplateData): {
     actionType === "CREATED"
       ? `Tu cita en ${shop.name} ha sido confirmada.`
       : actionType === "UPDATED"
-      ? `Tu cita en ${shop.name} ha sido actualizada.`
-      : `Tu cita en ${shop.name} ha sido cancelada.`,
+        ? `Tu cita en ${shop.name} ha sido actualizada.`
+        : `Tu cita en ${shop.name} ha sido cancelada.`,
     ``,
     `Fecha: ${dateStr}`,
     `Hora: ${startStr} – ${endStr} (${totalDuration} min)`,

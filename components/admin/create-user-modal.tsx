@@ -45,7 +45,6 @@ export function CreateUserModal({ currentUserRole, isSuperAdmin, shopId, mode = 
   const [loading, setLoading] = useState(false)
   const [services, setServices] = useState<ServiceOption[]>([])
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([])
-  const [noneSelected, setNoneSelected] = useState(false)
   const [serviceSearch, setServiceSearch] = useState("")
 
   const filteredServices = services.filter(s =>
@@ -79,33 +78,26 @@ export function CreateUserModal({ currentUserRole, isSuperAdmin, shopId, mode = 
   const [phone, setPhone] = useState("")
   const [touched, setTouched] = useState({ name: false, email: false, phone: false })
 
-  const serviceSelectionValid = mode === 'CLIENT' || noneSelected || selectedServiceIds.length > 0
-  const isFormValid = name.trim() !== "" && email.trim() !== "" && phone.trim() !== "" && serviceSelectionValid
+  const isFormValid = name.trim() !== "" && email.trim() !== "" && phone.trim() !== ""
 
   const toggleService = (id: string) => {
-    setNoneSelected(false)
     setSelectedServiceIds(prev =>
       prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
     )
   }
 
   const handleNone = () => {
-    setNoneSelected(true)
     setSelectedServiceIds([])
   }
 
   const resetForm = () => {
     setName(""); setEmail(""); setPhone("")
     setTouched({ name: false, email: false, phone: false })
-    setSelectedServiceIds([]); setNoneSelected(false); setServiceSearch("")
+    setSelectedServiceIds([]); setServiceSearch("")
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!serviceSelectionValid) {
-      toast.error("Debes seleccionar al menos un servicio o 'Ninguno'")
-      return
-    }
     setLoading(true)
     const formData = new FormData(event.currentTarget)
 
@@ -213,9 +205,9 @@ export function CreateUserModal({ currentUserRole, isSuperAdmin, shopId, mode = 
             {/* Service Assignment — STAFF mode only */}
             {mode === 'STAFF' && (
               <div className="grid gap-2">
-                <Label className={cn("flex items-center gap-1.5", !serviceSelectionValid ? "text-destructive" : "")}>
+                <Label className="flex items-center gap-1.5">
                   <Wrench className="h-3.5 w-3.5 text-primary" />
-                  Servicios que ofrece *
+                  Servicios que ofrece
                 </Label>
                 {services.length === 0 ? (
                   <p className="text-xs text-muted-foreground italic">Cargando servicios...</p>
@@ -243,11 +235,11 @@ export function CreateUserModal({ currentUserRole, isSuperAdmin, shopId, mode = 
                       {/* Ninguno always first */}
                       <button
                         type="button"
-                        aria-pressed={noneSelected}
+                        aria-pressed={selectedServiceIds.length === 0}
                         onClick={handleNone}
                         className={cn(
                           "inline-flex items-center rounded-xl border px-3 py-1.5 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-primary",
-                          noneSelected
+                          selectedServiceIds.length === 0
                             ? "border-muted-foreground bg-muted text-muted-foreground"
                             : "border-border bg-muted/30 text-muted-foreground hover:border-muted-foreground/40"
                         )}
@@ -276,9 +268,6 @@ export function CreateUserModal({ currentUserRole, isSuperAdmin, shopId, mode = 
                       )}
                     </div>
                   </div>
-                )}
-                {!serviceSelectionValid && (
-                  <p className="text-xs text-destructive">Selecciona al menos un servicio o "Ninguno"</p>
                 )}
               </div>
             )}

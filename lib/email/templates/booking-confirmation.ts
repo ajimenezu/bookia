@@ -1,4 +1,5 @@
 import type { EmailTheme } from "../theme"
+import { shortenAddress } from "@/lib/utils"
 
 export interface BookingConfirmationTemplateData {
   shop: {
@@ -6,6 +7,8 @@ export interface BookingConfirmationTemplateData {
     slug: string
     logoUrl: string | null
     address: string | null
+    latitude?: number | null
+    longitude?: number | null
     whatsappPhone: string | null
   }
   customer: { name: string }
@@ -75,7 +78,7 @@ export function renderBookingConfirmation(d: BookingConfirmationTemplateData): {
       (s) => `
         <tr>
           <td style="padding:8px 0;color:#374151">${escapeHtml(s.name)}</td>
-          <td style="padding:8px 0;color:#6b7280;text-align:right">$${moneyFmt.format(s.price)}</td>
+          <td style="padding:8px 0;color:#6b7280;text-align:right">₡${moneyFmt.format(s.price)}</td>
         </tr>`
     )
     .join("")
@@ -140,7 +143,7 @@ export function renderBookingConfirmation(d: BookingConfirmationTemplateData): {
               </div>
 
               ${shop.address
-      ? `<div style="font-size:14px;color:#374151;margin-bottom:8px"><strong>Ubicación:</strong> <a href="https://maps.google.com/?q=${encodeURIComponent(shop.address)}" target="_blank" style="color:${theme.primary};text-decoration:underline;">${escapeHtml(shop.address)}</a></div>`
+      ? `<div style="font-size:14px;color:#374151;margin-bottom:8px"><strong>Ubicación:</strong> <a href="${shop.latitude && shop.longitude ? `https://www.google.com/maps/dir/?api=1&destination=${shop.latitude},${shop.longitude}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shop.address)}`}" target="_blank" style="color:${theme.primary};text-decoration:underline;">${escapeHtml(shortenAddress(shop.address))}</a></div>`
       : ""
     }
               ${shop.whatsappPhone
@@ -185,10 +188,10 @@ export function renderBookingConfirmation(d: BookingConfirmationTemplateData): {
     appointment.staffName ? `Con: ${appointment.staffName}` : null,
     ``,
     `Servicios:`,
-    ...appointment.services.map((s) => `  - ${s.name} ($${moneyFmt.format(s.price)})`),
-    `Total: $${moneyFmt.format(appointment.totalPrice)}`,
+    ...appointment.services.map((s) => `  - ${s.name} ₡${moneyFmt.format(s.price)})`),
+    `Total: ₡${moneyFmt.format(appointment.totalPrice)}`,
     ``,
-    shop.address ? `Ubicación: ${shop.address}` : null,
+    shop.address ? `Ubicación: ${shortenAddress(shop.address)}` : null,
     shop.whatsappPhone ? `WhatsApp: ${shop.whatsappPhone}` : null,
     ``,
     `Ver mis citas: ${shopUrl}`,

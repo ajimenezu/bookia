@@ -14,7 +14,7 @@ export async function triggerAppointmentNotifications(
       where: { id: appointmentId },
       include: {
         shop: {
-          select: { name: true, slug: true, logoUrl: true, address: true, whatsappPhone: true, businessType: true }
+          select: { name: true, slug: true, logoUrl: true, address: true, latitude: true, longitude: true, whatsappPhone: true, businessType: true }
         },
         staff: {
           select: { name: true, email: true }

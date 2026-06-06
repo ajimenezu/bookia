@@ -252,7 +252,7 @@ export function ApprovalSidePanel({
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="h-7 px-2 text-[10px] text-primary hover:text-primary/80 hover:bg-primary/5 font-bold"
+                      className="h-8 px-3 text-xs text-primary hover:text-primary/80 hover:bg-primary/5 font-bold"
                       onClick={handleMarkAllAsRead}
                       disabled={isPending}
                     >

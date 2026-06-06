@@ -47,10 +47,7 @@ export async function createUser(formData: FormData) {
 
   const { name, email, phone, role, shopId: targetShopId, serviceIds } = validated.data
 
-  // Validate: STAFF/OWNER must have service selection (even if empty = "Ninguno")
-  if ((role === "STAFF" || role === "OWNER") && formData.get("serviceIds") === null) {
-    return { success: false, error: "Debes seleccionar al menos un servicio (o 'Ninguno')" }
-  }
+
 
   try {
     // SECURITY FIX: Mandatory targetShopId validation

@@ -9,6 +9,7 @@ import {
   User,
   LayoutDashboard,
   CalendarPlus,
+  Bug,
 } from "lucide-react"
 import { 
   DropdownMenu, 
@@ -22,6 +23,7 @@ import { signOut } from "@/app/auth/actions"
 import { BusinessType, getTerminology } from "@/lib/dictionaries"
 import { getBusinessIcon } from "@/lib/business-icons"
 import { cn } from "@/lib/utils"
+import { ReportBugModal } from "@/components/admin/report-bug-modal"
 
 interface ShopNavbarProps {
   shop: {
@@ -113,12 +115,23 @@ export function ShopNavbar({ shop, user, role, showScheduleButton = true }: Shop
                   </Link>
                 </DropdownMenuItem>
                 {(role === "SUPER_ADMIN" || role === "OWNER" || role === "STAFF") && (
-                  <DropdownMenuItem asChild>
-                    <Link href={`/${shop.slug}/admin`} className="cursor-pointer rounded-lg py-2.5 font-medium text-sm hover:bg-sidebar-accent">
-                      <LayoutDashboard className="mr-3 h-4 w-4 text-primary" />
-                      <span>Panel administrativo</span>
-                    </Link>
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link href={`/${shop.slug}/admin`} className="cursor-pointer rounded-lg py-2.5 font-medium text-sm hover:bg-sidebar-accent">
+                        <LayoutDashboard className="mr-3 h-4 w-4 text-primary" />
+                        <span>Panel administrativo</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <ReportBugModal>
+                      <DropdownMenuItem 
+                        onSelect={(e) => e.preventDefault()}
+                        className="cursor-pointer rounded-lg py-2.5 font-medium text-sm hover:bg-sidebar-accent"
+                      >
+                        <Bug className="mr-3 h-4 w-4 text-primary" />
+                        <span>Reportar Problema</span>
+                      </DropdownMenuItem>
+                    </ReportBugModal>
+                  </>
                 )}
                 <DropdownMenuSeparator className="bg-sidebar-border mx-1" />
                 <DropdownMenuItem 

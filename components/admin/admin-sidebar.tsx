@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, CalendarDays, Users, Wrench, UserRound, Menu, X, LogOut, Bell, Settings, User, ExternalLink, ChevronDown } from "lucide-react"
+import { LayoutDashboard, CalendarDays, Users, Wrench, UserRound, Menu, X, LogOut, Bell, Settings, User, ExternalLink, ChevronDown, Bug } from "lucide-react"
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -19,6 +19,7 @@ import { Terminology, BusinessType } from "@/lib/dictionaries"
 import { getPendingRequests } from "@/app/[slug]/admin/staff/actions"
 import { ApprovalSidePanel } from "./approval-side-panel"
 import { getBusinessIcon } from "@/lib/business-icons"
+import { ReportBugModal } from "./report-bug-modal"
 
 export function AdminSidebar({
   children,
@@ -205,7 +206,20 @@ export function AdminSidebar({
 
         <div className="mt-auto border-t border-sidebar-border p-5">
           {shopSlug && (
-            <Link
+            <div className="flex flex-col gap-1.5">
+              <ReportBugModal>
+                <button
+                  className={cn(
+                    "w-full flex items-center gap-3.5 rounded-xl px-4 py-3 text-sm font-medium transition-all active:scale-[0.98]",
+                    "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground cursor-pointer text-left"
+                  )}
+                >
+                  <Bug className="h-5 w-5 opacity-70" />
+                  Reportar Problema
+                </button>
+              </ReportBugModal>
+
+              <Link
               href={`/${shopSlug}/admin/configuracion`}
               onClick={() => setMobileOpen(false)}
               className={cn(
@@ -215,9 +229,10 @@ export function AdminSidebar({
                   : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
               )}
             >
-              <Settings className="h-5 w-5 opacity-70" />
-              Configuración
-            </Link>
+                <Settings className="h-5 w-5 opacity-70" />
+                Configuración
+              </Link>
+            </div>
           )}
         </div>
       </aside>

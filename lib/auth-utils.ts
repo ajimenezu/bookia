@@ -49,9 +49,18 @@ export const getAdminUser = cache(async () => {
   const globalRole = user.app_metadata?.role as string | undefined
   const shopId = user.app_metadata?.shop_id as string | undefined
 
+  let fallbackRole = "CUSTOMER"
+  if (isSuperAdmin) {
+    fallbackRole = "SUPER_ADMIN"
+  } else if (memberships.some(m => m.role === "OWNER")) {
+    fallbackRole = "OWNER"
+  } else if (memberships.some(m => m.role === "STAFF")) {
+    fallbackRole = "STAFF"
+  }
+
   return { 
     user, 
-    role: globalRole || (isSuperAdmin ? "SUPER_ADMIN" : "CUSTOMER"),
+    role: globalRole || fallbackRole,
     shopId,
     memberships
   }

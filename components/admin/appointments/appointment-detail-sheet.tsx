@@ -373,16 +373,6 @@ export function AppointmentDetailSheet({
                       <User className="h-5 w-5" />
                       <h3 className="font-bold text-lg">Información del {t.client}</h3>
                     </div>
-                    {!["COMPLETED", "CANCELLED", "NO_SHOW"].includes(appointment.status) && !isPastOrPresent && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 rounded-lg font-bold border-primary/10 text-primary hover:bg-primary/10 transition-colors"
-                        onClick={() => setMode("edit")}
-                      >
-                        <Edit3 className="mr-1.5 h-3.5 w-3.5" /> Editar
-                      </Button>
-                    )}
                   </div>
                   <div className="grid gap-4 rounded-2xl border border-border bg-card/30 p-5 shadow-sm">
                     <div>
@@ -402,6 +392,19 @@ export function AppointmentDetailSheet({
                     )}
                   </div>
                 </section>
+
+                {!["COMPLETED", "CANCELLED", "NO_SHOW"].includes(appointment.status) && !isPastOrPresent && (
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-9 rounded-lg font-bold border-primary/20 text-primary hover:bg-primary/10 transition-colors"
+                      onClick={() => setMode("edit")}
+                    >
+                      <Edit3 className="mr-1.5 h-4 w-4" /> Editar Cita
+                    </Button>
+                  </div>
+                )}
 
                 <Separator className="opacity-50" />
 

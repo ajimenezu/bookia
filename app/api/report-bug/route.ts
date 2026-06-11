@@ -10,7 +10,7 @@ const bugReportSchema = z.object({
     userAgent: z.string().optional(),
     timestamp: z.string().optional(),
   }).optional(),
-  imageUrls: z.array(z.string().url()).optional(),
+  imageUrls: z.array(z.string()).optional(),
 })
 
 export async function POST(req: Request) {
@@ -21,7 +21,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
 
-    if (!["SUPER_ADMIN", "OWNER", "STAFF"].includes(adminUser.role)) {
+    const hasPermission = ["SUPER_ADMIN", "OWNER", "STAFF"].includes(adminUser.role) || 
+      (adminUser.memberships && adminUser.memberships.some((m: any) => ["SUPER_ADMIN", "OWNER", "STAFF"].includes(m.role)))
+
+    if (!hasPermission) {
       return NextResponse.json({ error: "No tienes permisos para realizar esta acción" }, { status: 403 })
     }
 
@@ -29,6 +32,7 @@ export async function POST(req: Request) {
     const parsed = bugReportSchema.safeParse(rawBody)
 
     if (!parsed.success) {
+      console.error("Bug report validation failed:", parsed.error.format())
       return NextResponse.json({ error: "Datos de formulario inválidos", details: parsed.error.format() }, { status: 400 })
     }
 

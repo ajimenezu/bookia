@@ -103,7 +103,7 @@ export function ReportBugModal({ children }: { children: React.ReactNode }) {
 
       // Collect metadata
       const metadata = {
-        userAgent: navigator.userAgent,
+        userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "Desconocido",
         timestamp: new Date().toISOString()
       }
 
@@ -120,6 +120,21 @@ export function ReportBugModal({ children }: { children: React.ReactNode }) {
 
       if (!res.ok) {
         const errorData = await res.json()
+        if (errorData.details) {
+          console.error("Backend validation details:", errorData.details)
+          const fieldErrors = Object.entries(errorData.details)
+            .filter(([key]) => key !== "_errors")
+            .map(([key, value]: [string, any]) => {
+              const errors = value?._errors || []
+              return `${key}: ${errors.join(", ")}`
+            })
+            .filter(err => err.length > (err.indexOf(':') + 2)) // Only keep if there are actual errors after colon
+            .join("\n")
+
+          if (fieldErrors) {
+            throw new Error(`Datos inválidos en: ${fieldErrors}`)
+          }
+        }
         throw new Error(errorData.error || "Error al enviar el reporte")
       }
 

@@ -9,6 +9,7 @@ const shopConfigSchema = z.object({
   name: z.string().min(2),
   description: z.string().optional().nullable(),
   whatsappPhone: z.string().optional().nullable(),
+  whatsappRemindersEnabled: z.boolean().optional(),
   address: z.string().optional().nullable(),
   latitude: z.number().optional().nullable(),
   longitude: z.number().optional().nullable(),

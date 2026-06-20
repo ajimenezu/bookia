@@ -39,6 +39,7 @@ export function ShopConfigContent({ shopId, initialShop, initialSchedules }: Sho
     name: initialShop.name || "",
     description: initialShop.description || "",
     whatsappPhone: initialShop.whatsappPhone || "",
+    whatsappRemindersEnabled: initialShop.whatsappRemindersEnabled ?? false,
     address: initialShop.address || "",
     latitude: initialShop.latitude ?? null,
     longitude: initialShop.longitude ?? null,
@@ -289,7 +290,24 @@ export function ShopConfigContent({ shopId, initialShop, initialSchedules }: Sho
                 </div>
               </div>
             </div>
-            
+
+            <div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border/50 bg-card shadow-sm">
+              <div className="space-y-0.5">
+                <Label htmlFor="whatsapp-reminders" className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-primary" />
+                  Recordatorios por WhatsApp
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Envía a tus clientes un recordatorio automático el día antes de su cita.
+                </p>
+              </div>
+              <Switch
+                id="whatsapp-reminders"
+                checked={shopInfo.whatsappRemindersEnabled}
+                onCheckedChange={checked => setShopInfo(prev => ({ ...prev, whatsappRemindersEnabled: checked }))}
+              />
+            </div>
+
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="address">Dirección Física e Integración de Mapa</Label>

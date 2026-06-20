@@ -24,6 +24,7 @@ model Shop {
   logoUrl        String?
   tagline        String?
   whatsappPhone  String?
+  whatsappRemindersEnabled Boolean @default(false)
   appointments   Appointment[]
   services       Service[]
   serviceCategories ServiceCategory[]
@@ -169,6 +170,7 @@ model Appointment {
   staff          User?             @relation("StaffAppointments", fields: [staffId], references: [id])
   services       Service[]         @relation("AppointmentServices")
   isNotified     Boolean           @default(false)
+  reminderSentAt DateTime?
   notes          AppointmentNote[]
   serviceDetails Json?
 

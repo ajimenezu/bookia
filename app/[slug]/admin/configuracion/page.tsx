@@ -30,6 +30,7 @@ export default async function ConfiguracionPage({ params }: PageProps) {
         name: true,
         description: true,
         whatsappPhone: true,
+        whatsappRemindersEnabled: true,
         address: true,
         latitude: true,
         longitude: true,

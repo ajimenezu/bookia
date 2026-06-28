@@ -214,7 +214,7 @@ export function BookingFlow({
   const handleAuthRedirect = (type: 'login' | 'register') => {
     saveBookingState()
     const path = type === 'login' ? 'login' : 'register'
-    window.location.href = `/${shopSlug}/${path}`
+    window.location.href = `/${path}`
   }
 
   // Formatting utils
@@ -292,9 +292,9 @@ export function BookingFlow({
 
     if (!isAdmin) {
       if (isLoggedIn) {
-        router.push(`/${shopSlug}/profile`)
+        router.push(`/profile`)
       } else {
-        router.push(`/${shopSlug}`)
+        router.push(`/`)
       }
     }
   }

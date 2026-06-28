@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import prisma from "@/lib/prisma"
+import { getShopUrl } from "@/lib/domain"
 import { z } from "zod"
 
 const signInSchema = z.object({
@@ -29,31 +30,26 @@ const signUpSchema = z.object({
  * Shared redirection logic based on user roles and context
  */
 function getRedirectPath(dbUser: any, currentShopSlug?: string): string {
+  // Root-relative: auth runs on the shop's own subdomain, so the host scopes the shop.
   if (dbUser.needsPasswordChange) {
     return "/admin/perfil/cambiar-password"
   }
 
   const memberships = dbUser.memberships || []
-  
-  // 1. Super Admin always goes to an admin view
+
+  // 1. Super Admin → admin view (super-admin bypass in requireAdmin grants access).
   const isSuperAdmin = memberships.some((m: any) => m.role === "SUPER_ADMIN")
   if (isSuperAdmin) {
-    return currentShopSlug ? `/${currentShopSlug}/admin` : "/admin" // Fallback to generic admin if slug missing
+    return "/admin"
   }
 
-  // 2. If in shop context, check if they are STAFF/OWNER of THIS shop
+  // 2. OWNER/STAFF of the current shop → admin; otherwise the shop home.
   if (currentShopSlug) {
     const shopMembership = memberships.find((m: any) => m.shop.slug === currentShopSlug)
     if (shopMembership && (shopMembership.role === "OWNER" || shopMembership.role === "STAFF")) {
-      return `/${currentShopSlug}/admin`
+      return "/admin"
     }
-    return `/${currentShopSlug}` // Customer or no membership in this shop
-  }
-
-  // 3. General login (outside shop context) - find first admin role
-  const firstAdminMembership = memberships.find((m: any) => m.role === "OWNER" || m.role === "STAFF")
-  if (firstAdminMembership?.shop) {
-    return `/${firstAdminMembership.shop.slug}/admin`
+    return "/"
   }
 
   return "/"
@@ -219,14 +215,12 @@ export async function signUpToShop(slug: string, formData: FormData) {
     }
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? ""
-
   // 1. Supabase SignUp — carry shop context into the confirmation email
   const { data: { user }, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: `${siteUrl}/${slug}`,
+      emailRedirectTo: `${getShopUrl(slug)}/`,
       data: {
         full_name: name,
         phone: phone,
@@ -272,7 +266,7 @@ export async function signUpToShop(slug: string, formData: FormData) {
   })
 
   revalidatePath("/", "layout")
-  return { success: true, redirectPath: `/${slug}` }
+  return { success: true, redirectPath: `/` }
 }
 
 export async function signOut(redirectTo?: string) {

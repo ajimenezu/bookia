@@ -139,7 +139,7 @@ export function ShopLanding({ shop, services, staff, user, role }: ShopLandingPr
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4 w-full sm:w-auto animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500">
               <Link
-                href={`/${shop.slug}/schedule`}
+                href={`/schedule`}
                 id="hero-book-btn"
                 className="h-16 rounded-[2rem] bg-primary px-10 text-lg font-black uppercase tracking-widest text-primary-foreground shadow-2xl shadow-primary/30 transition-all hover:scale-105 hover:shadow-primary/40 active:scale-95 flex items-center justify-center"
               >
@@ -261,7 +261,7 @@ export function ShopLanding({ shop, services, staff, user, role }: ShopLandingPr
           {filteredServices.map((svc) => (
             <Link
               key={svc.id}
-              href={`/${shop.slug}/schedule?service=${svc.id}`}
+              href={`/schedule?service=${svc.id}`}
               id={`service-${svc.id}`}
               className="group flex flex-col gap-5 rounded-3xl border border-border bg-card p-6 text-left transition-all hover:border-primary/40 hover:shadow-2xl hover:-translate-y-2 cursor-pointer relative overflow-hidden active:scale-95 h-full"
             >

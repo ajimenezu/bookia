@@ -63,7 +63,8 @@ export function renderBookingConfirmation(d: BookingConfirmationTemplateData): {
   const startStr = timeFmt.format(appointment.startTime)
   const endStr = timeFmt.format(appointment.endTime)
   const totalDuration = appointment.services.reduce((acc, s) => acc + s.duration, 0)
-  const shopUrl = `${siteUrl}/${shop.slug}`
+  // siteUrl is already the shop's subdomain base (https://<slug>.mibookia.com)
+  const shopUrl = siteUrl
 
   const actionType = d.actionType || "CREATED"
 

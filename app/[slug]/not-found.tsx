@@ -33,7 +33,7 @@ export default function ShopNotFound() {
           </Button>
           {slug && (
             <Button asChild className="w-full">
-              <Link href={`/${slug}`}>
+              <Link href={`/`}>
                 Ir al inicio
               </Link>
             </Button>

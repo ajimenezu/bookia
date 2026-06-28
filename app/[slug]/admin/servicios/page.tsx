@@ -18,7 +18,7 @@ export default async function ServiciosPage({ params }: PageProps) {
   const shop = await getShopBySlug(slug)
   if (!shop) notFound()
 
-  const { businessType, shopId } = await requireAdmin(shop.id, `/${slug}/login`)
+  const { businessType, shopId } = await requireAdmin(shop.id, `/login`)
   const t = getTerminology(businessType as any)
 
   const [staffMembers, categories] = await Promise.all([

@@ -50,7 +50,7 @@ export default function ShopError({
         
         {slug && (
           <Button asChild variant="ghost" className="w-full mt-2">
-            <Link href={`/${slug}`}>
+            <Link href={`/`}>
               Ir al inicio del negocio
             </Link>
           </Button>

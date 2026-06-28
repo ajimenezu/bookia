@@ -72,7 +72,7 @@ export function ShopForgotPasswordForm({ slug, shopName, businessType, logoUrl }
               Revisa también la carpeta de spam.
             </CardDescription>
             <div className="mt-6">
-              <Link href={`/${slug}/login`} className="text-sm text-primary hover:underline font-semibold">
+              <Link href={`/login`} className="text-sm text-primary hover:underline font-semibold">
                 ← Volver al inicio de sesión
               </Link>
             </div>
@@ -124,7 +124,7 @@ export function ShopForgotPasswordForm({ slug, shopName, businessType, logoUrl }
                   )}
                 </Button>
                 <p className="text-center text-sm text-muted-foreground">
-                  <Link href={`/${slug}/login`} className="text-primary hover:underline font-semibold">
+                  <Link href={`/login`} className="text-primary hover:underline font-semibold">
                     ← Volver al inicio de sesión
                   </Link>
                 </p>

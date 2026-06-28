@@ -19,7 +19,7 @@ export default async function AdminDashboard({ params }: PageProps) {
   if (!shop) notFound()
 
   // 2. IMMEDIATELY verify admin rights for THIS specific shop
-  const { businessType, shopId } = await requireAdmin(shop.id, `/${slug}/login`)
+  const { businessType, shopId } = await requireAdmin(shop.id, `/login`)
 
   return (
     <div className="animate-in fade-in duration-500">

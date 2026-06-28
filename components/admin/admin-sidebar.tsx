@@ -20,6 +20,7 @@ import { getPendingRequests } from "@/app/[slug]/admin/staff/actions"
 import { ApprovalSidePanel } from "./approval-side-panel"
 import { getBusinessIcon } from "@/lib/business-icons"
 import { ReportBugModal } from "./report-bug-modal"
+import { getShopUrl } from "@/lib/domain"
 
 export function AdminSidebar({
   children,
@@ -56,11 +57,11 @@ export function AdminSidebar({
   const pendingCount = (pendingRequests?.schedules?.length || 0) + (pendingRequests?.timeOff?.length || 0) + (pendingRequests?.appointments?.length || 0)
 
   const navItems = [
-    { href: `/${shopSlug}/admin`, label: "Dashboard", icon: LayoutDashboard },
-    { href: `/${shopSlug}/admin/citas`, label: t.appointmentPlural, icon: CalendarDays },
-    { href: `/${shopSlug}/admin/clientes`, label: t.clientPlural, icon: Users },
-    { href: `/${shopSlug}/admin/servicios`, label: t.servicePlural, icon: Wrench },
-    { href: `/${shopSlug}/admin/staff`, label: t.staffPlural, icon: UserRound },
+    { href: `/admin`, label: "Dashboard", icon: LayoutDashboard },
+    { href: `/admin/citas`, label: t.appointmentPlural, icon: CalendarDays },
+    { href: `/admin/clientes`, label: t.clientPlural, icon: Users },
+    { href: `/admin/servicios`, label: t.servicePlural, icon: Wrench },
+    { href: `/admin/staff`, label: t.staffPlural, icon: UserRound },
   ]
 
   return (
@@ -68,7 +69,7 @@ export function AdminSidebar({
       {/* Persistent Top Bar (Mobile Header + Desktop Top Bar) */}
       <header className="fixed inset-x-0 top-0 z-10 flex h-16 items-center border-b border-sidebar-border bg-sidebar/80 backdrop-blur-lg px-6 shadow-sm lg:left-64">
         <div className={cn("flex flex-1 items-center justify-between gap-4 transition-opacity duration-200", mobileOpen && "opacity-0 pointer-events-none lg:opacity-100 lg:pointer-events-auto")}>
-          <Link href={`/${shopSlug}/admin`} className="flex items-center gap-2.5 lg:hidden">
+          <Link href={`/admin`} className="flex items-center gap-2.5 lg:hidden">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
               <BusinessIcon className="h-4 w-4" />
             </div>
@@ -109,13 +110,13 @@ export function AdminSidebar({
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-sidebar-border mx-1" />
                   <DropdownMenuItem asChild>
-                    <Link href={`/${shopSlug}/profile`} className="cursor-pointer rounded-lg py-2.5 font-medium text-sm hover:bg-sidebar-accent">
+                    <Link href={`/profile`} className="cursor-pointer rounded-lg py-2.5 font-medium text-sm hover:bg-sidebar-accent">
                       <User className="mr-3 h-4 w-4 text-primary" />
                       <span>Mi perfil</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href={`/${shopSlug}`} className="cursor-pointer rounded-lg py-2.5 font-medium text-sm hover:bg-sidebar-accent">
+                    <Link href={shopSlug ? getShopUrl(shopSlug) : "/"} className="cursor-pointer rounded-lg py-2.5 font-medium text-sm hover:bg-sidebar-accent">
                       <ExternalLink className="mr-3 h-4 w-4 text-primary" />
                       <span>Ver tienda</span>
                     </Link>
@@ -123,7 +124,7 @@ export function AdminSidebar({
                   <DropdownMenuSeparator className="bg-sidebar-border mx-1" />
                   <DropdownMenuItem 
                     className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer rounded-lg py-2.5 font-medium text-sm"
-                    onClick={async () => await signOut(shopSlug ? `/${shopSlug}` : "/login")}
+                    onClick={async () => await signOut("/")}
                   >
                     <LogOut className="mr-3 h-4 w-4" />
                     <span>Cerrar sesión</span>
@@ -220,11 +221,11 @@ export function AdminSidebar({
               </ReportBugModal>
 
               <Link
-              href={`/${shopSlug}/admin/configuracion`}
+              href={`/admin/configuracion`}
               onClick={() => setMobileOpen(false)}
               className={cn(
                 "flex items-center gap-3.5 rounded-xl px-4 py-3 text-sm font-medium transition-all active:scale-[0.98]",
-                pathname === `/${shopSlug}/admin/configuracion`
+                pathname === `/admin/configuracion`
                   ? "bg-primary text-primary-foreground shadow-md shadow-primary/10"
                   : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
               )}

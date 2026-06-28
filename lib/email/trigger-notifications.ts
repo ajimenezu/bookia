@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma"
 import { getTerminology, BusinessType } from "@/lib/dictionaries"
+import { getShopUrl } from "@/lib/domain"
 import { sendBookingConfirmation } from "./send-booking-confirmation"
 import { sendBookingNotificationStaff } from "./send-booking-notification-staff"
 
@@ -45,7 +46,8 @@ export async function triggerAppointmentNotifications(
     const customerEmail = appointment.customerEmail || appointment.customer?.email
     const customerPhone = appointment.customerPhone || appointment.customer?.phone || null
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? ""
+    // Per-shop subdomain base, e.g. https://vanity-salon.mibookia.com
+    const siteUrl = getShopUrl(shop.slug)
 
     const appointmentPayload = {
       startTime: appointment.startTime,

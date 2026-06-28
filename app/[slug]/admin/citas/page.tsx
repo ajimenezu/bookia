@@ -25,7 +25,7 @@ export default async function CitasPage({ params, searchParams }: PageProps) {
   const shop = await getShopBySlug(slug)
   if (!shop) notFound()
 
-  const { businessType, shopId } = await requireAdmin(shop.id, `/${slug}/login`)
+  const { businessType, shopId } = await requireAdmin(shop.id, `/login`)
   const t = getTerminology(businessType)
 
   const sp = await searchParams

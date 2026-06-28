@@ -144,37 +144,28 @@ export async function getRedirectPath(
   dbUser: UserWithMemberships, 
   currentShopSlug?: string
 ): Promise<string> {
+  // Paths are root-relative: auth happens on the shop's own subdomain, so the
+  // current host already scopes the shop. `currentShopSlug` is the host's shop.
   if (dbUser.needsPasswordChange) {
     return "/admin/perfil/cambiar-password"
   }
 
   const memberships = dbUser.memberships || []
-  
-  // 1. Super Admin always goes to an admin view
+
+  // 1. Super Admin always lands on the admin view (super-admin bypass in
+  //    requireAdmin grants access regardless of membership in the host shop).
   const isSuperAdmin = memberships.some(m => m.role === "SUPER_ADMIN")
   if (isSuperAdmin) {
-    if (currentShopSlug) return `/${currentShopSlug}/admin`
-    
-    // If no shop context, try to find the first shop for this super admin or just any shop
-    const firstShop = await prisma.shop.findFirst({
-      select: { slug: true }
-    })
-    return firstShop ? `/${firstShop.slug}/admin` : "/admin"
+    return "/admin"
   }
 
-  // 2. If in shop context, check if they are STAFF/OWNER of THIS shop
+  // 2. OWNER/STAFF of the current shop → admin; otherwise the shop home.
   if (currentShopSlug) {
     const shopMembership = memberships.find(m => m.shop?.slug === currentShopSlug)
     if (shopMembership && (shopMembership.role === "OWNER" || shopMembership.role === "STAFF")) {
-      return `/${currentShopSlug}/admin`
+      return "/admin"
     }
-    return `/${currentShopSlug}`
-  }
-
-  // 3. General login (outside shop context) - find first admin role
-  const firstAdminMembership = memberships.find(m => m.role === "OWNER" || m.role === "STAFF")
-  if (firstAdminMembership?.shop) {
-    return `/${firstAdminMembership.shop.slug}/admin`
+    return "/"
   }
 
   return "/"

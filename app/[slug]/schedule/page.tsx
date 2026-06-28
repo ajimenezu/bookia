@@ -113,7 +113,7 @@ export default async function ShopSchedulePage({ params, searchParams }: PagePro
       <main className="flex-1 pb-20">
         <div className="mx-auto max-w-5xl px-4 pt-6">
           <Link
-            href={`/${shop.slug}`}
+            href={`/`}
             className="group inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors mb-6"
           >
             <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />

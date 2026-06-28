@@ -48,7 +48,7 @@ export function ShopNavbar({ shop, user, role, showScheduleButton = true }: Shop
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-lg">
       <div className="mx-auto flex min-h-[4rem] py-2 max-w-5xl items-center justify-between px-4 sm:px-6 gap-3 sm:gap-4">
-        <Link href={`/${shop.slug}`} className="flex items-center gap-2.5 hover:opacity-90 transition-all active:scale-95">
+        <Link href={`/`} className="flex items-center gap-2.5 hover:opacity-90 transition-all active:scale-95">
           {shop.logoUrl ? (
             <Image
               src={shop.logoUrl}
@@ -69,7 +69,7 @@ export function ShopNavbar({ shop, user, role, showScheduleButton = true }: Shop
         <div className="flex items-center gap-2 sm:gap-6 shrink-0">
           {!user && (
             <Link
-              href={`/${shop.slug}/login`}
+              href={`/login`}
               id="nav-login-btn"
               className="px-2 sm:px-3 py-2 text-[10px] sm:text-sm font-bold text-muted-foreground transition-colors hover:text-primary uppercase tracking-widest flex items-center justify-center"
               title="Iniciar sesión"
@@ -80,7 +80,7 @@ export function ShopNavbar({ shop, user, role, showScheduleButton = true }: Shop
 
           {showScheduleButton && (
             <Link
-              href={`/${shop.slug}/schedule`}
+              href={`/schedule`}
               id="nav-book-btn"
               className="rounded-xl bg-primary p-2.5 sm:px-5 sm:py-2.5 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95 flex items-center justify-center"
               title={t.bookVerb}
@@ -109,7 +109,7 @@ export function ShopNavbar({ shop, user, role, showScheduleButton = true }: Shop
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-sidebar-border mx-1" />
                 <DropdownMenuItem asChild>
-                  <Link href={`/${shop.slug}/profile`} className="cursor-pointer rounded-lg py-2.5 font-medium text-sm hover:bg-sidebar-accent">
+                  <Link href={`/profile`} className="cursor-pointer rounded-lg py-2.5 font-medium text-sm hover:bg-sidebar-accent">
                     <User className="mr-3 h-4 w-4 text-primary" />
                     <span>Mi perfil</span>
                   </Link>
@@ -117,7 +117,7 @@ export function ShopNavbar({ shop, user, role, showScheduleButton = true }: Shop
                 {(role === "SUPER_ADMIN" || role === "OWNER" || role === "STAFF") && (
                   <>
                     <DropdownMenuItem asChild>
-                      <Link href={`/${shop.slug}/admin`} className="cursor-pointer rounded-lg py-2.5 font-medium text-sm hover:bg-sidebar-accent">
+                      <Link href={`/admin`} className="cursor-pointer rounded-lg py-2.5 font-medium text-sm hover:bg-sidebar-accent">
                         <LayoutDashboard className="mr-3 h-4 w-4 text-primary" />
                         <span>Panel administrativo</span>
                       </Link>
@@ -141,7 +141,7 @@ export function ShopNavbar({ shop, user, role, showScheduleButton = true }: Shop
                   )}
                   onClick={() => {
                     startTransition(async () => {
-                      await signOut(`/${shop.slug}`)
+                      await signOut(`/`)
                     })
                   }}
                 >

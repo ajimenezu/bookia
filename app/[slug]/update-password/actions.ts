@@ -43,11 +43,11 @@ export async function updatePasswordForShop(slug: string, formData: FormData) {
     include: { memberships: { include: { shop: true } } }
   })
 
-  let redirectPath = `/${slug}`
+  let redirectPath = `/`
   if (dbUser) {
     const shopMembership = dbUser.memberships.find((m: any) => m.shop.slug === slug)
     if (shopMembership && (shopMembership.role === "OWNER" || shopMembership.role === "STAFF" || shopMembership.role === "SUPER_ADMIN")) {
-      redirectPath = `/${slug}/admin`
+      redirectPath = `/admin`
     }
   }
 

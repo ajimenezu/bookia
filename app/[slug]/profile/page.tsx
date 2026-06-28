@@ -28,7 +28,7 @@ export default async function ProfilePage({ params }: PageProps) {
 
   const account = await getAdminUser()
   if (!account?.user) {
-    redirect(`/${slug}/login?returnUrl=/${slug}/profile`)
+    redirect(`/login?returnUrl=/profile`)
   }
 
   // Fetch full user details from Prisma
@@ -38,7 +38,7 @@ export default async function ProfilePage({ params }: PageProps) {
 
   if (!dbUser) {
     // This shouldn't happen for a logged-in user, but handle it
-    redirect(`/${slug}/login`)
+    redirect(`/login`)
   }
 
   // Fetch appointments for this user in THIS shop

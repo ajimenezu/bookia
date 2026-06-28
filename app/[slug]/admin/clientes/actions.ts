@@ -9,6 +9,7 @@ import { Role } from "@prisma/client"
 import { formatLastVisit } from "@/lib/date-utils"
 import { calculateAppointmentPrice } from "@/lib/appointments"
 import { getTerminology } from "@/lib/dictionaries"
+import { getShopUrl } from "@/lib/domain"
 
 
 
@@ -71,7 +72,6 @@ export async function createUser(formData: FormData) {
     if (!shop) throw new Error("Tienda no encontrada")
 
     const supabaseAdmin = createServiceRoleClient()
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? ""
 
     // 1. Invite the user via email — they set their own password by clicking the link.
     //    No temporary credentials are ever generated or stored.
@@ -86,7 +86,7 @@ export async function createUser(formData: FormData) {
         shop_logo_url: shop.logoUrl ?? null,
         invited_by: (inviter as any).name ?? (inviter as any).email,
       },
-      redirectTo: `${siteUrl}/${shop.slug}/update-password`,
+      redirectTo: `${getShopUrl(shop.slug)}/update-password`,
     })
 
     if (inviteError) {

@@ -44,7 +44,7 @@ export function ShopSignUpForm({ slug, shopName, businessType, logoUrl }: ShopSi
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=/${slug}`,
+        redirectTo: `${window.location.origin}/auth/callback?next=/`,
       },
     })
     if (error) {
@@ -102,7 +102,7 @@ export function ShopSignUpForm({ slug, shopName, businessType, logoUrl }: ShopSi
             Haz clic en el enlace para activar tu cuenta y volver a {shopName}.
           </CardDescription>
           <div className="mt-6">
-            <Link href={`/${slug}/login`} className="text-sm text-primary hover:underline font-semibold">
+            <Link href={`/login`} className="text-sm text-primary hover:underline font-semibold">
               Volver al inicio de sesión
             </Link>
           </div>
@@ -277,14 +277,14 @@ export function ShopSignUpForm({ slug, shopName, businessType, logoUrl }: ShopSi
                       <p>{error}</p>
                       <div className="flex flex-wrap gap-3 text-xs">
                         <Link
-                          href={`/${slug}/login`}
+                          href={`/login`}
                           className="underline font-semibold hover:no-underline"
                         >
                           Iniciar sesión
                         </Link>
                         <span className="text-destructive/50">·</span>
                         <Link
-                          href={`/${slug}/forgot-password`}
+                          href={`/forgot-password`}
                           className="underline font-semibold hover:no-underline"
                         >
                           Olvidé mi contraseña
@@ -355,7 +355,7 @@ export function ShopSignUpForm({ slug, shopName, businessType, logoUrl }: ShopSi
 
               <p className="text-center text-sm text-muted-foreground">
                 ¿Ya tienes una cuenta?{" "}
-                <Link href={`/${slug}/login`} className="text-primary hover:underline font-semibold">
+                <Link href={`/login`} className="text-primary hover:underline font-semibold">
                   Inicia sesión
                 </Link>
               </p>
@@ -364,7 +364,7 @@ export function ShopSignUpForm({ slug, shopName, businessType, logoUrl }: ShopSi
         </form>
 
         <p className="text-center text-sm text-muted-foreground">
-          <Link href={`/${slug}`} className="text-primary hover:underline">
+          <Link href={`/`} className="text-primary hover:underline">
             ← Volver a {shopName}
           </Link>
         </p>

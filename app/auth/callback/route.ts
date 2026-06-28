@@ -2,11 +2,20 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import prisma from "@/lib/prisma"
 import { getRedirectPath } from "@/lib/auth-utils"
+import { getSubdomain, getShopUrl } from "@/lib/domain"
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url)
-  const code = searchParams.get("code")
-  const next = searchParams.get("next")
+  const url = new URL(request.url)
+  const code = url.searchParams.get("code")
+  // Shop context comes from the subdomain the callback lands on, not a path param.
+  // NOTE: build the redirect base from the Host header, NOT `url.origin` —
+  // `request.url` reports the internal server origin (localhost), losing the
+  // subdomain, which would bounce the user to the apex.
+  const host = request.headers.get("host")
+  const shopSlug = getSubdomain(host) ?? undefined
+  const base = shopSlug
+    ? getShopUrl(shopSlug)
+    : `${url.protocol}//${host ?? url.host}`
 
   if (code) {
     const supabase = await createClient()
@@ -40,13 +49,10 @@ export async function GET(request: Request) {
           }
         })
 
-        // Extract potential shop slug from 'next' parameter (e.g., "/slug" -> "slug")
-        const shopSlugFromNext = next ? next.split("/").filter(Boolean)[0] : undefined
-
         let currentUserState = dbUser
-        if (shopSlugFromNext) {
-          const shop = await prisma.shop.findFirst({
-            where: { slug: shopSlugFromNext },
+        if (shopSlug) {
+          const shop = await prisma.shop.findUnique({
+            where: { slug: shopSlug },
             select: { id: true }
           })
 
@@ -89,20 +95,14 @@ export async function GET(request: Request) {
           }
         }
 
-        // Determine destination route based on role/membership hierarchy
-        let redirectPath = await getRedirectPath(currentUserState, shopSlugFromNext)
-        
-        // If 'next' was provided and points to something else (like a specific subpage), 
-        // we might want to respect it, but prioritize admin redirect for admins.
-        if (next && next !== `/${shopSlugFromNext}` && redirectPath === `/${shopSlugFromNext}`) {
-          redirectPath = next
-        }
-        
-        return NextResponse.redirect(`${origin}${redirectPath}`)
+        // Destination is root-relative; `base` is the shop's subdomain.
+        const redirectPath = await getRedirectPath(currentUserState, shopSlug)
+
+        return NextResponse.redirect(`${base}${redirectPath}`)
       }
     }
   }
 
   // Authentication exchange failed or missing code parameter
-  return NextResponse.redirect(`${origin}/login?error=Autenticación+con+Google+fallida`)
+  return NextResponse.redirect(`${base}/login?error=Autenticación+con+Google+fallida`)
 }

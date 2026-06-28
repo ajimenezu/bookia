@@ -3,6 +3,7 @@ import { getShopBySlug } from "@/lib/shop"
 import prisma from "@/lib/prisma"
 import { notFound, redirect } from "next/navigation"
 import { ShopConfigContent } from "@/components/admin/shop-config-content"
+import { ShopPortalLink } from "@/components/admin/shop-portal-link"
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -15,9 +16,9 @@ export default async function ConfiguracionPage({ params }: PageProps) {
   if (!shop) notFound()
 
   // SECURITY: Only Owners and Super Admins can access configuration
-  const session = await requireAdmin(shop.id, `/${slug}/login`)
+  const session = await requireAdmin(shop.id, `/login`)
   if (!session.isSuperAdmin && session.role !== "OWNER") {
-    redirect(`/${slug}/admin`)
+    redirect(`/admin`)
   }
 
   // Fetch shop details and current schedules
@@ -50,7 +51,9 @@ export default async function ConfiguracionPage({ params }: PageProps) {
         </p>
       </div>
 
-      <ShopConfigContent 
+      <ShopPortalLink slug={slug} />
+
+      <ShopConfigContent
         shopId={shop.id} 
         initialShop={shopDetails} 
         initialSchedules={schedules} 

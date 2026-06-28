@@ -17,7 +17,7 @@ export default async function AdminLayout({ children, params }: LayoutProps) {
   if (!shop) notFound()
 
   // Validates the authenticated user has access to this specific shop
-  const { businessType, user } = await requireAdmin(shop.id, `/${slug}/login`)
+  const { businessType, user } = await requireAdmin(shop.id, `/login`)
   const t = getTerminology(businessType)
 
   return (

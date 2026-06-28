@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import prisma from "@/lib/prisma"
+import { getShopUrl } from "@/lib/domain"
 import { z } from "zod"
 
 const schema = z.object({
@@ -19,10 +20,9 @@ export async function requestPasswordReset(slug: string, formData: FormData) {
 
   const { email } = validated.data
   const supabase = await createClient()
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? ""
 
   await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${siteUrl}/${slug}/update-password`,
+    redirectTo: `${getShopUrl(slug)}/update-password`,
   })
 
   // Always succeed — do not leak whether the email exists.

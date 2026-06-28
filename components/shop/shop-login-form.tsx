@@ -133,7 +133,7 @@ export function ShopLoginForm({ slug, shopName, businessType, logoUrl }: ShopLog
 
               <div className="flex justify-end">
                 <Link
-                  href={`/${slug}/forgot-password`}
+                  href={`/forgot-password`}
                   className="text-sm text-primary hover:underline"
                 >
                   ¿Olvidaste tu contraseña?
@@ -164,14 +164,14 @@ export function ShopLoginForm({ slug, shopName, businessType, logoUrl }: ShopLog
               </div>
 
               <GoogleSignInButton 
-                redirectTo={`/${slug}`}
+                redirectTo={`/`}
                 onError={setError} 
                 disabled={loading} 
               />
 
               <p className="text-center text-sm text-muted-foreground">
                 ¿No tienes una cuenta?{" "}
-                <Link href={`/${slug}/register`} className="text-primary hover:underline font-semibold">
+                <Link href={`/register`} className="text-primary hover:underline font-semibold">
                   Regístrate
                 </Link>
               </p>
@@ -181,7 +181,7 @@ export function ShopLoginForm({ slug, shopName, businessType, logoUrl }: ShopLog
 
         {/* Back to shop link */}
         <p className="text-center text-sm text-muted-foreground">
-          <Link href={`/${slug}`} className="text-primary hover:underline">
+          <Link href={`/`} className="text-primary hover:underline">
             ← Volver a {shopName}
           </Link>
         </p>

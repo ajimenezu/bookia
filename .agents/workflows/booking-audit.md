@@ -23,6 +23,7 @@ description: Audit checklist for appointment availability and scheduling logic.
 - **Check**: Skips staff selection UI entirely if only 1 eligible staff member exists.
 
 ## 4. Service Constraints
+- **Check**: Public listing queries MUST filter out "hidden" services, while internal admin booking flows may still schedule them.
 - **Check**: Booking flow strictly enforces category constraints (cannot mix categories).
 
 *(Ref: `booking_engine.md`)*

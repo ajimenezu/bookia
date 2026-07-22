@@ -158,7 +158,7 @@ export function PlansSection() {
                 variant={plan.highlight ? "default" : "secondary"}
               >
                 <Link
-                  href="/schedule"
+                  href="/demo"
                   onClick={() => {
                     trackPlanClick(plan.name, billingCycle)
                     trackCtaClick("start-trial", "plans")

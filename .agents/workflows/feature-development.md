@@ -23,6 +23,7 @@ description: Comprehensive checklist for developing new features, including UI g
 - **Icons & Fonts**: `lucide-react` (strokeWidth=1.5). Font: `Geist` (`font-sans`), `font-mono` for IDs.
 
 ## 3. Layout & Skeletons
+- **Form Stability**: Reserve container space for dynamic validation messages to prevent layout shifts and accidental "double-click" exit issues on modals.
 - **Responsiveness**: Mobile-first (`flex-col` -> `md:flex-row`). Use fluid typography or `text-wrap` for large text blocks to prevent layout breaking on small screens.
 - **Loading State**: `loading.tsx` MUST perfectly match `page.tsx` skeleton layout.
 - **UI Stability**: To prevent layout "jumping" when `Suspense` resolves, keep high-level layout elements (like headers and "Create" buttons) at the page level (Server Component) rather than inside the suspended Client Component.

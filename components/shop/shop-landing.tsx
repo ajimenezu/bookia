@@ -76,6 +76,9 @@ function formatDuration(minutes: number) {
 
 export function ShopLanding({ shop, services, staff, user, role }: ShopLandingProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [showAllServices, setShowAllServices] = useState(false)
+  const INITIAL_SERVICES_COUNT = 9 // 3 rows of 3 on desktop
+
   const t = getTerminology(shop.businessType)
   const BusinessIcon = getBusinessIcon(shop.businessType)
 
@@ -83,6 +86,10 @@ export function ShopLanding({ shop, services, staff, user, role }: ShopLandingPr
   const filteredServices = selectedCategory 
     ? services.filter(s => s.categories?.includes(selectedCategory))
     : services
+
+  const displayedServices = showAllServices 
+    ? filteredServices 
+    : filteredServices.slice(0, INITIAL_SERVICES_COUNT)
 
   const whatsappHref = shop.whatsappPhone
     ? `https://wa.me/${shop.whatsappPhone.replace(/\D/g, "")}`
@@ -104,7 +111,7 @@ export function ShopLanding({ shop, services, staff, user, role }: ShopLandingPr
           <div className="flex flex-col items-center gap-8 text-center">
             {/* Premium Badge */}
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-5 py-2 text-xs font-black uppercase tracking-[0.2em] text-primary animate-in fade-in slide-in-from-top-4 duration-700">
-              <Sparkles className="h-3.5 w-3.5" />
+              <BusinessIcon className="h-3.5 w-3.5" />
               {t.businessName} de Excelencia
             </div>
 
@@ -221,10 +228,13 @@ export function ShopLanding({ shop, services, staff, user, role }: ShopLandingPr
           </p>
         </div>
 
-        {allCategories.length > 0 && (
+        {allCategories.length > 1 && (
           <div className="mb-10 flex overflow-x-auto pb-4 pt-2 px-2 -mx-2 gap-3 no-scrollbar snap-x">
             <button
-              onClick={() => setSelectedCategory(null)}
+              onClick={() => {
+                setSelectedCategory(null)
+                setShowAllServices(false)
+              }}
               className={cn(
                 "snap-start shrink-0 px-5 py-2.5 rounded-full text-sm font-black uppercase tracking-widest transition-all",
                 selectedCategory === null
@@ -237,7 +247,10 @@ export function ShopLanding({ shop, services, staff, user, role }: ShopLandingPr
             {allCategories.map(cat => (
               <button
                 key={cat}
-                onClick={() => setSelectedCategory(cat)}
+                onClick={() => {
+                  setSelectedCategory(cat)
+                  setShowAllServices(false)
+                }}
                 className={cn(
                   "snap-start shrink-0 px-5 py-2.5 rounded-full text-sm font-black uppercase tracking-widest transition-all",
                   selectedCategory === cat
@@ -258,7 +271,7 @@ export function ShopLanding({ shop, services, staff, user, role }: ShopLandingPr
         )}
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredServices.map((svc) => (
+          {displayedServices.map((svc) => (
             <Link
               key={svc.id}
               href={`/schedule?service=${svc.id}`}
@@ -300,6 +313,17 @@ export function ShopLanding({ shop, services, staff, user, role }: ShopLandingPr
             </Link>
           ))}
         </div>
+
+        {filteredServices.length > INITIAL_SERVICES_COUNT && (
+          <div className="mt-12 flex justify-center animate-in fade-in duration-500">
+            <button
+              onClick={() => setShowAllServices(!showAllServices)}
+              className="rounded-full border border-border bg-card px-8 py-3 text-sm font-black uppercase tracking-widest text-foreground transition-all hover:bg-primary/5 hover:text-primary hover:border-primary/30 active:scale-95 shadow-sm"
+            >
+              {showAllServices ? "Ver menos" : `Ver más ${t.servicePlural.toLowerCase()}`}
+            </button>
+          </div>
+        )}
       </section>
 
       {/* ─── STAFF PREVIEW ─── */}

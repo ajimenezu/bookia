@@ -60,7 +60,7 @@ export function ServiceStep({
     <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 px-4 sm:px-6 w-full min-w-0">
       <h2 className="mb-6 text-xl font-black text-foreground tracking-tight">Selecciona tus {t.servicePlural.toLowerCase()}</h2>
       
-      {allCategories.length > 0 && (
+      {allCategories.length > 1 && (
         <div className="mb-6 flex overflow-x-auto pb-4 pt-2 px-2 -mx-2 gap-3 no-scrollbar snap-x">
           <button
             onClick={() => setSelectedCategory(null)}

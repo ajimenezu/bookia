@@ -10,6 +10,7 @@ description: Pre-commit PR audit covering Zod validation, code reusability, and 
 - **FAIL IF**: Unescaped raw HTML output.
 
 ## 2. UI/UX Consistency
+- **Check**: Form validation messages MUST have reserved container space to prevent layout shifts that move action buttons.
 - **Check**: `loading.tsx` precisely mimics `page.tsx` skeleton.
 - **Check**: Mobile-first responsive design works flawlessly before desktop breakpoints.
 - **Check**: Strictly uses OKLCH tokens (`bg-primary`, `text-muted`).

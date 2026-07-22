@@ -159,7 +159,9 @@ export function CreateUserModal({ currentUserRole, isSuperAdmin, shopId, mode = 
                 placeholder="Ej: Juan Pérez" required 
                 className={touched.name && !name.trim() ? "border-destructive focus-visible:ring-destructive" : ""}
               />
-              {touched.name && !name.trim() && <p className="text-xs text-destructive">El nombre es requerido</p>}
+              <p className="text-xs text-destructive min-h-[16px]">
+                {touched.name && !name.trim() ? "El nombre es requerido" : ""}
+              </p>
             </div>
 
             <div className="grid gap-1">
@@ -171,7 +173,9 @@ export function CreateUserModal({ currentUserRole, isSuperAdmin, shopId, mode = 
                 type="email" placeholder="juan@ejemplo.com" required 
                 className={touched.email && !email.trim() ? "border-destructive focus-visible:ring-destructive" : ""}
               />
-              {touched.email && !email.trim() && <p className="text-xs text-destructive">El correo es requerido</p>}
+              <p className="text-xs text-destructive min-h-[16px]">
+                {touched.email && !email.trim() ? "El correo es requerido" : ""}
+              </p>
             </div>
 
             <div className="grid gap-1">
@@ -183,7 +187,9 @@ export function CreateUserModal({ currentUserRole, isSuperAdmin, shopId, mode = 
                 placeholder="+506 8888 8888" required
                 className={touched.phone && !phone.trim() ? "border-destructive focus-visible:ring-destructive" : ""}
               />
-              {touched.phone && !phone.trim() && <p className="text-xs text-destructive">El teléfono es requerido</p>}
+              <p className="text-xs text-destructive min-h-[16px]">
+                {touched.phone && !phone.trim() ? "El teléfono es requerido" : ""}
+              </p>
             </div>
 
             {showRoleSelect ? (

@@ -170,7 +170,7 @@ export async function getPendingRequests(shopIdRaw: string) {
   const thirtyDaysAgo = new Date()
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-  const [pendingSchedules, pendingTimeOff, newAppointments] = await Promise.all([
+  const [pendingSchedules, pendingTimeOff, newAppointments, myNotifiedSchedules, myNotifiedTimeOff] = await Promise.all([
     // Only owners/superadmins see pending approvals
     isPrivileged 
       ? prisma.staffSchedule.findMany({
@@ -195,13 +195,25 @@ export async function getPendingRequests(shopIdRaw: string) {
         startTime: { gte: thirtyDaysAgo }
       },
       include: { services: true }
+    }),
+
+    // Staff sees their approved/rejected requests
+    prisma.staffSchedule.findMany({
+      where: { shopId, staffId: user.id, status: { in: ["APPROVED", "REJECTED"] } },
+      include: { breaks: true }
+    }),
+
+    prisma.staffTimeOff.findMany({
+      where: { shopId, staffId: user.id, status: { in: ["APPROVED", "REJECTED"] } }
     })
   ])
 
   return {
     schedules: pendingSchedules,
     timeOff: pendingTimeOff,
-    appointments: newAppointments
+    appointments: newAppointments,
+    myNotifiedSchedules,
+    myNotifiedTimeOff
   }
 }
 

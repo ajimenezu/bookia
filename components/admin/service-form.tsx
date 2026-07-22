@@ -5,6 +5,7 @@ import { Clock, BadgeCent, Type, AlignLeft, Trash2, Loader2, Users, Tag, Chevron
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Badge } from "@/components/ui/badge"
+import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -27,6 +28,7 @@ interface ServiceFormProps {
     description: string | null
     price: number
     duration: number
+    isHidden?: boolean
     staffMembers?: { id: string }[]
     categories?: { id: string; name: string }[]
   }
@@ -46,7 +48,8 @@ export function ServiceForm({ slug, shopId, businessType = "BARBERIA", staffList
     description: initialData?.description || "",
     price: initialData?.price?.toString() || "",
     hours: initialHours.toString(),
-    minutes: initialMinutes.toString()
+    minutes: initialMinutes.toString(),
+    isHidden: initialData?.isHidden || false
   })
 
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>(
@@ -83,6 +86,7 @@ export function ServiceForm({ slug, shopId, businessType = "BARBERIA", staffList
       previewData.price !== (initialData?.price?.toString() || "") ||
       previewData.hours !== initialHours.toString() ||
       previewData.minutes !== initialMinutes.toString() ||
+      previewData.isHidden !== (initialData?.isHidden || false) ||
       JSON.stringify(selectedStaffIds.sort()) !== JSON.stringify((initialData?.staffMembers?.map(s => s.id) || []).sort()) ||
       selectedCategory !== (initialData?.categories?.[0]?.name || null)
     : isValid
@@ -112,6 +116,13 @@ export function ServiceForm({ slug, shopId, businessType = "BARBERIA", staffList
     // Append selected category
     if (selectedCategory) {
       formData.append("category", selectedCategory)
+    }
+
+    // Append isHidden
+    if (previewData.isHidden) {
+      formData.append("isHidden", "true")
+    } else {
+      formData.append("isHidden", "false")
     }
 
     try {
@@ -359,9 +370,9 @@ export function ServiceForm({ slug, shopId, businessType = "BARBERIA", staffList
             </PopoverContent>
           </Popover>
         </div>
-        {!selectedCategory && (
-          <p className="text-xs text-destructive font-medium -mt-1">Debes seleccionar una categoría.</p>
-        )}
+        <p className="text-xs text-destructive font-medium min-h-[20px] -mt-1">
+          {!selectedCategory ? "Debes seleccionar una categoría." : ""}
+        </p>
 
         <div className="grid gap-3">
           <Label className="flex items-center gap-2 font-medium text-sm text-foreground/80">
@@ -393,9 +404,23 @@ export function ServiceForm({ slug, shopId, businessType = "BARBERIA", staffList
               )
             })}
           </div>
-          {selectedStaffIds.length === 0 && (
-            <p className="text-xs text-destructive mt-1 font-medium">Debes seleccionar al menos un {t.staff.toLowerCase()}.</p>
-          )}
+          <p className="text-xs text-destructive mt-1 font-medium min-h-[20px]">
+            {selectedStaffIds.length === 0 ? `Debes seleccionar al menos un ${t.staff.toLowerCase()}.` : ""}
+          </p>
+        </div>
+
+        <div className="flex flex-row items-center justify-between rounded-lg border border-border p-4 bg-muted/30">
+          <div className="space-y-0.5">
+            <Label className="text-base font-medium">Ocultar de la página pública</Label>
+            <p className="text-sm text-muted-foreground">
+              El servicio solo podrá ser agendado por administradores desde el panel.
+            </p>
+          </div>
+          <Switch 
+            checked={previewData.isHidden} 
+            onCheckedChange={(checked) => setPreviewData({ ...previewData, isHidden: checked })} 
+            disabled={loading || deleting}
+          />
         </div>
 
         <div className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-center sm:justify-between border-t border-border/60">

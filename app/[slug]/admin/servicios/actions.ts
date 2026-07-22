@@ -12,7 +12,8 @@ const serviceSchema = z.object({
   duration: z.number().int().positive("La duración debe ser un número positivo"),
   shopId: z.string().min(1, "El ID de la tienda es obligatorio"),
   staffIds: z.array(z.string()).min(1, "Debe seleccionar al menos un miembro del equipo para este servicio"),
-  category: z.string().min(1, "Debe seleccionar una categoría para este servicio")
+  category: z.string().min(1, "Debe seleccionar una categoría para este servicio"),
+  isHidden: z.boolean().optional().default(false)
 })
 
 async function validateServiceOwnership(serviceId: string, membershipShopId: string, isSuperAdmin: boolean) {
@@ -45,6 +46,7 @@ export async function createService(formData: FormData) {
       shopId: targetShopId,
       staffIds: formData.getAll("staffIds"),
       category: formData.get("category"),
+      isHidden: formData.get("isHidden") === "on" || formData.get("isHidden") === "true",
     }
 
     const validated = serviceSchema.safeParse(rawData)
@@ -60,6 +62,7 @@ export async function createService(formData: FormData) {
         price: validated.data.price,
         duration: validated.data.duration,
         shopId: targetShopId,
+        isHidden: validated.data.isHidden,
         staffMembers: {
           connect: validated.data.staffIds.map(id => ({ id }))
         },
@@ -96,6 +99,7 @@ export async function updateService(formData: FormData) {
       shopId: service.shopId,
       staffIds: formData.getAll("staffIds"),
       category: formData.get("category"),
+      isHidden: formData.get("isHidden") === "on" || formData.get("isHidden") === "true",
     }
 
     const validated = serviceSchema.safeParse(rawData)
@@ -110,6 +114,7 @@ export async function updateService(formData: FormData) {
         description: validated.data.description,
         price: validated.data.price,
         duration: validated.data.duration,
+        isHidden: validated.data.isHidden,
         staffMembers: {
           set: validated.data.staffIds.map(id => ({ id }))
         },

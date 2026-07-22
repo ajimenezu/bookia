@@ -174,9 +174,9 @@ export function ReportBugModal({ children }: { children: React.ReactNode }) {
                 {...form.register("url")} 
                 readOnly
               />
-              {form.formState.errors.url && (
-                <p className="text-sm text-destructive">{form.formState.errors.url.message}</p>
-              )}
+              <p className="text-sm text-destructive min-h-[20px]">
+                {form.formState.errors.url ? form.formState.errors.url.message : ""}
+              </p>
             </div>
 
             <div className="grid gap-1">
@@ -186,9 +186,9 @@ export function ReportBugModal({ children }: { children: React.ReactNode }) {
                 placeholder="Ej. El botón de guardar no funciona"
                 {...form.register("title")} 
               />
-              {form.formState.errors.title && (
-                <p className="text-sm text-destructive">{form.formState.errors.title.message}</p>
-              )}
+              <p className="text-sm text-destructive min-h-[20px]">
+                {form.formState.errors.title ? form.formState.errors.title.message : ""}
+              </p>
             </div>
 
             <div className="grid gap-1">
@@ -200,9 +200,9 @@ export function ReportBugModal({ children }: { children: React.ReactNode }) {
                 {...form.register("description")} 
                 className="resize-none"
               />
-              {form.formState.errors.description && (
-                <p className="text-sm text-destructive">{form.formState.errors.description.message}</p>
-              )}
+              <p className="text-sm text-destructive min-h-[20px]">
+                {form.formState.errors.description ? form.formState.errors.description.message : ""}
+              </p>
             </div>
 
             <div className="grid gap-1">

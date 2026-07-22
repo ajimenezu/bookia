@@ -33,6 +33,7 @@ export default async function ShopPublicPage({ params }: PageProps) {
     where: { slug },
     include: {
       services: { 
+        where: { isHidden: false },
         orderBy: { price: "asc" },
         include: { categories: true }
       },

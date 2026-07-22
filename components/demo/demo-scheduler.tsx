@@ -232,7 +232,9 @@ export function DemoScheduler() {
                         aria-invalid={Boolean(companyNameError)}
                         className={companyNameError ? "border-destructive" : undefined}
                       />
-                      {companyNameError ? <p className="text-xs text-destructive">{companyNameError}</p> : null}
+                      <p className="text-xs text-destructive min-h-[16px]">
+                        {companyNameError ? companyNameError : ""}
+                      </p>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="contactName">Nombre de contacto <span className="text-destructive">*</span></Label>
@@ -246,7 +248,9 @@ export function DemoScheduler() {
                         aria-invalid={Boolean(contactNameError)}
                         className={contactNameError ? "border-destructive" : undefined}
                       />
-                      {contactNameError ? <p className="text-xs text-destructive">{contactNameError}</p> : null}
+                      <p className="text-xs text-destructive min-h-[16px]">
+                        {contactNameError ? contactNameError : ""}
+                      </p>
                     </div>
                   </div>
 
@@ -274,7 +278,9 @@ export function DemoScheduler() {
                           ))}
                         </SelectContent>
                       </Select>
-                      {businessTypeError ? <p className="text-xs text-destructive">{businessTypeError}</p> : null}
+                      <p className="text-xs text-destructive min-h-[16px]">
+                        {businessTypeError ? businessTypeError : ""}
+                      </p>
                     </div>
                     {isOtherBusinessType ? (
                       <div className="space-y-2 md:col-span-2">
@@ -289,7 +295,9 @@ export function DemoScheduler() {
                           aria-invalid={Boolean(customBusinessTypeError)}
                           className={customBusinessTypeError ? "border-destructive" : undefined}
                         />
-                        {customBusinessTypeError ? <p className="text-xs text-destructive">{customBusinessTypeError}</p> : null}
+                        <p className="text-xs text-destructive min-h-[16px]">
+                          {customBusinessTypeError ? customBusinessTypeError : ""}
+                        </p>
                       </div>
                     ) : null}
                     <div className="space-y-2 md:col-span-2">
@@ -312,7 +320,9 @@ export function DemoScheduler() {
                           ))}
                         </SelectContent>
                       </Select>
-                      {teamSizeError ? <p className="text-xs text-destructive">{teamSizeError}</p> : null}
+                      <p className="text-xs text-destructive min-h-[16px]">
+                        {teamSizeError ? teamSizeError : ""}
+                      </p>
                     </div>
                   </div>
 
@@ -357,7 +367,9 @@ export function DemoScheduler() {
                         aria-invalid={Boolean(emailError)}
                         className={emailError ? "border-destructive" : undefined}
                       />
-                      {emailError ? <p className="text-xs text-destructive">{emailError}</p> : null}
+                      <p className="text-xs text-destructive min-h-[16px]">
+                        {emailError ? emailError : ""}
+                      </p>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="phone">Teléfono / WhatsApp <span className="text-destructive">*</span></Label>
@@ -372,7 +384,9 @@ export function DemoScheduler() {
                         aria-invalid={Boolean(phoneError)}
                         className={phoneError ? "border-destructive" : undefined}
                       />
-                      {phoneError ? <p className="text-xs text-destructive">{phoneError}</p> : null}
+                      <p className="text-xs text-destructive min-h-[16px]">
+                        {phoneError ? phoneError : ""}
+                      </p>
                     </div>
                   </div>
 

@@ -22,6 +22,7 @@ export interface Terminology {
   bookVerb: string
   bookingVerb: string
   appointmentHistory: string
+  viewBusiness: string
 }
 
 export const DICTIONARIES: Record<BusinessType, Terminology> = {
@@ -46,7 +47,8 @@ export const DICTIONARIES: Record<BusinessType, Terminology> = {
     appointmentGender: "f",
     bookVerb: "Agendar",
     bookingVerb: "Agendando",
-    appointmentHistory: "Historial de Citas"
+    appointmentHistory: "Historial de Citas",
+    viewBusiness: "Ver barbería"
   },
   SALON_BELLEZA: {
     staff: "Estilista",
@@ -69,7 +71,8 @@ export const DICTIONARIES: Record<BusinessType, Terminology> = {
     appointmentGender: "f",
     bookVerb: "Reservar",
     bookingVerb: "Reservando",
-    appointmentHistory: "Historial de Reservas"
+    appointmentHistory: "Historial de Reservas",
+    viewBusiness: "Ver salón de belleza"
   },
   SPA: {
     staff: "Terapeuta",
@@ -92,7 +95,8 @@ export const DICTIONARIES: Record<BusinessType, Terminology> = {
     appointmentGender: "f",
     bookVerb: "Agendar",
     bookingVerb: "Agendando",
-    appointmentHistory: "Historial de Citas"
+    appointmentHistory: "Historial de Citas",
+    viewBusiness: "Ver SPA"
   },
   CLINICA: {
     staff: "Especialista",
@@ -115,7 +119,8 @@ export const DICTIONARIES: Record<BusinessType, Terminology> = {
     appointmentGender: "f",
     bookVerb: "Agendar",
     bookingVerb: "Agendando",
-    appointmentHistory: "Historial de Citas"
+    appointmentHistory: "Historial de Citas",
+    viewBusiness: "Ver clínica"
   }
 }
 

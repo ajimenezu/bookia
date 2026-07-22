@@ -159,9 +159,9 @@ export function ShopSignUpForm({ slug, shopName, businessType, logoUrl }: ShopSi
                     className={`pl-10 bg-background/50 border-border ${touched.name && !name.trim() ? "border-destructive focus-visible:ring-destructive" : ""}`}
                   />
                 </div>
-                {touched.name && !name.trim() && (
-                  <p className="text-xs text-destructive">El nombre es requerido</p>
-                )}
+                <p className="text-xs text-destructive min-h-[16px]">
+                  {touched.name && !name.trim() ? "El nombre es requerido" : ""}
+                </p>
               </div>
 
               <div className="space-y-1">
@@ -181,9 +181,9 @@ export function ShopSignUpForm({ slug, shopName, businessType, logoUrl }: ShopSi
                     className={`pl-10 bg-background/50 border-border ${touched.email && !email.trim() ? "border-destructive focus-visible:ring-destructive" : ""}`}
                   />
                 </div>
-                {touched.email && !email.trim() && (
-                  <p className="text-xs text-destructive">El correo electrónico es requerido</p>
-                )}
+                <p className="text-xs text-destructive min-h-[16px]">
+                  {touched.email && !email.trim() ? "El correo electrónico es requerido" : ""}
+                </p>
               </div>
 
               <div className="space-y-1">
@@ -203,9 +203,9 @@ export function ShopSignUpForm({ slug, shopName, businessType, logoUrl }: ShopSi
                     className={`pl-10 bg-background/50 border-border ${touched.phone && !phone.trim() ? "border-destructive focus-visible:ring-destructive" : ""}`}
                   />
                 </div>
-                {touched.phone && !phone.trim() && (
-                  <p className="text-xs text-destructive">El teléfono es requerido</p>
-                )}
+                <p className="text-xs text-destructive min-h-[16px]">
+                  {touched.phone && !phone.trim() ? "El teléfono es requerido" : ""}
+                </p>
               </div>
 
               <div className="space-y-1">

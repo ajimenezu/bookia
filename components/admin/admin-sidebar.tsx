@@ -118,7 +118,7 @@ export function AdminSidebar({
                   <DropdownMenuItem asChild>
                     <Link href={shopSlug ? getShopUrl(shopSlug) : "/"} className="cursor-pointer rounded-lg py-2.5 font-medium text-sm hover:bg-sidebar-accent">
                       <ExternalLink className="mr-3 h-4 w-4 text-primary" />
-                      <span>Ver tienda</span>
+                      <span>{t.viewBusiness || "Ver tienda"}</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-sidebar-border mx-1" />

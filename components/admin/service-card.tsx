@@ -11,6 +11,7 @@ interface ServiceCardProps {
   description?: string | null
   businessType?: BusinessType
   isPreview?: boolean
+  isHidden?: boolean
   className?: string
   onClick?: () => void
 }
@@ -22,6 +23,7 @@ export function ServiceCard({
   description,
   businessType = "BARBERIA",
   isPreview = false,
+  isHidden = false,
   className,
   onClick
 }: ServiceCardProps) {
@@ -61,6 +63,11 @@ export function ServiceCard({
           </h3>
           <div className="flex items-center gap-1.5 mt-1 text-primary/80">
             <span className="text-lg font-black tracking-tighter">{formattedPrice}</span>
+            {isHidden && (
+              <Badge variant="outline" className="ml-2 bg-destructive/10 text-destructive border-destructive/20 text-[10px] uppercase font-bold tracking-wider">
+                Oculto
+              </Badge>
+            )}
           </div>
         </div>
       </div>

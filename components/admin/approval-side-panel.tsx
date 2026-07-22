@@ -26,6 +26,8 @@ interface ApprovalSidePanelProps {
     schedules: any[]
     timeOff: any[]
     appointments: any[]
+    myNotifiedSchedules?: any[]
+    myNotifiedTimeOff?: any[]
   }
   onRequestsChange?: (requests: any) => void
 }
@@ -41,7 +43,16 @@ export function ApprovalSidePanel({
   const [requests, setRequests] = useState(initialRequests)
 
   useEffect(() => {
-    setRequests(initialRequests)
+    try {
+      const dismissed = JSON.parse(localStorage.getItem("dismissedPermissions") || "[]")
+      setRequests({
+        ...initialRequests,
+        myNotifiedSchedules: initialRequests.myNotifiedSchedules?.filter(s => !dismissed.includes(s.id)),
+        myNotifiedTimeOff: initialRequests.myNotifiedTimeOff?.filter(to => !dismissed.includes(to.id))
+      })
+    } catch (e) {
+      setRequests(initialRequests)
+    }
   }, [initialRequests])
 
   const handleAction = (type: "SCHEDULE" | "TIMEOFF", id: string, action: "APPROVE" | "REJECT") => {
@@ -64,6 +75,28 @@ export function ApprovalSidePanel({
         toast.error(e.message)
       }
     })
+  }
+
+  const handleAcknowledgePermission = (type: "SCHEDULE" | "TIMEOFF", id: string) => {
+    try {
+      const dismissed = JSON.parse(localStorage.getItem("dismissedPermissions") || "[]")
+      if (!dismissed.includes(id)) {
+        dismissed.push(id)
+        localStorage.setItem("dismissedPermissions", JSON.stringify(dismissed))
+      }
+      
+      if (type === "SCHEDULE") {
+        const updated = { ...requests, myNotifiedSchedules: requests.myNotifiedSchedules?.filter((s: any) => s.id !== id) }
+        setRequests(updated)
+        onRequestsChange?.(updated)
+      } else {
+        const updated = { ...requests, myNotifiedTimeOff: requests.myNotifiedTimeOff?.filter((s: any) => s.id !== id) }
+        setRequests(updated)
+        onRequestsChange?.(updated)
+      }
+    } catch (e: any) {
+      toast.error(e.message)
+    }
   }
 
   const handleAcknowledgeAppointment = (id: string) => {
@@ -100,7 +133,7 @@ export function ApprovalSidePanel({
     })
   }
 
-  const hasRequests = requests.schedules.length > 0 || requests.timeOff.length > 0 || requests.appointments.length > 0
+  const hasRequests = requests.schedules.length > 0 || requests.timeOff.length > 0 || requests.appointments.length > 0 || (requests.myNotifiedSchedules && requests.myNotifiedSchedules.length > 0) || (requests.myNotifiedTimeOff && requests.myNotifiedTimeOff.length > 0)
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -127,6 +160,93 @@ export function ApprovalSidePanel({
             </div>
           ) : (
             <div className="space-y-6">
+              {/* Staff Notifications */}
+              {requests.myNotifiedSchedules && requests.myNotifiedSchedules.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <Check className="h-3 w-3" /> Estado de tus Horarios
+                  </h3>
+                  {requests.myNotifiedSchedules.map((s: any) => (
+                    <div key={s.id} className="rounded-xl border border-border bg-card p-4 space-y-3 shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold",
+                          s.status === "REJECTED" ? "bg-destructive/10 text-destructive" : "bg-success/10 text-success"
+                        )}>
+                          {s.status === "REJECTED" ? <XCircle className="h-4 w-4" /> : <Check className="h-4 w-4" />}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold">Horario {getDayName(s.dayOfWeek)}</p>
+                          <span className={cn(
+                            "text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-tighter",
+                            s.status === "REJECTED" ? "bg-destructive text-destructive-foreground" : "bg-success text-success-foreground"
+                          )}>
+                            {s.status === "REJECTED" ? "Rechazado" : "Aprobado"}
+                          </span>
+                        </div>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        className="w-full h-8"
+                        onClick={() => handleAcknowledgePermission("SCHEDULE", s.id)}
+                        disabled={isPending}
+                      >
+                        Entendido
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {(requests.myNotifiedSchedules?.length ? true : false) && (requests.myNotifiedTimeOff?.length ? true : false) && <Separator />}
+
+              {requests.myNotifiedTimeOff && requests.myNotifiedTimeOff.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <Check className="h-3 w-3" /> Estado de tus Permisos
+                  </h3>
+                  {requests.myNotifiedTimeOff.map((to: any) => (
+                    <div key={to.id} className="rounded-xl border border-border bg-card p-4 space-y-3 shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold",
+                          to.status === "REJECTED" ? "bg-destructive/10 text-destructive" : "bg-success/10 text-success"
+                        )}>
+                          {to.status === "REJECTED" ? <XCircle className="h-4 w-4" /> : <Check className="h-4 w-4" />}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold">{to.type}</p>
+                          <span className={cn(
+                            "text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-tighter",
+                            to.status === "REJECTED" ? "bg-destructive text-destructive-foreground" : "bg-success text-success-foreground"
+                          )}>
+                            {to.status === "REJECTED" ? "Rechazado" : "Aprobado"}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-sm bg-muted/30 rounded-lg p-2 border border-border/50">
+                        <p className="font-semibold text-xs flex items-center gap-1.5">
+                          <Calendar className="h-3 w-3 text-primary" />
+                          {new Date(to.startDate).toLocaleDateString([], { timeZone: 'UTC' })} al {new Date(to.endDate).toLocaleDateString([], { timeZone: 'UTC' })}
+                        </p>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        className="w-full h-8"
+                        onClick={() => handleAcknowledgePermission("TIMEOFF", to.id)}
+                        disabled={isPending}
+                      >
+                        Entendido
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {((requests.myNotifiedSchedules?.length || requests.myNotifiedTimeOff?.length) && (requests.schedules.length > 0 || requests.timeOff.length > 0 || requests.appointments.length > 0)) ? <Separator /> : null}
+
               {/* Schedules */}
               {requests.schedules.length > 0 && (
                 <div className="space-y-4">
@@ -163,7 +283,7 @@ export function ApprovalSidePanel({
                       <div className="flex gap-2">
                         <Button 
                           size="sm" 
-                          className="flex-1 h-8 bg-success hover:bg-success/90 text-success-foreground" 
+                          className="flex-1 h-8 bg-success hover:bg-success/90 text-white font-bold" 
                           onClick={() => handleAction("SCHEDULE", s.id, "APPROVE")}
                           disabled={isPending}
                         >
@@ -219,7 +339,7 @@ export function ApprovalSidePanel({
                       <div className="flex gap-2">
                         <Button 
                           size="sm" 
-                          className="flex-1 h-8 bg-success hover:bg-success/90 text-success-foreground" 
+                          className="flex-1 h-8 bg-success hover:bg-success/90 text-white font-bold" 
                           onClick={() => handleAction("TIMEOFF", to.id, "APPROVE")}
                           disabled={isPending}
                         >

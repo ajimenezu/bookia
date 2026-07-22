@@ -60,6 +60,7 @@ export function ServicesList({ services, categories = [], slug, shopId, business
               duration={service.duration} 
               description={service.description}
               businessType={businessType}
+              isHidden={service.isHidden}
               onClick={() => handleEdit(service)}
             />
           ))}

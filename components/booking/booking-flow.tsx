@@ -51,6 +51,7 @@ interface BookingFlowProps {
   staff: StaffData[]
   initialClientName?: string
   initialClientPhone?: string
+  initialClientEmail?: string
   hideHeader?: boolean
   isAdmin?: boolean
   clients?: ClientData[]
@@ -78,6 +79,7 @@ export function BookingFlow({
   staff,
   initialClientName,
   initialClientPhone,
+  initialClientEmail,
   hideHeader = false,
   isAdmin = false,
   clients = [],
@@ -102,7 +104,7 @@ export function BookingFlow({
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
   const [clientName, setClientName] = useState(initialClientName || "")
   const [clientPhone, setClientPhone] = useState(initialClientPhone || "")
-  const [clientEmail, setClientEmail] = useState("")
+  const [clientEmail, setClientEmail] = useState(initialClientEmail || "")
   const [clientType, setClientType] = useState<"registered" | "unregistered">(isAdmin ? "registered" : "unregistered")
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
   const [clientSearch, setClientSearch] = useState("")
@@ -282,7 +284,7 @@ export function BookingFlow({
     setSelectedTime(null)
     setClientName(initialClientName || "")
     setClientPhone(initialClientPhone || "")
-    setClientEmail("")
+    setClientEmail(initialClientEmail || "")
     setTouched({ name: false, phone: false })
     setShowConfirmation(false)
     setBookingError(null)

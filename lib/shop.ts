@@ -6,6 +6,8 @@ import prisma from "./prisma"
  * deduplicated via react.cache for the current request.
  */
 export const getShopBySlug = cache(async (slug: string) => {
+  if (!slug) return null
+
   return prisma.shop.findUnique({
     where: { slug }
   })

@@ -48,7 +48,7 @@ export default async function ProfilePage({ params }: PageProps) {
       shopId: shop.id
     },
     include: {
-      shop: { select: { name: true, slug: true } },
+      shop: { select: { name: true, slug: true, businessType: true } },
       staff: { select: { name: true } },
       services: { select: { name: true } },
       service: { select: { name: true } } // legacy support
@@ -71,6 +71,7 @@ export default async function ProfilePage({ params }: PageProps) {
       staffName: app.staff?.name || null,
       shopName: app.shop.name,
       shopSlug: app.shop.slug,
+      businessType: app.shop.businessType,
       price: app.priceAtBooking
     }
   })

@@ -19,6 +19,8 @@ import {
 import { AppointmentStatus } from "@prisma/client"
 import Link from "next/link"
 import { cancelAppointmentByCustomer } from "@/app/[slug]/profile/actions"
+import { getBusinessIcon } from "@/lib/business-icons"
+import { BusinessType } from "@/lib/dictionaries"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { EditProfileModal } from "./edit-profile-modal"
@@ -49,6 +51,7 @@ interface AppointmentData {
   staffName: string | null
   shopName: string
   shopSlug: string
+  businessType?: BusinessType | null
   price: number | null
 }
 
@@ -139,12 +142,14 @@ export function AppointmentCard({ appointment, currentShopSlug }: { appointment:
     }).format(new Date(date))
   }
 
+  const BusinessIcon = getBusinessIcon(appointment.businessType)
+
   return (
     <div className="group relative flex flex-col gap-6 rounded-[2rem] border border-border bg-card p-6 transition-all hover:border-primary/40 hover:shadow-2xl hover:-translate-y-1 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-primary">
-            <MapPin className="h-3 w-3" />
+            <BusinessIcon className="h-3 w-3" />
             {appointment.shopName}
           </div>
           <h3 className="text-xl font-black text-foreground">{appointment.serviceName}</h3>

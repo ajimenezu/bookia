@@ -26,15 +26,25 @@ export default async function ShopSchedulePage({ params, searchParams }: PagePro
   const initialRescheduleId = typeof rescheduleId === 'string' ? rescheduleId : undefined
   const account = await getAdminUser()
 
-  const user = account?.user ? {
-    name: account.user.user_metadata?.full_name || account.user.email,
-    phone: account.user.user_metadata?.phone || null
+  let dbUser = null
+  if (account?.user) {
+    dbUser = await prisma.user.findUnique({
+      where: { id: account.user.id },
+      select: { name: true, phone: true, email: true }
+    })
+  }
+
+  const user = dbUser ? {
+    name: dbUser.name || account?.user?.email,
+    phone: dbUser.phone || null,
+    email: dbUser.email
   } : null
 
   const shop = await prisma.shop.findFirst({
     where: { slug },
     include: {
       services: {
+        where: { isHidden: false },
         orderBy: { price: "asc" },
         include: { categories: true }
       },
@@ -131,6 +141,7 @@ export default async function ShopSchedulePage({ params, searchParams }: PagePro
               staff={staff}
               initialClientName={user?.name ?? undefined}
               initialClientPhone={user?.phone ?? undefined}
+              initialClientEmail={user?.email ?? undefined}
               hideHeader={true}
               shopSchedules={mappedSchedules}
               initialServiceId={initialServiceId}

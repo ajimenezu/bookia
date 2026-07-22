@@ -236,9 +236,9 @@ export function InfoStep({
                       onBlur={() => setTouched(prev => ({ ...prev, name: true }))}
                       className={touched.name && !clientName.trim() ? "bg-card border-destructive focus-visible:ring-destructive" : "bg-card"}
                     />
-                    {touched.name && !clientName.trim() && (
-                      <p className="text-xs text-destructive">El nombre es requerido</p>
-                    )}
+                    <p className="text-xs text-destructive min-h-[16px]">
+                      {touched.name && !clientName.trim() ? "El nombre es requerido" : ""}
+                    </p>
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor={`admin-phone-${shopId}`} className={touched.phone && !clientPhone.trim() ? "text-sm text-destructive" : "text-sm text-foreground"}>Teléfono (WhatsApp) *</Label>
@@ -250,9 +250,9 @@ export function InfoStep({
                       onBlur={() => setTouched(prev => ({ ...prev, phone: true }))}
                       className={touched.phone && !clientPhone.trim() ? "bg-card border-destructive focus-visible:ring-destructive" : "bg-card"}
                     />
-                    {touched.phone && !clientPhone.trim() && (
-                      <p className="text-xs text-destructive">El teléfono es requerido</p>
-                    )}
+                    <p className="text-xs text-destructive min-h-[16px]">
+                      {touched.phone && !clientPhone.trim() ? "El teléfono es requerido" : ""}
+                    </p>
                   </div>
                 </TabsContent>
               </Tabs>
@@ -268,9 +268,9 @@ export function InfoStep({
                     onBlur={() => setTouched(prev => ({ ...prev, name: true }))}
                     className={touched.name && !clientName.trim() ? "bg-card border-destructive focus-visible:ring-destructive" : "bg-card"}
                   />
-                  {touched.name && !clientName.trim() && (
-                    <p className="text-xs text-destructive">El nombre es requerido</p>
-                  )}
+                  <p className="text-xs text-destructive min-h-[16px]">
+                    {touched.name && !clientName.trim() ? "El nombre es requerido" : ""}
+                  </p>
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor={`phone-${shopId}`} className={touched.phone && !clientPhone.trim() ? "text-sm text-destructive" : "text-sm text-foreground"}>Teléfono (WhatsApp){!isAdmin && " *"}</Label>
@@ -282,9 +282,9 @@ export function InfoStep({
                     onBlur={() => setTouched(prev => ({ ...prev, phone: true }))}
                     className={touched.phone && !clientPhone.trim() && !isAdmin ? "bg-card border-destructive focus-visible:ring-destructive" : "bg-card"}
                   />
-                  {touched.phone && !clientPhone.trim() && !isAdmin && (
-                    <p className="text-xs text-destructive">El teléfono es requerido</p>
-                  )}
+                  <p className="text-xs text-destructive min-h-[16px]">
+                    {touched.phone && !clientPhone.trim() && !isAdmin ? "El teléfono es requerido" : ""}
+                  </p>
                 </div>
               </>
             )}

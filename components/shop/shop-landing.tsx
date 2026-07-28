@@ -441,12 +441,22 @@ export function ShopLanding({ shop, services, staff, user, role }: ShopLandingPr
               )}
             </div>
             
-            <p className="text-sm font-medium text-muted-foreground">
-              © {new Date().getFullYear()} {shop.name}. Powered by{" "}
-              <Link href="/" className="text-primary font-black hover:underline underline-offset-4">
-                ExcaliTech
+            <div className="flex flex-wrap items-center justify-center gap-6 text-sm font-medium text-muted-foreground">
+              <Link href="/terms" className="hover:text-primary transition-colors">
+                Términos
               </Link>
-            </p>
+              <span className="text-border">|</span>
+              <Link href="/privacy" className="hover:text-primary transition-colors">
+                Privacidad
+              </Link>
+              <span className="text-border">|</span>
+              <p>
+                © {new Date().getFullYear()} {shop.name}. Powered by{" "}
+                <Link href="/" className="text-primary font-black hover:underline underline-offset-4">
+                  ExcaliTech
+                </Link>
+              </p>
+            </div>
           </div>
         </div>
       </footer>

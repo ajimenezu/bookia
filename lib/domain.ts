@@ -44,14 +44,16 @@ export const RESERVED_PATHS = new Set([
   "demo",
   "login",
   "schedule",
+  "terms",
+  "privacy",
 ])
 
 /**
  * First path segments served by SHARED apex routes that must keep working on a
  * shop subdomain WITHOUT being rewritten onto `/[slug]/...` — e.g. the Supabase
- * OAuth callback (`/auth/callback`) and API handlers.
+ * OAuth callback (`/auth/callback`), legal pages, and API handlers.
  */
-export const SHARED_SUBDOMAIN_PATHS = new Set(["auth", "api"])
+export const SHARED_SUBDOMAIN_PATHS = new Set(["auth", "api", "terms", "privacy"])
 
 /**
  * Extract the shop subdomain from a Host header.

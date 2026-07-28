@@ -3,6 +3,7 @@
 import { Dispatch, SetStateAction } from "react"
 
 import { Loader2, Search, LogIn, UserPlus } from "lucide-react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -310,6 +311,19 @@ export function InfoStep({
 
             {bookingError && (
               <p className="text-sm text-destructive">{bookingError}</p>
+            )}
+
+            {!isAdmin && (
+              <p className="text-center text-[11px] text-muted-foreground leading-relaxed px-1 mt-2">
+                Al confirmar tu reserva, aceptas nuestros{" "}
+                <Link href="/terms" target="_blank" className="text-primary hover:underline font-semibold">
+                  Términos del Servicio
+                </Link>{" "}
+                y la{" "}
+                <Link href="/privacy" target="_blank" className="text-primary hover:underline font-semibold">
+                  Política de Privacidad
+                </Link>.
+              </p>
             )}
 
             <Button

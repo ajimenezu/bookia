@@ -25,7 +25,15 @@ export function LandingFooter() {
 
           <div className="flex flex-col items-center justify-between gap-4 border-t border-border/70 pt-6 text-sm text-muted-foreground md:flex-row">
             <p>Plataforma de reservas para negocios de servicios en crecimiento.</p>
-            <p>&copy; 2026 BookIA. Todos los derechos reservados.</p>
+            <div className="flex flex-wrap items-center gap-6 text-xs sm:text-sm">
+              <Link href="/terms" className="hover:text-primary transition-colors">
+                Términos del Servicio
+              </Link>
+              <Link href="/privacy" className="hover:text-primary transition-colors">
+                Política de Privacidad
+              </Link>
+              <span>&copy; {new Date().getFullYear()} BookIA. Todos los derechos reservados.</span>
+            </div>
           </div>
         </div>
       </div>

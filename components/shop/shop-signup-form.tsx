@@ -353,6 +353,17 @@ export function ShopSignUpForm({ slug, shopName, businessType, logoUrl }: ShopSi
                 Google
               </Button>
 
+              <p className="text-center text-xs text-muted-foreground leading-relaxed px-2">
+                Al hacer clic en &quot;Crear Cuenta&quot;, aceptas nuestros{" "}
+                <Link href="/terms" target="_blank" className="text-primary hover:underline font-medium">
+                  Términos del Servicio
+                </Link>{" "}
+                y nuestra{" "}
+                <Link href="/privacy" target="_blank" className="text-primary hover:underline font-medium">
+                  Política de Privacidad
+                </Link>.
+              </p>
+
               <p className="text-center text-sm text-muted-foreground">
                 ¿Ya tienes una cuenta?{" "}
                 <Link href={`/login`} className="text-primary hover:underline font-semibold">

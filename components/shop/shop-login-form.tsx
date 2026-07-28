@@ -179,12 +179,21 @@ export function ShopLoginForm({ slug, shopName, businessType, logoUrl }: ShopLog
           </Card>
         </form>
 
-        {/* Back to shop link */}
-        <p className="text-center text-sm text-muted-foreground">
+        {/* Back to shop & legal links */}
+        <div className="flex flex-col items-center gap-3 text-center text-sm text-muted-foreground">
           <Link href={`/`} className="text-primary hover:underline">
             ← Volver a {shopName}
           </Link>
-        </p>
+          <div className="flex items-center gap-4 text-xs">
+            <Link href="/terms" target="_blank" className="hover:text-primary transition-colors">
+              Términos del Servicio
+            </Link>
+            <span>•</span>
+            <Link href="/privacy" target="_blank" className="hover:text-primary transition-colors">
+              Política de Privacidad
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   )

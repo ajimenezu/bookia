@@ -83,6 +83,13 @@ export function getShopUrl(slug: string): string {
   return `${protocol}://${slug}.${ROOT_DOMAIN}`
 }
 
+/** Canonical URL for the Bookia platform root / landing page, e.g. `http://localhost:3000` or `https://mibookia.com`. */
+export function getPlatformUrl(path = "/"): string {
+  const protocol = IS_LOCAL ? "http" : "https"
+  const cleanPath = path.startsWith("/") ? path : `/${path}`
+  return `${protocol}://${ROOT_DOMAIN}${cleanPath}`
+}
+
 /**
  * Cookie domain for the Supabase session so ONE login is shared across every
  * shop subdomain (`.mibookia.com`). Undefined locally — browsers reject domain

@@ -73,7 +73,7 @@ export function AdminSidebar({
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
               <BusinessIcon className="h-4 w-4" />
             </div>
-            <span className="font-bold text-sidebar-foreground tracking-tight">BookIA</span>
+            <span className="font-bold text-sidebar-foreground tracking-tight">Bookia</span>
           </Link>
           
           <div className="flex items-center gap-2.5 ml-auto">
@@ -165,7 +165,7 @@ export function AdminSidebar({
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20 shrink-0">
               <BusinessIcon className="h-4.5 w-4.5" />
             </div>
-            <span className="text-xl font-bold text-sidebar-foreground tracking-tight truncate">BookIA</span>
+            <span className="text-xl font-bold text-sidebar-foreground tracking-tight truncate">Bookia</span>
           </div>
 
           <div className="flex items-center gap-2.5 shrink-0">

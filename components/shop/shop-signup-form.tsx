@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 import { BusinessType, getTerminology } from "@/lib/dictionaries"
 import { getBusinessIcon } from "@/lib/business-icons"
+import { getPlatformUrl } from "@/lib/domain"
 
 interface ShopSignUpFormProps {
   slug: string
@@ -374,11 +375,14 @@ export function ShopSignUpForm({ slug, shopName, businessType, logoUrl }: ShopSi
           </Card>
         </form>
 
-        <p className="text-center text-sm text-muted-foreground">
+        <div className="flex flex-col items-center gap-3 text-center text-sm text-muted-foreground">
           <Link href={`/`} className="text-primary hover:underline">
             ← Volver a {shopName}
           </Link>
-        </p>
+          <p className="text-xs text-muted-foreground/70">
+            Powered by <a href={getPlatformUrl()} className="font-bold text-foreground hover:text-primary">Bookia</a>
+          </p>
+        </div>
       </div>
     </div>
   )

@@ -12,6 +12,7 @@ import { GoogleSignInButton } from "@/components/auth/google-signin-button"
 import Link from "next/link"
 import { BusinessType, getTerminology } from "@/lib/dictionaries"
 import { getBusinessIcon } from "@/lib/business-icons"
+import { getPlatformUrl } from "@/lib/domain"
 
 interface ShopLoginFormProps {
   slug: string
@@ -184,7 +185,7 @@ export function ShopLoginForm({ slug, shopName, businessType, logoUrl }: ShopLog
           <Link href={`/`} className="text-primary hover:underline">
             ← Volver a {shopName}
           </Link>
-          <div className="flex items-center gap-4 text-xs">
+          <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-muted-foreground/70">
             <Link href="/terms" target="_blank" className="hover:text-primary transition-colors">
               Términos del Servicio
             </Link>
@@ -192,6 +193,8 @@ export function ShopLoginForm({ slug, shopName, businessType, logoUrl }: ShopLog
             <Link href="/privacy" target="_blank" className="hover:text-primary transition-colors">
               Política de Privacidad
             </Link>
+            <span>•</span>
+            <span>Powered by <a href={getPlatformUrl()} className="font-bold text-foreground hover:text-primary">Bookia</a></span>
           </div>
         </div>
       </div>

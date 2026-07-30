@@ -17,6 +17,7 @@ import type { BusinessType } from "@/lib/dictionaries"
 import { ShopNavbar } from "./shop-navbar"
 import { getBusinessIcon } from "@/lib/business-icons"
 import { shortenAddress, cn } from "@/lib/utils"
+import { getPlatformUrl } from "@/lib/domain"
 
 interface ServiceData {
   id: string
@@ -270,7 +271,16 @@ export function ShopLanding({ shop, services, staff, user, role }: ShopLandingPr
           </div>
         )}
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div
+          className={cn(
+            "grid gap-6",
+            displayedServices.length === 1
+              ? "max-w-md mx-auto w-full grid-cols-1"
+              : displayedServices.length === 2
+                ? "max-w-3xl mx-auto w-full sm:grid-cols-2"
+                : "sm:grid-cols-2 lg:grid-cols-3"
+          )}
+        >
           {displayedServices.map((svc) => (
             <Link
               key={svc.id}
@@ -450,12 +460,23 @@ export function ShopLanding({ shop, services, staff, user, role }: ShopLandingPr
                 Privacidad
               </Link>
               <span className="text-border">|</span>
-              <p>
-                © {new Date().getFullYear()} {shop.name}. Powered by{" "}
-                <Link href="/" className="text-primary font-black hover:underline underline-offset-4">
+              <div className="flex flex-wrap items-center justify-center gap-2 text-sm font-medium text-muted-foreground">
+                <span>© {new Date().getFullYear()} {shop.name}</span>
+                <span className="text-border">•</span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/5 border border-primary/15 text-xs font-bold text-foreground">
+                  <span className="text-muted-foreground/70 font-normal">Powered by</span>
+                  <a href={getPlatformUrl()} className="text-primary font-black hover:underline underline-offset-2">Bookia</a>
+                </span>
+                <span className="text-border">•</span>
+                <a
+                  href="https://www.excalitech.net/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-foreground transition-colors text-xs"
+                >
                   ExcaliTech
-                </Link>
-              </p>
+                </a>
+              </div>
             </div>
           </div>
         </div>

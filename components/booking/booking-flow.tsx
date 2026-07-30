@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect, useCallback, useMemo } from "react"
 
-import { CheckCircle2 } from "lucide-react"
+import { CheckCircle2, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
@@ -12,6 +12,7 @@ import { fetchAvailableSlots, createBooking } from "@/app/schedule/actions"
 import { BusinessType, getTerminology } from "@/lib/dictionaries"
 import { getBusinessIcon } from "@/lib/business-icons"
 import { convertTo12h } from "@/lib/date-utils"
+import { getPlatformUrl } from "@/lib/domain"
 
 // Step Components
 import { ServiceStep } from "./steps/service-step"
@@ -461,6 +462,14 @@ export function BookingFlow({
             handleAuthRedirect={handleAuthRedirect}
           />
         )}
+
+        <div className="mt-12 flex items-center justify-center gap-1.5 text-xs font-medium text-muted-foreground/60">
+          <Sparkles className="h-3.5 w-3.5 text-primary/70" />
+          <span>Reserva rápida y segura con</span>
+          <a href={getPlatformUrl()} className="font-black text-foreground hover:text-primary transition-colors">
+            Bookia
+          </a>
+        </div>
       </main>
 
       {/* Success Dialog */}

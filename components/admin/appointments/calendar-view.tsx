@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
@@ -17,9 +17,10 @@ interface CalendarViewProps {
   businessType: BusinessType
   services: { id: string; name: string; price: number; duration: number }[]
   staff: { id: string; name: string }[]
+  shopSchedules?: { dayOfWeek: number; isOpen: boolean }[]
 }
 
-export function CalendarView({ dates, appointments, shopId, businessType, services, staff }: CalendarViewProps) {
+export function CalendarView({ dates, appointments, shopId, businessType, services, staff, shopSchedules }: CalendarViewProps) {
   const t = getTerminology(businessType)
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null)
   const [isSheetOpen, setIsSheetOpen] = useState(false)
@@ -80,41 +81,63 @@ export function CalendarView({ dates, appointments, shopId, businessType, servic
       <div className="hidden md:block overflow-x-auto rounded-xl border border-border bg-card">
         <div className="grid min-w-[840px] grid-cols-7">
           {/* Day headers */}
-          {dates.map((d, i) => (
-            <div
-              key={d.label}
-              className={cn(
-                "border-b border-border px-3 py-3 text-center",
-                i < 6 && "border-r border-border",
-                d.isToday && "bg-primary/5"
-              )}
-            >
-              <p className="text-xs text-muted-foreground">{d.label}</p>
-              <p className={cn(
-                "mt-1 text-lg font-bold",
-                d.isToday ? "text-primary" : "text-card-foreground"
-              )}>
-                {d.day}
-              </p>
-            </div>
-          ))}
+          {dates.map((d, i) => {
+            const isClosed = shopSchedules?.some(s => s.dayOfWeek === d.fullDate.getDay() && !s.isOpen)
+            return (
+              <div
+                key={d.label}
+                className={cn(
+                  "border-b border-border px-3 py-3 text-center",
+                  i < 6 && "border-r border-border",
+                  d.isToday && "bg-primary/5",
+                  isClosed && "bg-muted/10"
+                )}
+              >
+                <div className="flex items-center justify-center gap-1">
+                  <p className="text-xs text-muted-foreground">{d.label}</p>
+                  {isClosed && (
+                    <span className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-bold text-muted-foreground uppercase">
+                      Cerrado
+                    </span>
+                  )}
+                </div>
+                <p className={cn(
+                  "mt-1 text-lg font-bold",
+                  d.isToday ? "text-primary" : "text-card-foreground",
+                  isClosed && "text-muted-foreground"
+                )}>
+                  {d.day}
+                </p>
+              </div>
+            )
+          })}
 
           {/* Day columns */}
           {dates.map((d, dayIndex) => {
             const dayAppts = appointments.filter((a) =>
               new Date(a.startTime).toISOString().split('T')[0] === d.fullDate.toISOString().split('T')[0]
             )
+            const isClosed = shopSchedules?.some(s => s.dayOfWeek === d.fullDate.getDay() && !s.isOpen)
             return (
               <div
                 key={d.label + "-col"}
                 className={cn(
                   "h-[650px] overflow-y-auto p-2 scrollbar-hide hover:scrollbar-default transition-all",
                   dayIndex < 6 && "border-r border-border",
-                  d.isToday && "bg-primary/5"
+                  d.isToday && "bg-primary/5",
+                  isClosed && "bg-muted/5"
                 )}
               >
                 {dayAppts.length === 0 ? (
-                  <p className="py-4 text-center text-xs text-muted-foreground text-pretty">Sin {t.appointmentPlural.toLowerCase()}</p>
+                  isClosed ? (
+                    <div className="py-8 text-center px-2">
+                      <span className="inline-block rounded-md bg-muted/50 px-2 py-1 text-[11px] font-medium text-muted-foreground">
+                        Día cerrado
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="py-4 text-center text-xs text-muted-foreground text-pretty">Sin {t.appointmentPlural.toLowerCase()}</p>
+                  )
                 ) : (
                   <div className="grid gap-2">
                     {dayAppts.map((apt) => (
@@ -163,23 +186,28 @@ export function CalendarView({ dates, appointments, shopId, businessType, servic
             </Button>
 
             <div className="flex-1 min-w-0 flex items-center gap-1 overflow-x-auto no-scrollbar py-1 px-1">
-              {dates.map((day, i) => (
-                <button
-                  key={day.label}
-                  onClick={() => setSelectedDay(i)}
-                  className={cn(
-                    "flex min-w-11 h-12 flex-col items-center justify-center rounded-xl text-xs font-medium transition-all active:scale-95",
-                    i === selectedDay
-                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105 z-10"
-                      : day.isToday
-                        ? "bg-primary/10 text-primary border border-primary/20"
-                        : "text-muted-foreground hover:bg-muted/50"
-                  )}
-                >
-                  <span className="text-[8px] uppercase font-bold leading-none opacity-70">{day.label.slice(0, 3)}</span>
-                  <span className="mt-1 text-sm font-black leading-none">{day.day}</span>
-                </button>
-              ))}
+              {dates.map((day, i) => {
+                const isDayClosed = shopSchedules?.some(s => s.dayOfWeek === day.fullDate.getDay() && !s.isOpen)
+                return (
+                  <button
+                    key={day.label}
+                    onClick={() => setSelectedDay(i)}
+                    className={cn(
+                      "flex min-w-11 h-12 flex-col items-center justify-center rounded-xl text-xs font-medium transition-all active:scale-95",
+                      i === selectedDay
+                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105 z-10"
+                        : day.isToday
+                          ? "bg-primary/10 text-primary border border-primary/20"
+                          : isDayClosed
+                            ? "text-muted-foreground/60 opacity-60 hover:bg-muted/30"
+                            : "text-muted-foreground hover:bg-muted/50"
+                    )}
+                  >
+                    <span className="text-[8px] uppercase font-bold leading-none opacity-70">{day.label.slice(0, 3)}</span>
+                    <span className="mt-1 text-sm font-black leading-none">{day.day}</span>
+                  </button>
+                )
+              })}
             </div>
 
             <Button
@@ -195,47 +223,71 @@ export function CalendarView({ dates, appointments, shopId, businessType, servic
         </div>
 
         {/* Selected day content */}
-        <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
-          {/* Day header */}
-          <div className={cn(
-            "flex items-center justify-between px-5 py-4 border-b border-border",
-            d?.isToday ? "bg-primary/5" : "bg-muted/10"
-          )}>
-            <div className="flex items-center gap-4">
+        {(() => {
+          const isMobileDayClosed = shopSchedules?.some(s => s.dayOfWeek === d?.fullDate.getDay() && !s.isOpen)
+          return (
+            <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
+              {/* Day header */}
               <div className={cn(
-                "flex h-12 w-12 items-center justify-center rounded-2xl font-black text-xl shadow-sm",
-                d?.isToday
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-card-foreground border border-border"
+                "flex items-center justify-between px-5 py-4 border-b border-border",
+                d?.isToday ? "bg-primary/5" : "bg-muted/10"
               )}>
-                {d?.day}
+                <div className="flex items-center gap-4">
+                  <div className={cn(
+                    "flex h-12 w-12 items-center justify-center rounded-2xl font-black text-xl shadow-sm",
+                    d?.isToday
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-card-foreground border border-border"
+                  )}>
+                    {d?.day}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className={cn(
+                        "font-bold text-lg leading-tight tracking-tight",
+                        d?.isToday ? "text-primary" : "text-card-foreground"
+                      )}>
+                        {d?.label}
+                      </p>
+                      {isMobileDayClosed && (
+                        <span className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-bold text-muted-foreground uppercase">
+                          Cerrado
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs font-medium text-muted-foreground">
+                      {isMobileDayClosed
+                        ? "Día cerrado en horario general"
+                        : dayAppts.length === 0
+                          ? `Sin ${t.appointmentPlural.toLowerCase()} para hoy`
+                          : `${dayAppts.length} ${dayAppts.length > 1 ? t.appointmentPlural.toLowerCase() : t.appointment.toLowerCase()} programada${dayAppts.length > 1 ? "s" : ""}`}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className={cn(
-                  "font-bold text-lg leading-tight tracking-tight",
-                  d?.isToday ? "text-primary" : "text-card-foreground"
-                )}>
-                  {d?.label}
-                </p>
-                <p className="text-xs font-medium text-muted-foreground">
-                  {dayAppts.length === 0
-                    ? `Sin ${t.appointmentPlural.toLowerCase()} para hoy`
-                    : `${dayAppts.length} ${dayAppts.length > 1 ? t.appointmentPlural.toLowerCase() : t.appointment.toLowerCase()} programada${dayAppts.length > 1 ? "s" : ""}`}
-                </p>
-              </div>
-            </div>
-          </div>
 
-          {/* Appointments list */}
-          {dayAppts.length === 0 ? (
-            <div className="py-20 text-center px-6">
-              <div className="mx-auto h-16 w-16 mb-4 rounded-full bg-muted/20 flex items-center justify-center">
-                <ChevronRight className="h-8 w-8 opacity-20 rotate-90" />
-              </div>
-              <p className="text-muted-foreground font-medium">No hay {t.appointmentPlural.toLowerCase()} para este día</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">¡Un día tranquilo siempre es bueno!</p>
-            </div>
-          ) : (
+              {/* Appointments list */}
+              {dayAppts.length === 0 ? (
+                isMobileDayClosed ? (
+                  <div className="py-16 text-center px-6">
+                    <div className="mx-auto h-16 w-16 mb-4 rounded-full bg-muted/20 flex items-center justify-center">
+                      <Clock className="h-8 w-8 text-muted-foreground/50" />
+                    </div>
+                    <p className="text-foreground font-bold text-base">Día cerrado en horario general</p>
+                    <p className="text-xs text-muted-foreground mt-1 max-w-xs mx-auto">
+                      Este día está marcado como no laborable en la configuración del negocio.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="py-20 text-center px-6">
+                    <div className="mx-auto h-16 w-16 mb-4 rounded-full bg-muted/20 flex items-center justify-center">
+                      <ChevronRight className="h-8 w-8 opacity-20 rotate-90" />
+                    </div>
+                    <p className="text-muted-foreground font-medium">No hay {t.appointmentPlural.toLowerCase()} para este día</p>
+                    <p className="text-xs text-muted-foreground/60 mt-1">¡Un día tranquilo siempre es bueno!</p>
+                  </div>
+                )
+              ) : (
             <div className="divide-y divide-border max-h-[600px] overflow-y-auto scrollbar-hide hover:scrollbar-default transition-all">
               {dayAppts.map((apt) => (
                 <div 
@@ -270,6 +322,9 @@ export function CalendarView({ dates, appointments, shopId, businessType, servic
             </div>
           )}
         </div>
+          )
+        })()
+        }
       </div>
     </>
   )

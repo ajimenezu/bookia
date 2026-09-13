@@ -17,7 +17,7 @@ export async function AppointmentsContent({ shopId, businessType, weekOffset, vi
   const { sunday, monday, dates } = getWeekRange(weekOffset)
   
   // Parallel fetch for better performance
-  const [appointments, services, staffData] = await Promise.all([
+  const [appointments, services, staffData, shopSchedules] = await Promise.all([
     getAppointmentsInRange(monday, sunday, shopId, undefined, "CANCELLED"),
     prisma.service.findMany({ 
       where: { shopId }, 
@@ -27,6 +27,10 @@ export async function AppointmentsContent({ shopId, businessType, weekOffset, vi
     prisma.shopMember.findMany({
       where: { shopId, role: { in: ["STAFF", "OWNER"] } },
       include: { user: { select: { id: true, name: true } } }
+    }),
+    prisma.shopSchedule.findMany({
+      where: { shopId },
+      select: { dayOfWeek: true, isOpen: true }
     })
   ])
 
@@ -49,7 +53,8 @@ export async function AppointmentsContent({ shopId, businessType, weekOffset, vi
     shopId,
     businessType,
     services: mappedServices,
-    staff: mappedStaff
+    staff: mappedStaff,
+    shopSchedules
   }
 
   return view === "calendar" ? (

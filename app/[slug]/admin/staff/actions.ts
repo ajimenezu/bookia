@@ -109,6 +109,14 @@ export async function updateStaffSchedule(
   })
 
   revalidatePath(`/${shopId}/admin/staff`)
+  const shop = await prisma.shop.findUnique({ where: { id: shopId }, select: { slug: true } })
+  if (shop) {
+    revalidatePath(`/${shop.slug}/admin/staff`)
+    revalidatePath(`/${shop.slug}/schedule`)
+    revalidatePath(`/${shop.slug}/admin/citas`)
+    revalidatePath(`/admin/staff`)
+    revalidatePath(`/admin/citas`)
+  }
   return { success: true }
 }
 
@@ -137,7 +145,7 @@ export async function addStaffTimeOff(
 
   const targetStatus = isprivileged ? "APPROVED" : "PENDING"
 
-  await prisma.staffTimeOff.create({
+  const timeOff = await prisma.staffTimeOff.create({
     data: {
       staffId,
       shopId,
@@ -152,6 +160,60 @@ export async function addStaffTimeOff(
   })
 
   revalidatePath(`/${shopId}/admin/staff`)
+  const shop = await prisma.shop.findUnique({ where: { id: shopId }, select: { slug: true } })
+  if (shop) {
+    revalidatePath(`/${shop.slug}/admin/staff`)
+    revalidatePath(`/${shop.slug}/schedule`)
+    revalidatePath(`/${shop.slug}/admin/citas`)
+    revalidatePath(`/admin/staff`)
+    revalidatePath(`/admin/citas`)
+  }
+  return { success: true, timeOff }
+}
+
+export async function deleteStaffTimeOff(
+  shopIdRaw: string,
+  timeOffIdRaw: string
+) {
+  const validated = z.object({
+    shopId: z.string().min(1),
+    timeOffId: z.string().min(1)
+  }).safeParse({ shopId: shopIdRaw, timeOffId: timeOffIdRaw })
+
+  if (!validated.success) throw new Error("Parámetros inválidos")
+  const { shopId, timeOffId } = validated.data
+
+  const { user, role, isSuperAdmin } = await requireAdmin(shopId)
+
+  const timeOff = await prisma.staffTimeOff.findUnique({
+    where: { id: timeOffId }
+  })
+
+  if (!timeOff || timeOff.shopId !== shopId) {
+    throw new Error("Ausencia no encontrada")
+  }
+
+  const isSelf = user.id === timeOff.staffId
+  const isPrivileged = role === "OWNER" || isSuperAdmin
+
+  if (!isSelf && !isPrivileged) {
+    throw new Error("No tienes permiso para eliminar este registro")
+  }
+
+  await prisma.staffTimeOff.delete({
+    where: { id: timeOffId }
+  })
+
+  revalidatePath(`/${shopId}/admin/staff`)
+  const shop = await prisma.shop.findUnique({ where: { id: shopId }, select: { slug: true } })
+  if (shop) {
+    revalidatePath(`/${shop.slug}/admin/staff`)
+    revalidatePath(`/${shop.slug}/schedule`)
+    revalidatePath(`/${shop.slug}/admin/citas`)
+    revalidatePath(`/admin/staff`)
+    revalidatePath(`/admin/citas`)
+  }
+
   return { success: true }
 }
 

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -50,6 +51,8 @@ export function ShopConfigContent({ shopId, initialShop, initialSchedules }: Sho
     return existing || { dayOfWeek: i, openTime: "08:00", closeTime: "20:00", slotDuration: 30, isOpen: true }
   })
   const [schedules, setSchedules] = useState(defaultSchedules)
+  const [syncOwnerSchedule, setSyncOwnerSchedule] = useState(true)
+  const router = useRouter()
 
   const isInfoDirty = JSON.stringify(shopInfo) !== JSON.stringify(defaultShopInfo)
   const isScheduleDirty = JSON.stringify(schedules) !== JSON.stringify(defaultSchedules)
@@ -232,8 +235,11 @@ export function ShopConfigContent({ shopId, initialShop, initialSchedules }: Sho
   const handleSaveSchedule = async () => {
     startTransition(async () => {
       try {
-        const result = await updateShopSchedules(shopId, schedules)
-        if (result.success) toast.success("Horario general actualizado")
+        const result = await updateShopSchedules(shopId, schedules, syncOwnerSchedule)
+        if (result.success) {
+          toast.success(syncOwnerSchedule ? "Horario general y personal actualizado" : "Horario general actualizado")
+          router.refresh()
+        }
       } catch (error: any) {
         toast.error(error.message || "Error al actualizar")
       }
@@ -356,6 +362,20 @@ export function ShopConfigContent({ shopId, initialShop, initialSchedules }: Sho
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-primary/20 bg-primary/5 text-sm gap-3">
+              <div className="space-y-0.5">
+                <span className="font-bold text-foreground">Sincronizar mi horario de atención</span>
+                <p className="text-xs text-muted-foreground">
+                  Aplica automáticamente estos días y horas a tu horario como profesional en el negocio.
+                </p>
+              </div>
+              <Switch 
+                checked={syncOwnerSchedule} 
+                onCheckedChange={setSyncOwnerSchedule} 
+                className="data-[state=checked]:bg-primary shrink-0"
+              />
+            </div>
+
             <div className="grid gap-4">
               {schedules.map((day, idx) => (
                 <div key={idx} className={cn(

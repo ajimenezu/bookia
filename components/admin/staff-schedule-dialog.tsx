@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus, Trash2, Clock, CalendarDays, Loader2, Calendar as CalendarIcon, ChevronDown } from "lucide-react"
-import { updateStaffSchedule, addStaffTimeOff } from "@/app/[slug]/admin/staff/actions"
+import { updateStaffSchedule, addStaffTimeOff, deleteStaffTimeOff } from "@/app/[slug]/admin/staff/actions"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
@@ -61,9 +61,11 @@ function DatePicker({
               !date && "text-muted-foreground"
             )}
           >
-            <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
-            {date ? format(date, "PPP", { locale: es }) : <span>Seleccionar fecha</span>}
-            <ChevronDown className="ml-auto h-4 w-4 opacity-50" />
+            <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-primary" />
+            <span className="flex-1 min-w-0 truncate">
+              {date ? format(date, "dd MMM yyyy", { locale: es }) : "Seleccionar fecha"}
+            </span>
+            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0 border-border bg-popover/95 backdrop-blur-md shadow-2xl" align="start">
@@ -125,6 +127,8 @@ export function StaffScheduleDialog({
   const isScheduleDirty = JSON.stringify(schedules) !== JSON.stringify(defaultSchedules)
 
   // Time Off State
+  const [timeOffList, setTimeOffList] = useState<any[]>(initialTimeOff)
+  const [showAllTimeOff, setShowAllTimeOff] = useState(false)
   const [timeOffData, setTimeOffData] = useState({
     startDate: new Date(),
     endDate: new Date(),
@@ -157,17 +161,32 @@ export function StaffScheduleDialog({
   const handleAddTimeOff = () => {
     startTransition(async () => {
       try {
-        await addStaffTimeOff(shopId, staffId, {
+        const res = await addStaffTimeOff(shopId, staffId, {
           ...timeOffData,
           startDate: timeOffData.startDate.toISOString(),
           endDate: timeOffData.endDate.toISOString(),
           startTime: timeOffData.isFullDay ? null : (timeOffData.startTime || null),
           endTime: timeOffData.isFullDay ? null : (timeOffData.endTime || null)
         })
+        if (res?.timeOff) {
+          setTimeOffList(prev => [res.timeOff, ...prev])
+        }
         toast.success(isOwner ? "Tiempo libre registrado" : "Solicitud de tiempo libre enviada")
         setIsTimeOffDirty(false)
       } catch (e: any) {
         toast.error(e.message)
+      }
+    })
+  }
+
+  const handleDeleteTimeOff = (timeOffId: string) => {
+    startTransition(async () => {
+      try {
+        await deleteStaffTimeOff(shopId, timeOffId)
+        setTimeOffList(prev => prev.filter(t => t.id !== timeOffId))
+        toast.success("Ausencia eliminada y día desbloqueado")
+      } catch (e: any) {
+        toast.error(e.message || "Error al eliminar la ausencia")
       }
     })
   }
@@ -228,6 +247,12 @@ export function StaffScheduleDialog({
           </div>
 
           <TabsContent value="weekly" className="space-y-6 pt-4 flex-1 overflow-y-auto">
+            <div className="px-6 sm:px-10">
+              <div className="p-3.5 rounded-xl border border-primary/20 bg-primary/5 text-xs text-muted-foreground flex items-center gap-2.5">
+                <Clock className="h-4 w-4 text-primary shrink-0" />
+                <span>Para que un día esté disponible para reservas, asegúrate de que también esté habilitado en <strong>Configuración &gt; Horario del Negocio</strong>.</span>
+              </div>
+            </div>
             <div className="space-y-4 px-6 sm:px-10 pb-20">
               {schedules.map((day, idx) => (
                 <div key={idx} className={cn(
@@ -429,24 +454,46 @@ export function StaffScheduleDialog({
             </div>
 
             <div className="space-y-3">
-              <h3 className="font-semibold text-sm">Historial de Ausencias</h3>
-              {initialTimeOff.length === 0 ? (
+              <h3 className="font-semibold text-sm">Historial de Ausencias / Bloqueos</h3>
+              {timeOffList.length === 0 ? (
                 <p className="text-center py-8 text-sm text-muted-foreground bg-muted/10 rounded-lg border border-dashed border-border/60 backdrop-blur-[2px]">
                   No hay ausencias registradas
                 </p>
               ) : (
                 <div className="space-y-2">
-                  {initialTimeOff.map((to, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-background/30 backdrop-blur-sm text-xs shadow-sm hover:border-primary/30 transition-colors">
-                      <div>
-                        <p className="font-bold">{format(new Date(to.startDate), "PPP", { locale: es })} - {format(new Date(to.endDate), "PPP", { locale: es })}</p>
-                        <p className="text-muted-foreground">{to.type} {to.note && `• ${to.note}`}</p>
+                  {(showAllTimeOff ? timeOffList : timeOffList.slice(0, 5)).map((to, i) => (
+                    <div key={to.id || i} className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-background/30 backdrop-blur-sm text-xs shadow-sm hover:border-primary/30 transition-colors">
+                      <div className="space-y-0.5">
+                        <p className="font-bold">{format(new Date(to.startDate), "dd MMM yyyy", { locale: es })} — {format(new Date(to.endDate), "dd MMM yyyy", { locale: es })}</p>
+                        <p className="text-muted-foreground">
+                          {to.type} {to.startTime && to.endTime ? `(${to.startTime} - ${to.endTime})` : "(Todo el día)"} {to.note && `• ${to.note}`}
+                        </p>
                       </div>
-                      <Badge variant={to.status === 'APPROVED' ? 'default' : to.status === 'REJECTED' ? 'destructive' : 'outline'} className="shadow-xs">
-                        {to.status}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={to.status === 'APPROVED' ? 'default' : to.status === 'REJECTED' ? 'destructive' : 'outline'} className="shadow-xs">
+                          {to.status === 'APPROVED' ? 'Aprobada' : to.status === 'REJECTED' ? 'Rechazada' : 'Pendiente'}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:bg-destructive/10 rounded-lg shrink-0 transition-colors"
+                          disabled={isPending}
+                          onClick={() => handleDeleteTimeOff(to.id)}
+                          title="Eliminar ausencia y reabrir día"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
+                  {timeOffList.length > 5 && (
+                    <button
+                      onClick={() => setShowAllTimeOff(prev => !prev)}
+                      className="w-full text-center text-xs text-primary font-semibold py-2 rounded-lg hover:bg-primary/5 transition-colors"
+                    >
+                      {showAllTimeOff ? `Ver menos` : `Ver ${timeOffList.length - 5} más`}
+                    </button>
+                  )}
                 </div>
               )}
             </div>

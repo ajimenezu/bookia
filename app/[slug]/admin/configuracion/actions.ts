@@ -35,11 +35,16 @@ export async function updateShopConfig(shopId: string, data: any) {
     data: validated,
   })
 
-  revalidatePath(`/[slug]/admin/configuracion`, "layout")
+  const shop = await prisma.shop.findUnique({ where: { id: shopId }, select: { slug: true } })
+  if (shop) {
+    revalidatePath(`/${shop.slug}/admin/configuracion`)
+    revalidatePath(`/${shop.slug}/admin`)
+    revalidatePath(`/admin/configuracion`)
+  }
   return { success: true }
 }
 
-export async function updateShopSchedules(shopId: string, schedules: any[]) {
+export async function updateShopSchedules(shopId: string, schedules: any[], syncOwnerSchedule?: boolean) {
   const session = await requireAdmin(shopId)
   if (!session.isSuperAdmin && session.role !== "OWNER") {
     throw new Error("Solo los propietarios pueden editar el horario")
@@ -47,9 +52,10 @@ export async function updateShopSchedules(shopId: string, schedules: any[]) {
 
   const validatedSchedules = z.array(scheduleSchema).parse(schedules)
 
-  await prisma.$transaction(
-    validatedSchedules.map((s) =>
-      prisma.shopSchedule.upsert({
+  await prisma.$transaction(async (tx) => {
+    // 1. Upsert master shop schedules
+    for (const s of validatedSchedules) {
+      await tx.shopSchedule.upsert({
         where: { shopId_dayOfWeek: { shopId, dayOfWeek: s.dayOfWeek } },
         update: {
           openTime: s.openTime,
@@ -66,9 +72,60 @@ export async function updateShopSchedules(shopId: string, schedules: any[]) {
           isOpen: s.isOpen,
         },
       })
-    )
-  )
+    }
 
-  revalidatePath(`/[slug]/admin/configuracion`, "layout")
+    // 2. If syncOwnerSchedule is enabled and user is owner, sync owner's staff schedule
+    if (syncOwnerSchedule && session.user?.id) {
+      for (const s of validatedSchedules) {
+        const existingStaffSched = await tx.staffSchedule.findUnique({
+          where: {
+            staffId_shopId_dayOfWeek: {
+              staffId: session.user.id,
+              shopId,
+              dayOfWeek: s.dayOfWeek
+            }
+          }
+        })
+
+        if (existingStaffSched) {
+          await tx.staffSchedule.update({
+            where: { id: existingStaffSched.id },
+            data: {
+              isOpen: s.isOpen,
+              openTime: s.openTime,
+              closeTime: s.closeTime,
+              status: "APPROVED"
+            }
+          })
+        } else {
+          await tx.staffSchedule.create({
+            data: {
+              staffId: session.user.id,
+              shopId,
+              dayOfWeek: s.dayOfWeek,
+              isOpen: s.isOpen,
+              openTime: s.openTime,
+              closeTime: s.closeTime,
+              status: "APPROVED"
+            }
+          })
+        }
+      }
+    }
+  })
+
+  const shop = await prisma.shop.findUnique({ where: { id: shopId }, select: { slug: true } })
+  if (shop) {
+    revalidatePath(`/${shop.slug}/admin/configuracion`)
+    revalidatePath(`/${shop.slug}/admin/staff`)
+    revalidatePath(`/${shop.slug}/admin/citas`)
+    revalidatePath(`/${shop.slug}/schedule`)
+    revalidatePath(`/${shop.slug}/admin`)
+    revalidatePath(`/admin/configuracion`)
+    revalidatePath(`/admin/staff`)
+    revalidatePath(`/admin/citas`)
+    revalidatePath(`/schedule`)
+  }
+
   return { success: true }
 }
